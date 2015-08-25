@@ -189,7 +189,12 @@ class Docpie(dict):
                         final_value = this_value
 
             logger.debug('set %s value %s', names, final_value)
-            value.update({name: final_value for name in names})
+            # Not work on py2.6
+            # value.update({name: final_value for name in names})
+            final = {}
+            for name in names:
+                final[name] = final_value
+            value.update(final)
 
         if self.autodash:
             value['-'] = bool(argv_clone.dash)

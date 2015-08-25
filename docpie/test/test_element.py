@@ -25,8 +25,13 @@ class TokenTest(unittest.TestCase):
             self.eq(each, t.current())
             self.eq(each, t.next())
 
-        self.assertIsNone(t.next(), None)
-        self.assertIsNone(t.current(), None)
+        if hasattr(self, 'assertIsNone'):
+            none = self.assertIsNone
+        else:
+            def none(expr, msg=None):
+                assert expr is None, msg
+        none(t.next())
+        none(t.current())
 
     def test_bracket_level0(self):
         t = self.t

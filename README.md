@@ -5,6 +5,19 @@ your python program, by simply providing `__doc__` string.
 
 If you want something more light-weight, you may have a look at [python-docopt](https://github.com/docopt/docopt)
 
+## Installation
+
+```bash
+pip install git+git://github.com/TylerTemp/docpie.git
+```
+`docopt` has been tested with Python:
+
+2.6.6, 2.6.9, 2.7, 2.7.10,
+
+3.2, 3.3.0, 3.3.6, 3.4.0, 3.4.3,
+
+pypy-2.0, pypy-2.6.0, pypy3-2.4.0
+
 
 ## Difference
 
@@ -21,7 +34,7 @@ If you want something more light-weight, you may have a look at [python-docopt](
 
    Which is equal to `Usage: prog [(a a)]...` in `docopt`.
 
-2. In `docpie` if a mutually exclusive elements group matches, the rest
+2. In `docpie` if one mutually exclusive elements group matches, the rest
    group will be skipped
 
    ```python
@@ -33,21 +46,21 @@ If you want something more light-weight, you may have a look at [python-docopt](
 
 ## Known issue
 
-1. the following situation:
+the following situation:
 
-   ```
-   Usage: --long=<arg>
-   ```
+```
+Usage: --long=<arg>
+```
 
-   without announcing `Options` will match `--long sth` and `sth --long`. To
-   avoid, simply write an announcement in `Options`
+without announcing `Options` will match `--long sth` and `sth --long`. To
+avoid, simply write an announcement in `Options`
 
-   ```
-   Usage: --long=<arg>
+```
+Usage: --long=<arg>
 
-   Options:
-     --long=<sth>    this flag requires a value
-   ```
+Options:
+ --long=<sth>    this flag requires a value
+```
 
 ## More features
 

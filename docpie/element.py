@@ -1,6 +1,18 @@
 import logging
 import re
-from itertools import product
+try:
+    from itertools import product
+except ImportError:
+    # python < 2.6
+    def product(*args, **kwds):
+        # product('ABCD', 'xy') --> Ax Ay Bx By Cx Cy Dx Dy
+        # product(range(2), repeat=3) --> 000 001 010 011 100 101 110 111
+        pools = map(tuple, args) * kwds.get('repeat', 1)
+        result = [[]]
+        for pool in pools:
+            result = [x+[y] for x in result for y in pool]
+        for prod in result:
+            yield tuple(prod)
 
 from docpie.error import DocpieError, DocpieExit, DocpieException
 from docpie.saver import Saver
@@ -125,7 +137,9 @@ class Atom(object):
         elif cls_name == 'Argument':
             cls = Argument
         default = dic['default']
-        return cls(*names, default=default)
+        # Not work on py2.6
+        # return cls(*names, default=default)
+        return cls(*names, **{'default': default})
 
     def __str__(self):
         return '/'.join(self._names)
@@ -174,7 +188,12 @@ class Option(Atom):
             else:
                 value = []
             logger.debug('%s returns its value %s', self, value)
-            return {name: value for name in names}
+            # Not work on py2.6
+            # return {name: value for name in names}
+            result = {}
+            for name in names:
+                result[name] = value
+            return result
 
         # has value, has ref
         if ref is not None:
@@ -191,14 +210,24 @@ class Option(Atom):
             value = int(value)
 
         logger.debug('%s returns its value %s', self, value)
-        return {name: value for name in names}
+        # Not work on py2.6
+        # return {name: value for name in names}
+        result = {}
+        for name in names:
+            result[name] = value
+        return result
 
     def get_sys_default_value(self, in_repeat=False):
         if in_repeat:
             value = []
         else:
             value = False
-        return {name: value for name in self._names}
+        # Not work on py2.6
+        # return {name: value for name in self._names}
+        result = {}
+        for name in self._names:
+            result[name] = value
+        return result
 
     def match(self, argv, saver, repeat_match=False):
         current = argv.current()
@@ -343,7 +372,9 @@ class Option(Atom):
         default = dic['default']
         ref_value = dic['ref']
         ref = None if ref_value is None else Unit.convert_2_object(ref_value)
-        return cls(*names, default=default, ref=ref)
+        # Not work on py2.6
+        # return cls(*names, default=default, ref=ref)
+        return cls(*names, **{'default': default, 'ref': ref})
 
     def __str__(self):
         result = super(Option, self).__str__()
@@ -424,14 +455,24 @@ class Command(Atom):
         else:
             value = self.value
 
-        return {name: value for name in self._names}
+        # Not work on py2.6
+        # return {name: value for name in self._names}
+        result = {}
+        for name in self._names:
+            result[name] = value
+        return result
 
     def get_sys_default_value(self, in_repeat=False):
         if in_repeat:
             value = []
         else:
             value = False
-        return {name: value for name in self._names}
+        # Not work on py2.6
+        # return {name: value for name in self._names}
+        result = {}
+        for name in self._names:
+            result[name] = value
+        return result
 
 
 class Argument(Atom):
@@ -523,15 +564,24 @@ class Argument(Atom):
                 value = []
             elif not isinstance(value, list):
                 value = [value]
-
-        return {name: value for name in self._names}
+        # Not work on py2.6
+        # return {name: value for name in self._names}
+        result = {}
+        for name in self._names:
+            result[name] = value
+        return result
 
     def get_sys_default_value(self, in_repeat=False):
         if in_repeat:
             value = []
         else:
             value = None
-        return {name: value for name in self._names}
+        # Not work on py2.6
+        # return {name: value for name in self._names}
+        result = {}
+        for name in self._names:
+            result[name] = value
+        return result
 
     def merge_value(self, values):
         if len(values) == 1:
@@ -706,7 +756,9 @@ class Unit(list):
         if isinstance(self[0], Unit):
             repeat = self.repeat or self[0].repeat
             if type(self) is not type(self[0]):
-                return Optional(*self[0], repeat=repeat).fix()
+                # Not work on py2.6
+                # return Optional(*self[0], repeat=repeat).fix()
+                return Optional(*self[0], **{'repeat': repeat}).fix()
             else:
                 result = self[0]
                 result.repeat = repeat
@@ -855,7 +907,9 @@ class Unit(list):
             cls = Required
         atoms = (convert_2_object(x) for x in dic['atoms'])
         repeat = dic['repeat']
-        return cls(*atoms, repeat=repeat)
+        # Not work on py2.6
+        # return cls(*atoms, repeat=repeat)
+        return cls(*atoms, **{'repeat': repeat})
 
     def __eq__(self, other):
         if not isinstance(other, Unit):

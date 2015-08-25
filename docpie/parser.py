@@ -13,7 +13,7 @@ logger = logging.getLogger('docpie.parser')
 class Parser(object):
 
     section_re_str = (r'(?:^|\n)'
-                      r'(?P<name>[\ \t]*{}[\ \t]*)'
+                      r'(?P<name>[\ \t]*{0}[\ \t]*)'
                       r'(?P<sep>\n?)'
                       r'(?P<section>.*?)'
                       r'\s*'
@@ -54,7 +54,10 @@ class Parser(object):
 
         instances = cls._parse_pattern(bracket_token)
 
-        return instance_type(*instances, repeat=repeat)
+        # Not support on py2.5
+        # return instance_type(*instances, repeat=repeat)
+        return instance_type(*instances, **{'repeat': repeat})
+
 
     @classmethod
     def _parse_element(cls, token):
@@ -81,7 +84,9 @@ class Parser(object):
             ins_lis = [atom_class(atom)]
         if token.current() == '...':
             token.next()
-            ins = Required(*ins_lis, repeat=True)
+            # Not work on py2.6
+            # ins = Required(*ins_lis, repeat=True)
+            ins = Required(*ins_lis, **{'repeat': True})
             while token.current() == '...':
                 token.next()
             return (ins,)

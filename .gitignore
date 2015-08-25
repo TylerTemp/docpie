@@ -8,3 +8,4 @@ test/tmp_test.py
 /docpie.egg-info
 .DS_Store
 MAINFEST
+test.unix
