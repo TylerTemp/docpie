@@ -1,0 +1,4 @@
+include LICENSE
+include ./docpie/test
+include ./docpie/test/*
+recursive-include LICENSE
