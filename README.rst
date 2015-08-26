@@ -58,9 +58,9 @@ Then try ``$ python example.py ship Titanic move 1 2`` or
        '''
        print(docpie(__doc__, name='myscript.py'))
 
-2. Different from ``docpie,``\ docpie\ ``will handle``--\` automatically
-   by default, you do not need to write it in your "Usage:" anymore.
-   (You can also trun off this feature)
+2. Different from ``docpie``, ``docpie`` will handle ``--``
+   automatically by default, you do not need to write it in your
+   "Usage:" anymore. (You can also trun off this feature)
 
    .. code:: python
 
@@ -232,7 +232,8 @@ instead of positional arguments.
    ``docpie`` will ignore the first element of your "usage"
 -  ``case_sensitive`` (bool, default ``False``) specifies if it need
    case sensitive when matching "Usage:" and "Options:"
--  ``extra`` see "Advanced Usage" - "Auto Handler"
+-  ``extra`` see `"Advanced Usage" <#advanced-usage>`__ - `"Auto
+   Handler" <#auto-handler>`__
 
 the return value is a dictonary. Note if a flag has alias(e.g, ``-h`` &
 ``--help`` has the same meaning, you can specify in "Options"), all the
@@ -835,3 +836,37 @@ This feature can be expected in the future ``docpie``
     Usage: cp.py <source_file>... <target_directory>
 
 And the "known issue" may also be solved in the future ``docpie``
+
+Developing
+----------
+
+execute ``/test/test.py`` to run the test
+
+the logger name of ``docpie`` is ``"docpie"``
+
+``docpie`` contains two developing tools: ``bashlog`` and ``tracemore``.
+You can do like:
+
+.. code:: python
+
+    import logging
+    from docpie import docpie, Docpie, bashlog
+    from docpie.tracemore import get_exc_plus
+
+    root_logger = bashlog.stdoutlogger()  # You may init your logger in your way
+    docpie_logger = logging.getLogger('docpie')
+    docpie_logger.setLevel(logging.DEBUG)
+
+    try:
+        docpie(doc)
+    except BaseException:
+        docpie_logger.error(get_exc_plus)
+
+the code in ``bashlog.py`` is taken from
+`tornado <https://github.com/tornadoweb/tornado>`__, and
+``tracemore.py`` is from `python
+Cookbook <http://www.amazon.com/Python-Cookbook-Third-David-Beazley/dp/1449340377/ref=sr_1_1?ie=UTF8&qid=1440593849&sr=8-1&keywords=python+cookbook>`__
+
+<!-- Use
+``pandoc --from=markdown --to=rst --output=README.rst README.md`` to
+convert this into rst -->
