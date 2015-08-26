@@ -74,6 +74,13 @@ class Parser(object):
             else:
                 ins = OptionsShortcut()
             return (ins,)
+        if atom.startswith('-') and '<' in atom:
+            flag, partly_arg = atom.split('<', 1)
+            flag_class = Atom.get_class(flag)
+            arg_class = Atom.get_class('<' + partly_arg)
+            if flag_class is Option and arg_class is Argument:
+                # maybe return as ref?
+                return (Option(flag), Argument('<' + partly_arg))
         atom_class = Atom.get_class(atom)
         if (atom_class is Option and
                 not atom.startswith('--') and

@@ -1075,7 +1075,7 @@ class OptionsShortcut(object):
     def convert_2_dict(cls, obj):
         return {
             '__class__': obj.__class__.__name__,
-            # 'ref': [x.convert_2_dict() for x in obj._ref],
+            # 'ref': [x.convert_2_dict(x) for x in obj._ref],
             'hide': tuple(obj._hide),
         }
 
@@ -1297,7 +1297,7 @@ class Either(list):
     def convert_2_dict(cls, obj):
         return {
             '__class__': obj.__class__.__name__,
-            'branch': [x.convert_2_dict() for x in obj],
+            'branch': [x.convert_2_dict(x) for x in obj],
         }
 
     @classmethod

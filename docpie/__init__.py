@@ -32,11 +32,16 @@ class Docpie(dict):
     version = None
     extra = {}
 
-    def __init__(self, doc=None, **config):
+    def __init__(self, doc=None, help=True, version=None,
+                 stdopt=True, attachopt=True, attachvalue=True,
+                 auto2dashes=True, name=None, case_sensitive=False, extra={}):
 
         # set config first
-        if config:
-            self.set_config(config)
+        self.set_config(
+            help=help, version=version,
+            stdopt=stdopt, attachopt=attachopt, attachvalue=attachvalue,
+            auto2dashes=auto2dashes, name=name, case_sensitive=case_sensitive,
+            extra={})
 
         if doc is not None:
             self.doc = doc
@@ -76,6 +81,14 @@ class Docpie(dict):
     @attachvalue.setter
     def attachvalue(self, value):
         Atom.attachvalue = value
+
+    def need_pickle(self):
+        return self, OptionsShortcut._ref
+
+    @staticmethod
+    def restore_pickle(value):
+        self, OptionsShortcut._ref = value
+        return self
 
     def docpie(self, argv=None):
         if argv is None:
@@ -211,6 +224,8 @@ class Docpie(dict):
 
     def check_flag_and_handler(self, token):
         for flag, handler in self.extra.items():
+            if not callable(handler):
+                continue
             find_it, _ = token.clone().break_for_option(
                 (flag,), self.stdopt, self.attachvalue)
             if find_it:
@@ -286,7 +301,7 @@ class Docpie(dict):
 
         return self
 
-    def set_config(self, config):
+    def set_config(self, **config):
         if 'stdopt' in config:
             self.stdopt = config.pop('stdopt')
         if 'attachopt' in config:
@@ -302,10 +317,17 @@ class Docpie(dict):
             if self.help:
                 self.extra['--help'] = self.long_help_handler
                 self.extra['-h'] = self.short_help_handler
+            else:
+                self.extra.pop('--help', None)
+                self.extra.pop('-h', None)
         if 'version' in config:
             self.version = config.pop('version')
-            if self.version is not None:
+            if self.version is None:
+                self.extra.pop('--version', None)
+                self.extra.pop('-v', None)
+            else:
                 self.extra['-v'] = self.version_handler
+                self.extra['--version'] = self.version_handler
         if 'case_sensitive' in config:
             self.case_sensitive = config.pop('case_sensitive')
         if 'extra' in config:
@@ -314,6 +336,26 @@ class Docpie(dict):
         if config:  # should be empty
             raise ValueError(
                 '%s is/are not accepted key argument(s)' % list(config.keys()))
+
+    def preview(self):
+        print(('[Quick preview of Docpie %s]' % __version__).center(80, '='))
+        print('')
+        print(' str '.center(80, '-'))
+        print('Usage:')
+        for each in self.usages:
+            print(each)
+        print('\nOptions:')
+        for each in OptionsShortcut._ref:
+            print(each)
+
+        print(' repr '.center(80, '-'))
+        print('Usage:')
+        for each in self.usages:
+            print(repr(each))
+        print('\nOptions:')
+        for each in OptionsShortcut._ref:
+            print(repr(each))
+
 
     def __str__(self):
         return '{%s}' % ',\n '.join('%r: %r' % i for i in sorted(self.items()))

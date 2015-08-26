@@ -120,35 +120,6 @@ Then try `$ python example.py ship Titanic move 1 2` or
      '-o': 'sth'}
     ```
 
-   <!-- `docopt` allows you to customize some flags' behavior, e.g
-
-   ```python
-   '''
-   A simple example
-
-   Usage:
-     text.py [options]
-
-   Options:
-     -h, --help  print this message
-   '''
-
-   import sys
-   from docopt import docopt
-
-   def handle_short_help(docpie, flag):
-       print('Usage:')
-       print(docpie.usage_text)
-       print("Try '%s --help' for more information." % (docpie.name or sys.argv[0]))
-       sys.exit()
-
-   argument = docpie(__doc__, extra={'-h': handle_short_help})
-   print(argument)
-   ```
-
-   Now `-h` will display the "Usage" with a tip, `--help` will print the whole
-   `__doc__` string -->
-
 
 Installation
 -------------------------------------------------------------------------------
@@ -258,6 +229,7 @@ positional arguments.
     first element of your "usage"
 *   `case_sensitive` (bool, default `False`) specifies if it need case
     sensitive when matching "Usage:" and "Options:"
+*   `extra` see "Advanced Usage" - "Auto Handler"
 
 the return value is a dictonary. Note if a flag has alias(e.g, `-h` & `--help`
 has the same meaning, you can specify in "Options"), all the alias will also
@@ -318,13 +290,458 @@ Each pattern can consist of the following elements:
     e.g. `--flag`. When `stdopt` and `attachopt` are on, you can "stack"
     seveval of short option, e.g. `-oiv` can mean `-o -i -v`.
 
-    The option can have value. e.g. `--input=FILE`, `-i FILE`, 
+    The option can have value. e.g. `--input=FILE`, `-i FILE`, `-i<file>`.
+    But it's important that you specify its argument in "Options"
+*   **commands** are words that do *not* follow the described above. Note that
+    `-` and `--` are also commands.
+
+
+Use the following constructs to specify patterns:
+
+*   **[ ]** (brackets) **optional** elements. Note the elements in brackets
+    should either be all omitted or provided. e.g. `program.py [-ab]` will
+    only match `-ab`, `-a -b` or ` `(empty argument)
+*   **( )** (parens) **required** elements.  All elements that are *not*
+    put in **[ ]** are also required, e.g.:
+    `my_program.py --path=<path> <file>...` is the same as
+    `my_program.py (--path=<path> <file>...)`.
+*   **|** (pipe) **mutually exclusive** elements. Use **( )** or **[ ]**
+    to group them, e.g `program.py (--left | --right)`.
+    Note for `program.py (<a> | <b> | <c>)`, because there is no difference
+    between arguments, this will be parsed as `program.py (<a>)`
+    and `<b>`, `<c>` will be the alias of `<a>`
+
+    ```python
+    from docpie import docpie
+    print(docpie('Usage: prog (<a> | <b>)', 'prog py'.split()))
+    # {'--': False, '<a>': 'py', '<b>': 'py'}
+    ```
+
+*   **...** (ellipsis) **repeatable** elements. To specify that
+    arbitrary number of repeating elements could be accepted, use
+    ellipsis (`...`), e.g.  `my_program.py FILE ...` means one or
+    more `FILE`-s are accepted.  If you want to accept zero or more
+    elements, use brackets, e.g.: ``my_program.py [FILE ...]``. Ellipsis
+    works as a unary operator on the expression to the left.
+*   **[options]** (case sensitive) shortcut for any options.  You can
+    use it if you want to specify that the usage pattern could be
+    provided with any options defined below in the option-descriptions
+    and do not want to enumerate them all in usage-pattern.
+
+    Note that you can wirte `program.py [options]...`, but you can't break
+    the format like `program.py [options...]`
+    (in this case, `options` is a command)
+
+If your pattern allows to match argument-less option (a flag) several
+times:
+
+```
+Usage: my_program.py [-vvv | -vv | -v]
+```
+
+then number of occurrences of the option will be counted. I.e.
+`args['-v']` will be `2` if program was invoked as `my_program
+-vv`. Same works for commands.
+
+Note that the `|` acts like `or` in python, which means if one elements
+group matched, the following groups will be skipped. usage like
+`program.py [-v | -vv | -vvv]` will not match `program.py -vv`, because the
+first `-v` matches first part of `-vv`, and then nothing left to match the
+rest argv, so it fails.
+
+If your usage patterns allows to match same-named option with argument
+or positional argument several times, the matched arguments will be
+collected into a list:
+
+```
+Usage: program.py <file> <file> --path=<path>...
+
+Options: --path=<path>...     the path you need
+```
+
+(Note you **must** specify "Options" here. See "Known Issue")
+
+Then `program.py file1 file2 --path ./here ./there` will give you
+`{'<file>': ['file1', 'file2'], '--path': ['./here', './there']}`
+
+Also note that the `...` only has effect to `<path>`. You can also write in
+this way:
+
+```
+Usage: program.py <file> <file> (--path=<path>)...
+
+Options: --path=<path>     the path you need
+```
+
+Then it can match `program.py file1 file2 --path=./here --path=./there`
+with the same result.
+
+
+### Options Format
+
+**Option descriptions** consist of a list of options that you put
+below your usage patterns.
+
+It is necessary to list option descriptions in order to specify:
+
+*   synonymous short and long options,
+*   if an option has an argument,
+*   if option's argument has a default value.
+
+
+"Options" starts with `Options:` (set `case_sensitive` to make it case
+sensitive/insensitive). descriptions can followed it directly or
+on the next line. If you have rest content, separate with an empty line.
+
+e.g.
+
+```python
+"""
+Usage: prog [options]
+
+Options: -h"""
+```
+
+or
+
+```python
+"""
+Usage: prog [options]
+
+Options:
+  -h, --help
+
+Not part of Options.
+"""
+```
+
+The rules in "Option" section are as follows:
+
+*   To specify that option has an argument, put a word describing that
+    argument after space (or equals "`=`" sign) as shown below. Follow
+    either <angular-brackets> or UPPER-CASE convention for options'
+    arguments.  You can use comma if you want to separate options. In
+    the example below, both lines are valid, however you are recommended
+    to stick to a single style.
+
+    ```
+    -o FILE --output=FILE       # without comma, with "=" sign
+    -i <file>, --input <file>   # with comma, without "=" sing
+    ```
+
+    You can also give several synonymous
+    (only suggested in the following situation)
+
+    ```
+    -?, -h, --help
+    ```
+
+*   the description of the option can be written in two ways:
+    1) separate option and description with 2+ empty spaces.
+    2) start at the next line but indent 2+ empty spaces more.
+
+    ```
+    -?, -h, --help  print help message. use
+                    -h/-? for a short help and
+                    --help for a long help. # Good. 2+ empty spaces
+    -a, --all
+        A long long long long long long long
+        long long long long long description of
+        -a & --all    # Good. New line & indent 2 more spaces
+    ```
+*   Use `[default: <your-default-value>]` at the end of the description
+    if you need to provide a default value for an option. Note `docpie` has
+    a very strict format of default: it must start with `[default: `(note
+    the empty space after `:`), followed by your default value, then `]`
+    and no more, even a following dot is not acceptale.
+
+    ```
+    --coefficient=K  The K coefficient [default: 2.95]  # '2.95'
+    --output=FILE    Output file [default: ]            # empty string
+    --directory=DIR  Some directory [default:  ]        # a space
+    --input=FILE     Input file[default: sys.stdout].   # not work because of the dot
+    ```
+*   If the option is not repeatable, the value inside `[default: ...]`
+    will be interpreted as string.  If it *is* repeatable, it will be
+    splited into a list on whitespace:
+
+    ```
+    Usage: my_program.py [--repeatable=<arg> --repeatable=<arg>]
+                         [--another-repeatable=<arg>]...
+                         [--not-repeatable=<arg>]
+
+    # will be ['./here', './there']
+    --repeatable=<arg>          [default: ./here ./there]
+
+    # will be ['./here']
+    --another-repeatable=<arg>  [default: ./here]
+
+    # will be './here ./there', because it is not repeatable
+    --not-repeatable=<arg>      [default: ./here ./there]
+    ```
+
+
+Advanced Usage
+-------------------------------------------------------------------------------
+
+Normally the `docpie` is all you need, But you can do more tricks with `Docpie`
+
+```python
+from docpie import Docpie
+```
+
+### Basic Usage
+
+when call
+
+```python
+from docpie import docpie
+print(docpie(__doc__))
+```
+
+it's equal to:
+
+```python
+from docpie import Docpie
+pie = Docpie(__doc__)
+pie.docpie()
+print(pie)
+```
+
+```python
+Docpie.__init__(self, doc=None, **config)
+```
+
+`Docpie.__init__` accepts all arguments of `docpie` function except the `argv`.
+Another difference is that all arguments in  `Docpie.__init__` except `doc` are
+keyword-only arguments.
+
+
+```python
+Docpie.docpie(self, argv=None)
+```
+
+`Docpie.docpie` accepts `argv` which is the same `argv` in `docpie`
+
+
+### Change Config
+
+```python
+Docpie.set_config(self, **config)
+```
+
+`set_config` allows you to change the argument after you initialized `Docpie`.
+`config` is a dict that the key is the same of `**config` in `__init__`
+
+```python
+pie = Docpie(__doc__)
+pie.set_config({'help': False})  # now Docpie will not handle `-h`/`--help`
+pie.docpie()
+```
+
+### Auto handler
+
+Docpie has an attribute called `extra`. `extra` is a dict, the key is an option
+(str), and the value is a function. the function accepts two arguments, the
+first will be the `Docpie` instance, the second is the the same of the key.
+
+it may lookes like:
+
+```python
+{'-h': <function docpie.Docpie.short_help_handler>,
+ '--help': <function docpie.Docpie.long_help_handler>,
+ '-v': <function docpie.Docpie.version_handler>,
+ '--version': <function docpie.Docpie.version_handler>,
+}
+```
+
+When `version` is not `None`, Docpie will do the following things:
+
+1.  set `Docpie.version` to this value
+2.  add "-v", "--version" as the key of `Docpie.extra`, both values are
+    `Docpie.version_handler`
+3.  when call `Docpie.docpie`, `Docpie` check if whether the keys in
+    `Docpie.extra` appears in `argv`.
+4.  if find the key, to say `-v` for example, `Docpie` will check
+    `Docpie.extra` and call `Docpie.extra["-v"](docpie, "-v")`,
+    the first argument is the instance
+5.  By default, `Docpie.version_handler(docpie, flag)` will print
+    `Docpie.version`, and exit the program.
+
+for `help=True`, `Docpie` will set `{'-h': Docpie.short_help_handler,
+'--help': Docpie.long_help_handler}`.
+
+
+When doing so, `Docpie` will not check your `Options` section. Which means even
+you set `-h, -?, --help    print help message` in `Options` secion, `Docpie`
+will not handle `-?` automatically. (TODO: make this happen next version)
+
+You can change this by passing `extra` argument, e.g.
+
+```python
+"""
+Example for Docpie!
+
+Usage: example.py [options]
+
+Options:
+  -v, --obvious    print more infomation  # note the `-v` is taken
+  --version        print version
+  -h, -?, --help   print this infomation
+  --moo            the Easter Eggs!
+
+Have fun, my friend.
+"""
+from docpie import Docpie
+import sys
+
+
+def moo_handler(pie, flag):
+    print("Alright you got me. I'm an Easter Eggs.\n"
+          "You may use this program like this:\n")
+    print("Usage:")
+    print(pie.usage_text)
+    print("")
+    print("Options:")
+    print("".join(pie.option_text.splitlines(True)[:-1]))
+    sys.exit()    # Don't forget to exit
+
+pie = Docpie(__doc__, version='0.0.1')
+pie.set_config(
+  extra={
+    '--moo': moo_handler,  # set moo handler
+    '-?': pie.short_help_handler,  # make it same as `-h`
+    '-v': None,  # unset `-v`
+  }
+)
+
+print(pie)
+```
+
+now try the following command:
+
+```bash
+example.py -v
+example.py --version
+example.py -h
+example.py -?
+example.py --help
+example.py --moo
+```
+
+to customize your `extra`, the following attribute of `Docpie` may help:
+
+*   `Docpie.version` is the version you set. (default `None`)
+*   `Docpie.usage_text` is the usage section. ("Usage:" is not contained)
+*   `Docpie.option_text` is the options section. ("Options:" is not contained)
+
+### Serialization
+
+`Docpie.need_pickle(self)` give you everything you need to pickle.
+`Docpie.restore_pickle(value)` restore everything which already converted
+back by pickle
+
+`Docpie.convert_2_dict(self)` can convert `Docpie` instance into a dict so
+you can JSONlizing it. Use `Docpie.convert_2_docpie(cls, dic)` to convert
+back to `Docpie` instance.
+
+Here is a full example of serialization and unserialization together with
+`pickle`
+
+In developing:
+
+```python
+"""
+This is my cool script!
+
+Usage: script.py [options] (--here|--there)
+
+Options:
+  --here
+  --there
+  -h, --help
+  -v, --version
+
+Have fun then.
+"""
+
+import json
+try:
+    import cPickle as pickle
+except ImportError:    # py3 maybe
+    import pickle
+from docpie import Docpie
+
+
+pie = Docpie(__doc__)
+
+with open('myscript.docpie.pickle', 'wb') as pkf:
+    pickle.dump(pie.need_pickle(), pkf)
+
+# omit `encoding` if you're using python2
+with open('myscript.docpie.json', 'w', encoding='utf-8') as jsf:
+    json.dump(pie.convert_2_dict(), jsf)
+```
+
+In release:
+
+```python
+"""
+This is my cool script!
+
+Usage: script.py [options] (--here|--there)
+
+Options:
+  --here
+  --there
+  -h, --help
+  -v, --version
+
+Have fun then.
+"""
+
+import os
+import json
+try:
+    import cPickle as pickle
+except ImportError:    # py3 maybe
+    import pickle
+from docpie import Docpie
+
+pie = None
+
+if os.path.exists('myscript.docpie.pickle'):
+    with open('myscript.docpie.pickle', 'rb') as pkf:
+        try:
+            pie = Docpie.restore_pickle(pickle.load(pkf))
+        except BaseException:
+            pass
+
+if pie is None and os.path.exists('myscript.docpie.json'):
+    # omit `encoding` if you're using python2
+    with open('myscript.docpie.json', 'r', encoding='utf-8') as jsf:
+        try:
+            pie = Docpie.convert_2_docpie(json.load(jsf))
+        except BaseException:
+            pass
+
+if pie is None:
+    pie = Docpie(__doc__)
+
+print(pie.docpie())
+```
+
+
+### preview
+
+after you get your `Docpie` instance, call `.preview()` to have a quick view
+that how does `Docpie` undertand your `doc`
+
 
 Difference
 -------------------------------------------------------------------------------
 
 `docpie` is not `docopt`.
-
 
 1.  `docpie` will trade element in `[]` (optional) as a whole, e.g
 
@@ -349,7 +766,7 @@ Difference
     even you specify it in "Options":
 
     ```python
-    """Usage: prog -iFILE
+    """Usage: prog -iFILE   # Not work in docpie
 
     Options: -i FILE
     """
@@ -364,7 +781,15 @@ Difference
     """
     ```
 
-## Known issue
+4. `docpie` use `Options:` to find the current "Option" section,
+    however `docopt` will treat any line in `doc` starts with `-`
+    (not counting spaces) as "Options"
+
+5.  Subparsers are not supported currently.
+
+
+Known Issue
+-------------------------------------------------------------------------------
 
 the following situation:
 
@@ -382,7 +807,8 @@ Options:
  --long=<sth>    this flag requires a value
 ```
 
-## More features
+More features
+-------------------------------------------------------------------------------
 
 This feature can be expected in the future `docpie`
 
@@ -391,3 +817,5 @@ This feature can be expected in the future `docpie`
 ```
 Usage: cp.py <source_file>... <target_directory>
 ```
+
+And the "known issue" may also be solved in the future `docpie`
