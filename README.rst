@@ -849,18 +849,15 @@ You can do like:
 
 .. code:: python
 
-    import logging
     from docpie import docpie, Docpie, bashlog
     from docpie.tracemore import get_exc_plus
 
-    root_logger = bashlog.stdoutlogger()  # You may init your logger in your way
-    docpie_logger = logging.getLogger('docpie')
-    docpie_logger.setLevel(logging.DEBUG)
+    logger = bashlog.stdoutlogger('docpie')  # You may init your logger in your way
 
     try:
         docpie(doc)
     except BaseException:
-        docpie_logger.error(get_exc_plus)
+        logger.error(get_exc_plus())
 
 the code in ``bashlog.py`` is taken from
 `tornado <https://github.com/tornadoweb/tornado>`__, and
