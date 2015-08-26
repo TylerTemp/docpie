@@ -1,11 +1,12 @@
 class DocpieException(BaseException):
+    '''Basic exception of docpie'''
     usage_str = None
     opt_str = None
 
 
 class DocpieExit(SystemExit, DocpieException):
-    pass
+    '''Error in construction of usage-message by developer.'''
 
 
 class DocpieError(Exception, DocpieException):
-    pass
+    '''Exit in case user invoked program with incorrect arguments.'''

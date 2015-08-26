@@ -181,7 +181,8 @@ positional arguments.
     below) or see `Docpie` if you only want to change `-h`/`--help` behavior.
 *   `version` (any type, default `None`) specifies the version of your program.
     When it's not `None`, `docpie` will handle `-v`/`--version`, print this
-    value, and exit. See `Docpie` if you want to customize it.
+    value, and exit. See "[Advanced Usage](#advanced-usage)" -
+    "[Auto Handler](#auto-handler)" if you want to customize it.
 *   `stdopt` (bool, default `True`) when set `True`(default), long flag should
     only starts with `--`, e.g. `--help`, and short flag should be `-` followed
     by a letter. This is suggested to make it `True`. When set to `False`,
@@ -229,10 +230,11 @@ positional arguments.
     first element of your "usage"
 *   `case_sensitive` (bool, default `False`) specifies if it need case
     sensitive when matching "Usage:" and "Options:"
-*   `extra` see ["Advanced Usage"](#advanced-usage) - ["Auto Handler"](#auto-handler)
+*   `extra` see "[Advanced Usage](#advanced-usage)" -
+    "[Auto Handler](#auto-handler)"
 
 the return value is a dictonary. Note if a flag has alias(e.g, `-h` & `--help`
-has the same meaning, you can specify in "Options"), all the alias will also
+has the same meaning, you can specify in "Options"), all the alias will also be
 in the result.
 
 Format
@@ -272,9 +274,9 @@ Usage:
     prog [--long-option-1] [--long-option-2]
          [--long-option-3] [--long-option-4]  # Good
     prog [--long-option-1] [--long-option-2]
-      [--long-option-3] [--long-option-4]  # Works but not so good
+      [--long-option-3] [--long-option-4]     # Works but not so good
     prog [--long-option-1] [--long-option-2]
-    [--long-option-3] [--long-option-4]  # Not work. Need to indent more.
+    [--long-option-3] [--long-option-4]       # Not work. Need to indent more.
 
 """
 ```
@@ -293,7 +295,7 @@ Each pattern can consist of the following elements:
     The option can have value. e.g. `--input=FILE`, `-i FILE`, `-i<file>`.
     But it's important that you specify its argument in "Options"
 *   **commands** are words that do *not* follow the described above. Note that
-    `-` and `--` are also commands.
+    `-` and `--` are also command.
 
 
 Use the following constructs to specify patterns:
@@ -359,7 +361,7 @@ Usage: program.py <file> <file> --path=<path>...
 Options: --path=<path>...     the path you need
 ```
 
-(Note you **must** specify "Options" here. See "Known Issue")
+(Note you **must** specify "Options" here. See "[Known Issue](#known-issue)")
 
 Then `program.py file1 file2 --path ./here ./there` will give you
 `{'<file>': ['file1', 'file2'], '--path': ['./here', './there']}`
@@ -509,13 +511,12 @@ print(pie)
 ```
 
 ```python
-Docpie.__init__(self, doc=None, **config)
+Docpie.__init__(self, doc=None, help=True, version=None,
+                stdopt=True, attachopt=True, attachvalue=True,
+                auto2dashes=True, name=None, case_sensitive=False, extra={})
 ```
 
 `Docpie.__init__` accepts all arguments of `docpie` function except the `argv`.
-Another difference is that all arguments in  `Docpie.__init__` except `doc` are
-keyword-only arguments.
-
 
 ```python
 Docpie.docpie(self, argv=None)
@@ -531,11 +532,12 @@ Docpie.set_config(self, **config)
 ```
 
 `set_config` allows you to change the argument after you initialized `Docpie`.
-`config` is a dict that the key is the same of `**config` in `__init__`
+`**config` is a dict, and the keys can only be what in `__init__` accepts
+except `doc`
 
 ```python
 pie = Docpie(__doc__)
-pie.set_config({'help': False})  # now Docpie will not handle `-h`/`--help`
+pie.set_config(help=False)  # now Docpie will not handle `-h`/`--help`
 pie.docpie()
 ```
 
@@ -645,6 +647,10 @@ back by pickle
 you can JSONlizing it. Use `Docpie.convert_2_docpie(cls, dic)` to convert
 back to `Docpie` instance.
 
+**Note:** if you change `extra` directly or by passing `extra` argument,
+the infomation will be lost because JOSN can not save function object.
+You need to call `set_config(extra={...})` after `convert_2_docpie`.
+
 Here is a full example of serialization and unserialization together with
 `pickle`
 
@@ -724,6 +730,9 @@ if pie is None and os.path.exists('myscript.docpie.json'):
             pie = Docpie.convert_2_docpie(json.load(jsf))
         except BaseException:
             pass
+        else:
+            # set extra if you have changed `extra` before
+            pie.set_config(extra={})
 
 if pie is None:
     pie = Docpie(__doc__)
@@ -734,8 +743,8 @@ print(pie.docpie())
 
 ### preview
 
-after you get your `Docpie` instance, call `.preview()` to have a quick view
-that how does `Docpie` undertand your `doc`
+after you get your `pie=Docpie(__doc__)` instance, you can call
+`pie.preview()` to have a quick view of how does `Docpie` understand your `doc`
 
 
 Difference
