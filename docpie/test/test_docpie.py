@@ -66,9 +66,18 @@ class DocpieBasicTest(unittest.TestCase):
         self.assertRaises(DocpieExit, docpie, doc, 'prog --hel')
 
     def test_command_help(self):
-        eq = self.assertEqual
+
+        # Temp disable output
+        class EmptyWriter(object):
+            def write(self, *a, **k):
+                pass
+
+        real_stdout, sys.stdout = sys.stdout, EmptyWriter()
+
         doc = 'usage: prog --help-commands | --help'
         self.assertRaises(SystemExit, docpie, doc, 'prog --help')
+
+        sys.stdout = real_stdout
 
     # def test_unicode(self):
     #     try:
@@ -185,8 +194,6 @@ class DocpieBasicTest(unittest.TestCase):
     def test_issue_docopt_65_evaluate_argv_when_called_not_when_imported(self):
         eq = self.assertEqual
 
-        import sys
-
         sys.argv = 'prog -a'.split()
         eq(docpie('usage: prog [-a][-b]'),
            {'-a': True, '-b': False, '-': False, '--': False})
@@ -195,10 +202,12 @@ class DocpieBasicTest(unittest.TestCase):
         eq(docpie('usage: prog [-a][-b]'),
            {'-a': False, '-b': True, '-': False, '--': False})
 
-    # I don't get the idea of this issue...
     def test_issue_71_double_dash_is_not_a_valid_option_argument(self):
         doc = '''Usage:
-                    fubar [-f LEVEL] [--] <items>...'''
+                    fubar [-f LEVEL] [--] <items>...
+
+                 Options:
+                   -f LEVEL'''
 
         self.assertRaises(DocpieExit, docpie, doc, 'fubar -f -- 1 2 ')
 

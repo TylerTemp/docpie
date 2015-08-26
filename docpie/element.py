@@ -3,7 +3,7 @@ import re
 try:
     from itertools import product
 except ImportError:
-    # python < 2.6
+    # python 2.6
     def product(*args, **kwds):
         # product('ABCD', 'xy') --> Ax Ay Bx By Cx Cy Dx Dy
         # product(range(2), repeat=3) --> 000 001 010 011 100 101 110 111
@@ -220,6 +220,15 @@ class Option(Atom):
     def get_sys_default_value(self, in_repeat=False):
         if in_repeat:
             value = []
+        elif self.ref is not None:
+            arg_range = self.ref.arg_range()
+            max_arg_num = max(arg_range)
+            if max_arg_num == 0:
+                value = False
+            elif max_arg_num == 1:
+                value = None
+            else:
+                value = []
         else:
             value = False
         # Not work on py2.6
@@ -245,9 +254,15 @@ class Option(Atom):
         dashes_index = argv.index('--') if '--' in argv else -1
 
         # TODO: check if there is buggy
-        if ('-' in self._names and
-                dash_index != -1 and
-                not (argv.auto_dashes and dashes_index < dash_index)):
+        if '-' in self._names:
+            if argv.auto_dash:
+                argv.check_dash()
+                self.value = bool(argv.dash)
+                return self.value
+
+            if dash_index == -1 or dash_index > argv.dashes_index():
+                return False
+
             if repeat_match:
                 if self.value is None:
                     self.value = 1
@@ -255,7 +270,7 @@ class Option(Atom):
                     self.value += 1
             else:
                 self.value = True
-            argv.pop('-')
+            argv.pop(dash_index)
             argv.dash = True
             return True
 
@@ -266,7 +281,7 @@ class Option(Atom):
                 self.value += 1
             else:
                 self.value = True
-            argv.pop('--')
+            argv.pop(dashes_index)
             argv.dashes = True
             return True
 
@@ -302,6 +317,16 @@ class Option(Atom):
             logger.debug('%s matched %s / %s', self, self.value, argv)
             return True
 
+        # option (e.g. `--flag`) expects a value, but the argv looks like
+        # --flag -- sth
+        # then it should fail
+        if (sub_argv is None and
+                argv.current() == '--' and
+                argv.auto_dashes and
+                min(self.ref.arg_range()) > 0):
+            logger.info(
+                '%s ref must fully match but failed because `--`', self)
+            raise DocpieExit(DocpieException.usage_str)
         result = self.ref.match(sub_argv or argv, saver, repeat_match)
         if sub_argv:
             logger.info('%s ref must fully match but failed for %s',
@@ -422,6 +447,7 @@ class Command(Atom):
 
         skip = 0
         if current == '--':
+            argv.check_dash()
             if argv.auto_dashes and argv.dashes:
                 current = argv.current(1)
                 skip = 1
@@ -506,6 +532,7 @@ class Argument(Atom):
             return True
 
         if current == '--':
+            argv.check_dash()
             if argv.auto_dashes and argv.dashes:
                 current = argv.current(1)
                 # nothing left

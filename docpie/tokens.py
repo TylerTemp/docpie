@@ -93,17 +93,20 @@ class Argv(list):
 
     def check_dash(self):
         if not self:
-            return False
-        current = self[0]
-        if current == '-':
-            self.dash = True
-            self.pop(0)
-            return True
-        elif current == '--':
+            return
+        if self[0] == '--':
             self.dashes = True
-            # self.pop(0)
-            return False
-        return False
+        if self.auto_dash and '-' in self:
+            count = 0
+            while '-' in self and self.index('-') < self.dashes_index():
+                self.remove('-')
+                count += 1
+            self.dash = self.dash or count
+
+    def dashes_index(self):
+        return (self.index('--')
+                if self.auto_dashes and '--' in self
+                else float('inf'))
 
     def clone(self):
         result = Argv(self, self.auto_dash, self.auto_dashes)

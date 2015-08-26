@@ -331,7 +331,7 @@ class OptionParser(Parser):
 
         first = opt_lis.pop(0)
         if not first.startswith('-'):
-            raise DocpieError('option %s does not start with "-"' % opt_lis[0])
+            raise DocpieError('option %s does not start with "-"' % first)
 
         # if Atom.stdopt:
         # -sth -> name=-s, value=sth

@@ -31,6 +31,7 @@ class Docpie(dict):
     name = None
     help = True
     version = None
+    extra = {}
 
     def __init__(self, doc=None, **config):
 
@@ -85,10 +86,8 @@ class Docpie(dict):
 
         token = Argv(argv[1:], self.autodash, self.auto2dashes)
 
-        if self.help:
-            self.check_help(token.clone())
-        if self.version is not None:
-            self.check_version(token.clone())
+        self.check_flag_and_handler(token)
+        token.check_dash()
 
         for each in self.usages:
             logger.debug('matching usage %s', each)
@@ -149,7 +148,7 @@ class Docpie(dict):
             default = option._default
             this_value = option.value
 
-            logger.debug('%s/%s/%s', names, default, this_value)
+            logger.debug('%s/%s/%s', option, default, this_value)
 
             name_in_value = names.intersection(value)
             if name_in_value:  # add default if necessary
@@ -179,11 +178,19 @@ class Docpie(dict):
                         else:
                             final_value = default
                 else:
-                    if ref is not None and min(ref.arg_range()) != 0:
-                        # It requires at least a value
-                        logger.info('%s expects value', option)
-                        raise DocpieExit(DocpieException.usage_str)
-                    if this_value is None:
+                    if ref is not None:
+                        arg_range = ref.arg_range()
+                        if min(arg_range) != 0:
+                            # It requires at least a value
+                            logger.info('%s expects value', option)
+                            raise DocpieExit(DocpieException.usage_str)
+                        elif max(arg_range) == 1:
+                            final_value = None
+                        else:
+                            assert max(arg_range) > 1
+                            final_value = []
+                    # ref is None
+                    elif this_value is None:
                         final_value = False
                     else:
                         final_value = this_value
@@ -205,33 +212,29 @@ class Docpie(dict):
         self.update(value)
         return value
 
-    def check_help(self, token):
-        self._check_flag_and_handle(
-            token, ('-h',), self.short_help_handler)
-        self._check_flag_and_handle(
-            token, ('--help',), self.long_help_handler)
+    def check_flag_and_handler(self, token):
+        for flag, handler in self.extra.items():
+            find_it, _ = token.clone().break_for_option(
+                (flag,), self.stdopt, self.attachvalue)
+            if find_it:
+                logger.info('find %s, auto handle it', flag)
+                handler(self, flag)
 
-    def check_version(self, token):
-        self._check_flag_and_handle(
-            token, ('-v', '--version'), self.version_handler)
-
-    def _check_flag_and_handle(self, token, flags, handler):
-        find_it, _ = token.break_for_option(
-            flags, self.stdopt, self.attachvalue)
-        if find_it:
-            logger.info('find %s, auto handle it', flags)
-            return handler()
-
-    def short_help_handler(self):
+    @staticmethod
+    def short_help_handler(docpie, flag):
         print(DocpieException.usage_str)
+        print('')
+        print(DocpieException.opt_str)
         sys.exit()
 
-    def long_help_handler(self):
-        print(self.doc)
+    @staticmethod
+    def long_help_handler(docpie, flag):
+        print(docpie.doc)
         sys.exit()
 
-    def version_handler(self):
-        print(self.version)
+    @staticmethod
+    def version_handler(docpie, flag):
+        print(docpie.version)
         sys.exit()
 
     # @classmethod
@@ -302,10 +305,17 @@ class Docpie(dict):
             self.name = config.pop('name')
         if 'help' in config:
             self.help = config.pop('help')
+            if self.help:
+                self.extra['--help'] = self.long_help_handler
+                self.extra['-h'] = self.short_help_handler
         if 'version' in config:
             self.version = config.pop('version')
+            if self.version is not None:
+                self.extra['-v'] = self.version_handler
         if 'case_sensitive' in config:
             self.case_sensitive = config.pop('case_sensitive')
+        if 'extra' in config:
+            self.extra.update(config.pop('extra'))
 
         if config:  # should be empty
             raise ValueError(
@@ -317,7 +327,7 @@ class Docpie(dict):
 
 def docpie(doc, argv=None, help=True, version=None,
            stdopt=True, attachopt=True, attachvalue=True,
-           autodash=True, auto2dashes=True, name=None):
+           autodash=True, auto2dashes=True, name=None, extra={}):
 
     kwargs = locals()
     argv = kwargs.pop('argv')
