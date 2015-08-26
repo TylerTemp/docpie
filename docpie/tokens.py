@@ -36,12 +36,10 @@ class Token(list):
 
 class Argv(list):
 
-    def __init__(self, argv, autodash=True, auto2dashes=True):
+    def __init__(self, argv, auto2dashes=True):
         # self._full = argv
         self[:] = argv
-        self.auto_dash = autodash
         self.auto_dashes = auto2dashes
-        self.dash = False
         self.dashes = False
         # self.index = 0
 
@@ -63,7 +61,6 @@ class Argv(list):
                         _, _, value = option.partition(name)
                         if value:
                             sub_argv = Argv([value],
-                                            self.autodash,
                                             self.autodashes)
                         else:
                             sub_argv = None
@@ -75,11 +72,9 @@ class Argv(list):
                         _, _, value = option.partition(name)
                         if name.startswith('--') and value.startswith('='):
                             sub_argv = Argv([value[1:]],
-                                            self.auto_dash,
                                             self.auto_dashes)
                         elif value:
                             sub_argv = Argv([value],
-                                            self.auto_dash,
                                             self.auto_dashes)
 
                     logger.debug('find %s, sub_argv=%s', name, sub_argv)
@@ -96,32 +91,14 @@ class Argv(list):
             return
         if self[0] == '--':
             self.dashes = True
-        if self.auto_dash and '-' in self:
-            count = 0
-            while '-' in self and self.index('-') < self.dashes_index():
-                self.remove('-')
-                count += 1
-            self.dash = self.dash or count
-
-    def dashes_index(self):
-        return (self.index('--')
-                if self.auto_dashes and '--' in self
-                else float('inf'))
 
     def clone(self):
-        result = Argv(self, self.auto_dash, self.auto_dashes)
-        result.dash = self.dash
+        result = Argv(self, self.auto_dashes)
         result.dashes = self.dashes
         return result
 
-    def set_by(self, argv):
-        self[:] = argv
-        self.dash = argv.dash
-        self.dashes = argv.dashes
-
     def restore(self, ins):
         self[:] = ins
-        self.dash = ins.dash
         self.dashes = ins.dashes
 
     def status(self):
@@ -129,7 +106,7 @@ class Argv(list):
         return list(self)
 
     def dump_value(self):
-        return (list(self), self.dash, self.dashes)
+        return (list(self), self.dashes)
 
     def load_value(self, value):
-        self[:], self.dash, self.dashes = value
+        self[:], self.dashes = value

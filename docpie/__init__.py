@@ -26,7 +26,6 @@ class Docpie(dict):
     option_name = 'Options:'
     usage_name = 'Usage:'
     case_sensitive = False
-    autodash = True
     auto2dashes = True
     name = None
     help = True
@@ -84,7 +83,7 @@ class Docpie(dict):
         elif isinstance(argv, StrType):
             argv = argv.split()
 
-        token = Argv(argv[1:], self.autodash, self.auto2dashes)
+        token = Argv(argv[1:], self.auto2dashes)
 
         self.check_flag_and_handler(token)
         token.check_dash()
@@ -203,8 +202,6 @@ class Docpie(dict):
                 final[name] = final_value
             value.update(final)
 
-        if self.autodash:
-            value['-'] = bool(argv_clone.dash)
         if self.auto2dashes:
             value['--'] = bool(argv_clone.dashes)
 
@@ -246,7 +243,6 @@ class Docpie(dict):
             'stdopt': self.stdopt,
             'attachopt': self.attachopt,
             'attachvalue': self.attachvalue,
-            'autodash': self.autodash,
             'auto2dashes': self.auto2dashes,
             'case_sensitive': self.case_sensitive,
             'name': self.name,
@@ -297,8 +293,6 @@ class Docpie(dict):
             self.attachopt = config.pop('attachopt')
         if 'attachvalue' in config:
             self.attachvalue = config.pop('attachvalue')
-        if 'autodash' in config:
-            self.autodash = config.pop('autodash')
         if 'auto2dashes' in config:
             self.auto2dashes = config.pop('auto2dashes')
         if 'name' in config:
@@ -327,7 +321,7 @@ class Docpie(dict):
 
 def docpie(doc, argv=None, help=True, version=None,
            stdopt=True, attachopt=True, attachvalue=True,
-           autodash=True, auto2dashes=True, name=None, extra={}):
+           auto2dashes=True, name=None, case_sensitive=False, extra={}):
 
     kwargs = locals()
     argv = kwargs.pop('argv')

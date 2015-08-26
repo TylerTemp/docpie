@@ -15,17 +15,17 @@ class DocpieBasicTest(unittest.TestCase):
     def test_commands(self):
         eq = self.assertEqual
         eq(docpie('Usage: prog add', 'prog add'),
-           {'add': True, '-': False, '--': False})
+           {'add': True, '--': False})
         eq(docpie('Usage: prog [add]', 'prog'),
-           {'add': False, '-': False, '--': False})
+           {'add': False, '--': False})
         eq(docpie('Usage: prog [add]', 'prog add'),
-           {'add': True, '-': False, '--': False})
+           {'add': True, '--': False})
         eq(docpie('Usage: prog (add|rm)', 'prog add'),
-           {'add': True, 'rm': False, '-': False, '--': False})
+           {'add': True, 'rm': False, '--': False})
         eq(docpie('Usage: prog (add|rm)', 'prog rm'),
-           {'add': False, 'rm': True, '-': False, '--': False})
+           {'add': False, 'rm': True, '--': False})
         eq(docpie('Usage: prog a b', 'prog a b'),
-           {'a': True, 'b': True, '-': False, '--': False})
+           {'a': True, 'b': True, '--': False})
         self.assertRaises(DocpieExit, docpie, 'Usage: prog a b', 'b a')
 
     def test_docpie(self):
@@ -36,9 +36,9 @@ class DocpieBasicTest(unittest.TestCase):
                  Options: -v  Be verbose.'''
 
         eq(docpie(doc, 'prog arg'), {'-v': False, 'A': 'arg',
-                                     '-': False, '--': False})
+                                     '--': False})
         eq(docpie(doc, 'prog -v arg'), {'-v': True, 'A': 'arg',
-                                        '-': False, '--': False})
+                                        '--': False})
 
         # Note: different from docpie
         doc = '''
@@ -56,7 +56,7 @@ class DocpieBasicTest(unittest.TestCase):
         a = docpie(doc, 'prog -vqr file.py')
         eq(a, {'-v': True, '-q': True, '-r': True, '--help': False,
                'FILE': 'file.py', 'INPUT': None, 'OUTPUT': None,
-               '-': False, '--': False})
+               '--': False})
 
         self.assertRaises(DocpieExit, docpie, doc, 'prog -v')
         #
@@ -87,26 +87,26 @@ class DocpieBasicTest(unittest.TestCase):
     #     else:
     #         self.assertEqual(
     #             docpie(doc, u'prog -o 嘿嘿'), {'-o': True, u'<呵呵>': u'嘿嘿',
-    #                                          '-': False, '--': False})
+    #                                          '--': False})
 
     def test_count_multiple_flags(self):
         eq = self.assertEqual
         eq(docpie('usage: prog [-vv]', 'prog'),
-           {'-v': 0, '-': False, '--': False})
+           {'-v': 0, '--': False})
         eq(docpie('usage: prog [-v]', 'prog -v'),
-           {'-v': True, '-': False, '--': False})
+           {'-v': True, '--': False})
         self.assertRaises(DocpieExit, docpie, 'usage: prog [-vv]', 'prog -v')
         eq(docpie('usage: prog [-vv]', 'prog -vv'),
-           {'-v': 2, '-': False, '--': False})
+           {'-v': 2, '--': False})
         # Note it's different from docpie
         self.assertRaises(
             DocpieExit, docpie, 'usage: prog [-v | -vv | -vvv]', 'prog -vvv')
         eq(docpie('usage: prog [-vvv | -vv | -v]', 'prog -vvv'),
-           {'-v': 3, '-': False, '--': False})
+           {'-v': 3, '--': False})
         eq(docpie('usage: prog -v...', 'prog -vvvvvv'),
-           {'-v': 6, '-': False, '--': False})
+           {'-v': 6, '--': False})
         eq(docpie('usage: prog [--ver --ver]', 'prog --ver --ver'),
-           {'--ver': 2, '-': False, '--': False})
+           {'--ver': 2, '--': False})
         self.assertRaises(DocpieExit, docpie,
                           'usage: prog [-vv]', 'prog -vvv')
 
@@ -128,19 +128,19 @@ class DocpieBasicTest(unittest.TestCase):
                  Options:\n\t-d --data=<arg>    Input data [default: x]
               '''
         eq(docpie(doc, 'prog'), {'--data': ['x'], '-d': ['x'],
-                                 '--': False, '-': False})
+                                 '--': False})
 
         doc = '''Usage: prog [--data=<data>...]\n
                  Options:\n\t-d --data=<arg>    Input data [default: x y]
               '''
         eq(docpie(doc, 'prog'), {'--data': ['x', 'y'], '-d': ['x', 'y'],
-                                 '-': False, '--': False})
+                                 '--': False})
 
         doc = '''Usage: prog [--data=<data>...]\n
                  Options:\n\t-d --data=<arg>    Input data [default: x y]
               '''
         eq(docpie(doc, 'prog --data=this'),
-           {'--data': ['this'], '-d': ['this'], '-': False, '--': False})
+           {'--data': ['this'], '-d': ['this'], '--': False})
 
     def test_to_fix_this(self):
         eq = self.assertEqual
@@ -154,23 +154,23 @@ class DocpieBasicTest(unittest.TestCase):
         Options:
             --long=<a>    it requires a value'''
         eq(docpie(doc, 'prog --long='), {'--long': '',
-                                         '-': False, '--': False})
+                                         '--': False})
 
         eq(docpie('usage: prog -l <a>\n\n'
                   'options: -l <a>', ['prog', '-l', '']),
-           {'-l': '', '-': False, '--': False})
+           {'-l': '', '--': False})
 
     # no this feature so far
     def test_options_first(self):
         eq = self.assertEqual
         eq(docpie('usage: prog [--opt] [<args>...]', 'prog --opt this that'),
            {'--opt': True, '<args>': ['this', 'that'],
-            '-': False, '--': False})
+            '--': False})
 
         eq(docpie('usage: prog [--opt] [<args>...]',
                   'prog this that --opt'),
            {'--opt': True, '<args>': ['this', 'that'],
-            '-': False, '--': False})
+            '--': False})
         # assert docpie('usage: prog [--opt] [<args>...]',
         #               'prog this that --opt') == {'--opt': False,
         #                             '<args>': ['this', 'that', '--opt']}
@@ -196,11 +196,11 @@ class DocpieBasicTest(unittest.TestCase):
 
         sys.argv = 'prog -a'.split()
         eq(docpie('usage: prog [-a][-b]'),
-           {'-a': True, '-b': False, '-': False, '--': False})
+           {'-a': True, '-b': False, '--': False})
 
         sys.argv = 'prog -b'.split()
         eq(docpie('usage: prog [-a][-b]'),
-           {'-a': False, '-b': True, '-': False, '--': False})
+           {'-a': False, '-b': True, '--': False})
 
     def test_issue_71_double_dash_is_not_a_valid_option_argument(self):
         doc = '''Usage:
@@ -242,7 +242,7 @@ class DocpieRunDefaultTest(unittest.TestCase):
         doc = '''Usage: prog'''
 
         sys.argv = ['prog']
-        self.eq(doc, {'-': False, '--': False})
+        self.eq(doc, {'--': False})
 
         sys.argv = ['prog', '-xxx']
         self.fail(doc)
@@ -254,10 +254,10 @@ Options: -a  All.
 '''
 
         sys.argv = ['prog']
-        self.eq(doc, {'-a': False, '-': False, '--': False})
+        self.eq(doc, {'-a': False, '--': False})
 
         sys.argv = ['prog', '-a']
-        self.eq(doc, {'-a': True, '-': False, '--': False})
+        self.eq(doc, {'-a': True, '--': False})
 
         sys.argv = ['prog', '-x']
         self.fail(doc)
@@ -269,10 +269,10 @@ Options: --all  All.
 
 '''
         sys.argv = ['prog']
-        self.eq(doc, {'--all': False, '-': False, '--': False})
+        self.eq(doc, {'--all': False, '--': False})
 
         sys.argv = ['prog', '--all']
-        self.eq(doc, {'--all': True, '-': False, '--': False})
+        self.eq(doc, {'--all': True, '--': False})
 
         sys.argv = ['prog', '--xxx']
         self.fail(doc)
@@ -283,7 +283,7 @@ Options: --all  All.
 Options: -v, --verbose  Verbose.
 '''
         sys.argv = ['prog', '--verbose']
-        self.eq(doc, {'-v': True, '--verbose': True, '-': False, '--': False})
+        self.eq(doc, {'-v': True, '--verbose': True, '--': False})
 
         # Note: different from docopt, docpie doesn't support this so far
         sys.argv = ['prog', '--ver']
@@ -296,7 +296,7 @@ Options: -v, --ver, --verbose  Verbose.
 '''
         sys.argv = ['prog', '--ver']
         self.eq(doc, {'-v': True, '--ver': True, '--verbose': True,
-                      '-': False, '--': False})
+                      '--': False})
 
     def test_attached_value_short_opt(self):
         doc = '''Usage: prog [options]
@@ -305,10 +305,10 @@ Options: -p PATH
 '''
 
         sys.argv = ['prog', '-p', 'home/']
-        self.eq(doc, {'-p': 'home/', '--': False, '-': False})
+        self.eq(doc, {'-p': 'home/', '--': False})
 
         sys.argv = ['prog', '-phome/']
-        self.eq(doc, {'-p': 'home/', '--': False, '-': False})
+        self.eq(doc, {'-p': 'home/', '--': False})
 
         sys.argv = ['prog', '-p']
         self.fail(doc)
@@ -320,10 +320,10 @@ Options: --path <path>
 '''
 
         sys.argv = ['prog', '--path', 'home/']
-        self.eq(doc, {'--path': 'home/', '-': False, '--': False})
+        self.eq(doc, {'--path': 'home/', '--': False})
 
         sys.argv = ['prog', '--path=home/']
-        self.eq(doc, {'--path': 'home/', '-': False, '--': False})
+        self.eq(doc, {'--path': 'home/', '--': False})
 
         # Note: different from docopt
         sys.argv = ['prog', '--pa=home/']
@@ -337,7 +337,7 @@ Options: --path <path>
         self.fail(doc)
 
     def test_value_for_short_long_opt(self):
-        expected = {'-p': 'root', '--path': 'root', '-': False, '--': False}
+        expected = {'-p': 'root', '--path': 'root', '--': False}
         doc = '''Usage: prog [options]
 
 Options: -p PATH, --path=<path>  Path to files.
@@ -364,10 +364,10 @@ Options:
  -p PATH  Path to files [default: ./]
 '''
         sys.argv = ['prog']
-        self.eq(doc, {'-p': './', '-': False, '--': False})
+        self.eq(doc, {'-p': './', '--': False})
 
         sys.argv = ['prog', '-phome']
-        self.eq(doc, {'-p': 'home', '-': False, '--': False})
+        self.eq(doc, {'-p': 'home', '--': False})
 
         # Note: a little different from docpie
         doc = '''UsAgE: prog [options]
@@ -377,10 +377,10 @@ OpTiOnS: --path=<files>  Path to files
 '''
 
         sys.argv = ['prog']
-        self.eq(doc, {'--path': '/root', '-': False, '--': False})
+        self.eq(doc, {'--path': '/root', '--': False})
 
         sys.argv = ['prog', '--path=home']
-        self.eq(doc, {'--path': 'home', '-': False, '--': False})
+        self.eq(doc, {'--path': 'home', '--': False})
 
     def test_more_short_opt(self):
         doc = '''usage: prog [options]
@@ -393,15 +393,15 @@ options:
 
         sys.argv = ['prog', '-a', '-r', '-m', 'hello']
         self.eq(doc, {'-a': True, '-r': True, '-m': 'hello',
-                      '--': False, '-': False})
+                      '--': False})
 
         sys.argv = ['prog', '-ramsth']
         self.eq(doc, {'-a': True, '-r': True, '-m': 'sth',
-                      '--': False, '-': False})
+                      '--': False})
 
         sys.argv = ['prog', '-a', '-r']
         self.eq(doc, {'-a': True, '-r': True, '-m': None,
-                      '--': False, '-': False})
+                      '--': False})
 
     def test_furture_not_support_now(self):
         doc = '''Usage: prog [options]
@@ -412,11 +412,11 @@ Options: --version
 
         sys.argv = ['prog', '--version']
         self.eq(doc, {'--version': True, '--verbose': False,
-                      '--': False, '-': False})
+                      '--': False})
 
         sys.argv = ['prog', '--verbose']
         self.eq(doc, {'--version': False, '--verbose': True,
-                      '--': False, '-': False})
+                      '--': False})
 
         sys.argv = ['prog', '--ver']
         self.fail(doc)
@@ -436,7 +436,7 @@ options:
 
         sys.argv = ['prog', '-rammed']
         self.eq(doc, {'-a': True, '-r': True, '-m': 'med',
-                      '--': False, '-': False})
+                      '--': False})
 
         # Note: defferent from docopt
         # that you can't write as `-armMSG` or `-armmsg`
@@ -456,7 +456,7 @@ options: -a        Add
 '''
         sys.argv = sys.argv = ['prog', '-r', '-a', '-m', 'Hello']
         self.eq(doc, {'-a': True, '-r': True, '-m': 'Hello',
-                      '--': False, '-': False})
+                      '--': False})
 
     def test_opt_no_shortcut(self):
         doc = '''usage: prog -a -b
@@ -468,11 +468,11 @@ options:
 
         sys.argv = ['prog', '-a', '-b']
         self.eq(doc, {'-a': True, '-b': True,
-                      '--': False, '-': False})
+                      '--': False})
 
         sys.argv = ['prog', '-b', '-a']
         self.eq(doc, {'-a': True, '-b': True,
-                      '--': False, '-': False})
+                      '--': False})
 
         sys.argv = ['prog', '-a']
         self.fail(doc)
@@ -489,11 +489,11 @@ options: -a
 
         sys.argv = ['prog', '-a', '-b']
         self.eq(doc, {'-a': True, '-b': True,
-                      '--': False, '-': False})
+                      '--': False})
 
         sys.argv = ['prog', '-b', '-a']
         self.eq(doc, {'-a': True, '-b': True,
-                      '--': False, '-': False})
+                      '--': False})
 
         sys.argv = ['prog', '-a']
         self.fail(doc)
@@ -510,15 +510,15 @@ options: -a
 
         sys.argv = ['prog', '-a', '-b']
         self.eq(doc, {'-a': True, '-b': True,
-                      '--': False, '-': False})
+                      '--': False})
 
         sys.argv = ['prog', '-b', '-a']
         self.eq(doc, {'-a': True, '-b': True,
-                      '--': False, '-': False})
+                      '--': False})
 
         sys.argv = ['prog', '-b']
         self.eq(doc, {'-a': False, '-b': True,
-                      '--': False, '-': False})
+                      '--': False})
 
         sys.argv = ['prog', '-a']
         self.fail(doc)
@@ -535,11 +535,11 @@ options: -a
 
         sys.argv = ['prog', '-a', '-b']
         self.eq(doc, {'-a': True, '-b': True,
-                      '--': False, '-': False})
+                      '--': False})
 
         sys.argv = ['prog', '-b', '-a']
         self.eq(doc, {'-a': True, '-b': True,
-                      '--': False, '-': False})
+                      '--': False})
 
         sys.argv = ['prog', '-b']
         self.fail(doc)
@@ -549,7 +549,7 @@ options: -a
 
         sys.argv = ['prog']
         self.eq(doc, {'-a': False, '-b': False,
-                      '--': False, '-': False})
+                      '--': False})
 
     def test_required_either_opt(self):
         doc = '''usage: prog (-a|-b)
@@ -565,11 +565,11 @@ options: -a
 
         sys.argv = ['prog', '-b']
         self.eq(doc, {'-a': False, '-b': True,
-                      '--': False, '-': False})
+                      '--': False})
 
         sys.argv = ['prog', '-a']
         self.eq(doc, {'-a': True, '-b': False,
-                      '--': False, '-': False})
+                      '--': False})
 
     def test_optional_either_opt(self):
         doc = '''usage: prog [ -a | -b ]
@@ -583,21 +583,21 @@ options: -a
 
         sys.argv = ['prog']
         self.eq(doc, {'-a': False, '-b': False,
-                      '--': False, '-': False})
+                      '--': False})
 
         sys.argv = ['prog', '-a']
         self.eq(doc, {'-a': True, '-b': False,
-                      '--': False, '-': False})
+                      '--': False})
 
         sys.argv = ['prog', '-b']
         self.eq(doc, {'-a': False, '-b': True,
-                      '--': False, '-': False})
+                      '--': False})
 
     def test_one_arg(self):
         doc = '''usage: prog <arg>'''
 
         sys.argv = ['prog', '10']
-        self.eq(doc, {'<arg>': '10', '--': False, '-': False})
+        self.eq(doc, {'<arg>': '10', '--': False})
 
         sys.argv = ['prog', '10', '20']
         self.fail(doc)
@@ -609,20 +609,20 @@ options: -a
         doc = '''usage: prog [<arg>]'''
 
         sys.argv = ['prog', '10']
-        self.eq(doc, {'<arg>': '10', '--': False, '-': False})
+        self.eq(doc, {'<arg>': '10', '--': False})
 
         sys.argv = ['prog', '10', '20']
         self.fail(doc)
 
         sys.argv = ['prog']
-        self.eq(doc, {'<arg>': None, '--': False, '-': False})
+        self.eq(doc, {'<arg>': None, '--': False})
 
     def test_more_arg(self):
         doc = '''usage: prog <kind> <name> <type>'''
 
         sys.argv = ['prog', '10', '20', '40']
         self.eq(doc, {'<kind>': '10', '<name>': '20', '<type>': '40',
-                      '--': False, '-': False})
+                      '--': False})
 
         sys.argv = ['prog', '10', '20']
         self.fail(doc)
@@ -635,7 +635,7 @@ options: -a
 
         sys.argv = ['prog', '10', '20', '40']
         self.eq(doc, {'<kind>': '10', '<name>': '20', '<type>': '40',
-                      '--': False, '-': False})
+                      '--': False})
 
         # Note: different from docopt
         # that `<name>` & `<type>` should both present or omit
@@ -644,7 +644,7 @@ options: -a
 
         sys.argv = ['prog', '10']
         self.eq(doc, {'<kind>': '10', '<name>': None, '<type>': None,
-                      '--': False, '-': False})
+                      '--': False})
 
         sys.argv = ['prog']
         self.fail(doc)
@@ -654,7 +654,7 @@ options: -a
 
         sys.argv = ['prog', 'docpie']
         self.eq(doc, {'<name>': 'docpie', '<pattern>': 'docpie',
-                      '--': False, '-': False})
+                      '--': False})
 
     def test_arg_branch_unbalanced(self):
         doc = '''usage: prog [<kind> | <name> <type>]'''
@@ -670,18 +670,18 @@ options: -a
 
         sys.argv = ['prog', '10']
         self.eq(doc, {'<kind>': '10', '<name>': None, '<type>': None,
-                      '--': False, '-': False})
+                      '--': False})
 
         # But this works
         doc = '''usage: prog [<name> <type> | <kind>]'''
         sys.argv = ['prog', '10', '20']
         self.eq(doc, {'<kind>': None, '<name>': '10', '<type>': '20',
-                      '--': False, '-': False})
+                      '--': False})
 
         # This also works
         sys.argv = ['prog', '10']
         self.eq(doc, {'<kind>': '10', '<name>': None, '<type>': None,
-                      '--': False, '-': False})
+                      '--': False})
 
     def test_unit_arg_opt_combo(self):
         doc = '''usage: prog (<kind> --all | <name>)
@@ -691,11 +691,11 @@ options:
 
         sys.argv = ['prog', '10', '--all']
         self.eq(doc, {'<kind>': '10', '<name>': None, '--all': True,
-                      '--': False, '-': False})
+                      '--': False})
 
         sys.argv = ['prog', '10']
         self.eq(doc, {'<kind>': None, '<name>': '10', '--all': False,
-                      '--': False, '-': False})
+                      '--': False})
 
         sys.argv = ['prog']
         self.fail(doc)
@@ -704,7 +704,7 @@ options:
         doc = '''usage: prog [<name> <name>]'''
 
         sys.argv = ['prog', '10', '20']
-        self.eq(doc, {'<name>': ['10', '20'], '--': False, '-': False})
+        self.eq(doc, {'<name>': ['10', '20'], '--': False})
 
         # Different from docopt:
         # `<name>` should appear even time(s)
@@ -712,33 +712,33 @@ options:
         self.fail(doc)
 
         sys.argv = ['prog']
-        self.eq(doc, {'<name>': [], '--': False, '-': False})
+        self.eq(doc, {'<name>': [], '--': False})
 
         # But you can write in this way
         doc = '''usage: prog [<name>] [<name>]'''
         sys.argv = ['prog', '10']
-        self.eq(doc, {'<name>': ['10'], '--': False, '-': False})
+        self.eq(doc, {'<name>': ['10'], '--': False})
 
     def test_optinal_required_unit_arg(self):
         doc = '''usage: prog [(<name> <name>)]'''
 
         sys.argv = ['prog', '10', '20']
-        self.eq(doc, {'<name>': ['10', '20'], '--': False, '-': False})
+        self.eq(doc, {'<name>': ['10', '20'], '--': False})
 
         sys.argv = ['prog', '10']
         self.fail(doc)
 
         sys.argv = ['prog']
-        self.eq(doc, {'<name>': [], '--': False, '-': False})
+        self.eq(doc, {'<name>': [], '--': False})
 
     def test_repeat_required_arg(self):
         doc = '''usage: prog NAME...'''
 
         sys.argv = ['prog', '10', '20']
-        self.eq(doc, {'NAME': ['10', '20'], '--': False, '-': False})
+        self.eq(doc, {'NAME': ['10', '20'], '--': False})
 
         sys.argv = ['prog', '10']
-        self.eq(doc, {'NAME': ['10'], '--': False, '-': False})
+        self.eq(doc, {'NAME': ['10'], '--': False})
 
         sys.argv = ['prog']
         self.fail(doc)
@@ -747,37 +747,37 @@ options:
         doc = '''usage: prog [NAME]...'''
 
         sys.argv = ['prog', '10', '20']
-        self.eq(doc, {'NAME': ['10', '20'], '--': False, '-': False})
+        self.eq(doc, {'NAME': ['10', '20'], '--': False})
 
         sys.argv = ['prog', '10']
-        self.eq(doc, {'NAME': ['10'], '--': False, '-': False})
+        self.eq(doc, {'NAME': ['10'], '--': False})
 
         sys.argv = ['prog']
-        self.eq(doc, {'NAME': [], '--': False, '-': False})
+        self.eq(doc, {'NAME': [], '--': False})
 
     def test_repeat_optional_arg_another_format(self):
         doc = '''usage: prog [NAME...]'''
 
         sys.argv = ['prog', '10', '20']
-        self.eq(doc, {'NAME': ['10', '20'], '--': False, '-': False})
+        self.eq(doc, {'NAME': ['10', '20'], '--': False})
 
         sys.argv = ['prog', '10']
-        self.eq(doc, {'NAME': ['10'], '--': False, '-': False})
+        self.eq(doc, {'NAME': ['10'], '--': False})
 
         sys.argv = ['prog']
-        self.eq(doc, {'NAME': [], '--': False, '-': False})
+        self.eq(doc, {'NAME': [], '--': False})
 
     def test_repeat_optional_arg_nested(self):
         doc = '''usage: prog [NAME [NAME ...]]'''
 
         sys.argv = ['prog', '10', '20']
-        self.eq(doc, {'NAME': ['10', '20'], '--': False, '-': False})
+        self.eq(doc, {'NAME': ['10', '20'], '--': False})
 
         sys.argv = ['prog', '10']
-        self.eq(doc, {'NAME': ['10'], '--': False, '-': False})
+        self.eq(doc, {'NAME': ['10'], '--': False})
 
         sys.argv = ['prog']
-        self.eq(doc, {'NAME': [], '--': False, '-': False})
+        self.eq(doc, {'NAME': [], '--': False})
 
     def test_branch_same_arg_dif_partner(self):
         doc = '''usage: prog (NAME | --foo NAME)
@@ -786,10 +786,10 @@ options: --foo
 '''
 
         sys.argv = ['prog', '10']
-        self.eq(doc, {'NAME': '10', '--foo': False, '--': False, '-': False})
+        self.eq(doc, {'NAME': '10', '--foo': False, '--': False})
 
         sys.argv = ['prog', '--foo', '10']
-        self.eq(doc, {'NAME': '10', '--foo': True, '--': False, '-': False})
+        self.eq(doc, {'NAME': '10', '--foo': True, '--': False})
 
         sys.argv = ['prog', '--foo=10']
         self.fail(doc)
@@ -802,15 +802,15 @@ options: --foo
 
         sys.argv = ['prog', '10']
         self.eq(doc, {'NAME': ['10'], '--foo': False, '--bar': False,
-                      '--': False, '-': False})
+                      '--': False})
 
         sys.argv = ['prog', '10', '20']
         self.eq(doc, {'NAME': ['10', '20'], '--foo': False, '--bar': False,
-                      '--': False, '-': False})
+                      '--': False})
 
         sys.argv = ['prog', '--foo', '--bar']
         self.eq(doc, {'NAME': [], '--foo': True, '--bar': True,
-                      '--': False, '-': False})
+                      '--': False})
 
     def test_example(self):
         doc = '''Naval Fate.
@@ -840,7 +840,6 @@ Options:
                       '--speed': '20',
                       '--version': False,
                       '--': False,
-                      '-': False,
                       '<name>': ['Guardian'],
                       '<x>': '150',
                       '<y>': '300',
@@ -856,7 +855,7 @@ Options:
         doc = '''usage: prog --hello'''
 
         sys.argv = ['prog', '--hello']
-        self.eq(doc, {'--hello': True, '--': False, '-': False})
+        self.eq(doc, {'--hello': True, '--': False})
 
         # Note: different form docopt:
         # You must tell docpie that `--hello` expects a value in `options:`
@@ -867,29 +866,29 @@ Options:
     --hello=<world>'''
 
         sys.argv = ['prog']
-        self.eq(doc, {'--hello': None, '--': False, '-': False})
+        self.eq(doc, {'--hello': None, '--': False})
 
     def test_optional_opt(self):
         doc = '''usage: prog [-o]'''
 
         sys.argv = ['prog', '-o']
-        self.eq(doc, {'-o': True, '--': False, '-': False})
+        self.eq(doc, {'-o': True, '--': False})
 
         sys.argv = ['prog']
-        self.eq(doc, {'-o': False, '--': False, '-': False})
+        self.eq(doc, {'-o': False, '--': False})
 
     def test_one_optional_short_opt(self):
         doc = '''Usage: prog [-o]'''
 
         sys.argv = ['prog', '-o']
-        self.eq(doc, {'-o': True, '--': False, '-': False})
+        self.eq(doc, {'-o': True, '--': False})
 
     # Note: docpie does not have this future
     def test_either_option(self):
         doc = '''usage: prog --aabb | --aa'''
 
         sys.argv = ['prog', '--aa']
-        self.eq(doc, {'--aabb': False, '--aa': True, '--': False, '-': False})
+        self.eq(doc, {'--aabb': False, '--aa': True, '--': False})
 
         sys.argv = ['prog', '--a']
         self.fail(doc)
@@ -897,55 +896,55 @@ Options:
     def test_count_option(self):
         doc = '''usage: prog -v'''
         sys.argv = ['prog', '-v']
-        self.eq(doc, {'-v': True, '--': False, '-': False})
+        self.eq(doc, {'-v': True, '--': False})
 
         doc = '''usage: prog [-v -v]'''
         sys.argv = ['prog']
-        self.eq(doc, {'-v': 0, '--': False, '-': False})
+        self.eq(doc, {'-v': 0, '--': False})
         sys.argv = ['prog', '-v']
         self.fail(doc)
         sys.argv = ['prog', '-vv']
-        self.eq(doc, {'-v': 2, '--': False, '-': False})
+        self.eq(doc, {'-v': 2, '--': False})
 
         doc = '''usage: prog -v...'''
         sys.argv = ['prog']
         self.fail(doc)
         sys.argv = ['prog', '-v']
-        self.eq(doc, {'-v': 1, '--': False, '-': False})
+        self.eq(doc, {'-v': 1, '--': False})
 
         sys.argv = ['prog', '-vv']
-        self.eq(doc, {'-v': 2, '--': False, '-': False})
+        self.eq(doc, {'-v': 2, '--': False})
 
         sys.argv = ['prog', '-vvvvvv']
-        self.eq(doc, {'-v': 6, '--': False, '-': False})
+        self.eq(doc, {'-v': 6, '--': False})
 
         # Note: different from docopt
         doc = '''usage: prog [-vvv | -vv | -v]'''
         sys.argv = ['prog']
-        self.eq(doc, {'-v': 0, '--': False, '-': False})
+        self.eq(doc, {'-v': 0, '--': False})
         sys.argv = ['prog', '-v']
-        self.eq(doc, {'-v': 1, '--': False, '-': False})
+        self.eq(doc, {'-v': 1, '--': False})
         sys.argv = ['prog', '-vv']
-        self.eq(doc, {'-v': 2, '--': False, '-': False})
+        self.eq(doc, {'-v': 2, '--': False})
         sys.argv = ['prog', '-vvvv']
         self.fail(doc)
 
     def test_count_command(self):
         doc = '''usage: prog [go]'''
         sys.argv = ['prog', 'go']
-        self.eq(doc, {'go': True, '--': False, '-': False})
+        self.eq(doc, {'go': True, '--': False})
 
         doc = '''usage: prog [go go]'''
         sys.argv = ['prog']
-        self.eq(doc, {'go': 0, '--': False, '-': False})
+        self.eq(doc, {'go': 0, '--': False})
         sys.argv = ['prog', 'go', 'go']
-        self.eq(doc, {'go': 2, '--': False, '-': False})
+        self.eq(doc, {'go': 2, '--': False})
         sys.argv = ['prog', 'go', 'go', 'go']
         self.fail(doc)
 
         doc = '''usage: prog go...'''
         sys.argv = ['prog', 'go', 'go', 'go', 'go', 'go']
-        self.eq(doc, {'go': 5, '--': False, '-': False})
+        self.eq(doc, {'go': 5, '--': False})
 
     def test_option_not_include(self):
         doc = '''usage: prog [options] [-a]
@@ -953,7 +952,7 @@ Options:
 options: -a
          -b'''
         sys.argv = ['prog', '-a']
-        self.eq(doc, {'-a': True, '-b': False, '--': False, '-': False})
+        self.eq(doc, {'-a': True, '-b': False, '--': False})
         sys.argv = ['prog', '-aa']
         self.fail(doc)
 
@@ -965,24 +964,24 @@ Options:
     -v  Be verbose.'''
         sys.argv = ['prog', 'arg']
         self.eq(doc, {'A': 'arg', '-q': False, '-v': False,
-                      '--': False, '-': False})
+                      '--': False})
 
         sys.argv = ['prog', '-v', 'arg']
         self.eq(doc, {'A': 'arg', '-q': False, '-v': True,
-                      '--': False, '-': False})
+                      '--': False})
 
         sys.argv = ['prog', '-q', 'arg']
         self.eq(doc, {'A': 'arg', '-q': True, '-v': False,
-                      '--': False, '-': False})
+                      '--': False})
 
     def test_value_always_list(self):
         doc = '''usage: prog [NAME [NAME ...]]'''
 
         sys.argv = ['prog', 'a', 'b']
-        self.eq(doc, {'NAME': ['a', 'b'], '--': False, '-': False})
+        self.eq(doc, {'NAME': ['a', 'b'], '--': False})
 
         sys.argv = ['prog']
-        self.eq(doc, {'NAME': [], '--': False, '-': False})
+        self.eq(doc, {'NAME': [], '--': False})
 
     def test_ommit_default_opt_value(self):
         doc = '''usage: prog [options]
@@ -995,43 +994,43 @@ options:
 
         sys.argv = ['prog']
         self.eq(doc, {'-a': False, '-m': None, '-c': [],
-                      '--': False, '-': False})
+                      '--': False})
 
         sys.argv = ['prog', '-a']
         self.eq(doc, {'-a': True, '-m': None, '-c': [],
-                      '--': False, '-': False})
+                      '--': False})
 
     def test_fake_git(self):
         doc = '''usage: git [-v | --verbose]'''
         sys.argv = ['git', '-v']
         self.eq(doc, {'-v': True, '--verbose': False,
-                      '--': False, '-': False})
+                      '--': False})
 
         doc = '''usage: git remote [-v | --verbose]'''
         sys.argv = ['git', 'remote', '-v']
         self.eq(doc, {'-v': True, '--verbose': False, 'remote': True,
-                      '--': False, '-': False})
+                      '--': False})
 
     def test_empty_usage(self):
         doc = '''usage: prog'''
         sys.argv = ['prog']
-        self.eq(doc, {'--': False, '-': False})
+        self.eq(doc, {'--': False})
 
         doc = '''
         usage: prog
                prog <a> <b>'''
         sys.argv = ['prog', '1', '2']
-        self.eq(doc, {'<a>': '1', '<b>': '2', '--': False, '-': False})
+        self.eq(doc, {'<a>': '1', '<b>': '2', '--': False})
         sys.argv = ['prog']
-        self.eq(doc, {'<a>': None, '<b>': None, '--': False, '-': False})
+        self.eq(doc, {'<a>': None, '<b>': None, '--': False})
 
         doc = '''
         usage: prog <a> <b>
                prog'''
         sys.argv = ['prog', '1', '2']
-        self.eq(doc, {'<a>': '1', '<b>': '2', '--': False, '-': False})
+        self.eq(doc, {'<a>': '1', '<b>': '2', '--': False})
         sys.argv = ['prog']
-        self.eq(doc, {'<a>': None, '<b>': None, '--': False, '-': False})
+        self.eq(doc, {'<a>': None, '<b>': None, '--': False})
 
     # This does not support so far
     # r"""usage: prog [--file=<f>]"""
@@ -1044,7 +1043,7 @@ options:
 options: --file <a>
 '''
         sys.argv = ['prog']
-        self.eq(doc, {'--file': None, '--': False, '-': False})
+        self.eq(doc, {'--file': None, '--': False})
 
     def test_unusual_arg_name(self):
         doc = '''Usage: prog [-a <host:port>]
@@ -1053,7 +1052,7 @@ Options: -a, --address <host:port>  TCP address[default: localhost:6283]
 '''
         sys.argv = ['prog']
         self.eq(doc, {'--address': 'localhost:6283', '-a': 'localhost:6283',
-                      '--': False, '-': False})
+                      '--': False})
 
     # This is not supported so far
     # r"""usage: prog --long=<arg> ..."""
@@ -1073,7 +1072,7 @@ Options:
                     '--speed=5',  'go', 'right', '--speed=9']
         self.eq(doc,
                 {"go": 2, "<direction>": ["left", "right"],
-                 "--speed": ["5", "9"], '--': False, '-': False})
+                 "--speed": ["5", "9"], '--': False})
 
     def test_option_sct_with_option(self):
         doc = '''usage: prog [options] -a
@@ -1081,7 +1080,7 @@ Options:
 options: -a
 '''
         sys.argv = ['prog', '-a']
-        self.eq(doc, {'-a': True, '--': False, '-': False})
+        self.eq(doc, {'-a': True, '--': False})
 
     def test_option_default_split(self):
         doc = '''usage: prog [-o <o>]...
@@ -1089,10 +1088,10 @@ options: -a
 options: -o <o>  [default: x]
 '''
         sys.argv = ['prog', '-o', 'this', '-o', 'that']
-        self.eq(doc, {'-o': ['this', 'that'], '--': False, '-': False})
+        self.eq(doc, {'-o': ['this', 'that'], '--': False})
 
         sys.argv = ['prog']
-        self.eq(doc, {'-o': ['x'], '--': False, '-': False})
+        self.eq(doc, {'-o': ['x'], '--': False})
 
     def test_option_default_split_with_repeat(self):
         doc = '''usage: prog [-o <o>]...
@@ -1101,10 +1100,10 @@ options: -o <o>  [default: x y]
 '''
 
         sys.argv = ['prog', '-o', 'this']
-        self.eq(doc, {'-o': ['this'], '--': False, '-': False})
+        self.eq(doc, {'-o': ['this'], '--': False})
 
         sys.argv = ['prog']
-        self.eq(doc, {'-o': ['x', 'y'], '--': False, '-': False})
+        self.eq(doc, {'-o': ['x', 'y'], '--': False})
 
         doc = '''usage: prog [-o [<o>]...]
 
@@ -1112,10 +1111,10 @@ options: -o [<o>]...  [default: x y]
 '''
 
         sys.argv = ['prog', '-o', 'this']
-        self.eq(doc, {'-o': ['this'], '--': False, '-': False})
+        self.eq(doc, {'-o': ['this'], '--': False})
 
         sys.argv = ['prog']
-        self.eq(doc, {'-o': ['x', 'y'], '--': False, '-': False})
+        self.eq(doc, {'-o': ['x', 'y'], '--': False})
 
     # Different from docopt
     def test_docopt_issue_56(self):
@@ -1125,7 +1124,7 @@ Options:
   --xx=<x>
   --yy=<y>'''
         sys.argv = ['prog', '--xx=1', '--xx=2']
-        self.eq(doc, {'--xx': ['1', '2'], '--yy': [], '--': False, '-': False})
+        self.eq(doc, {'--xx': ['1', '2'], '--yy': [], '--': False})
 
         sys.argv = ['prog', '--xx=1', '--yy=2']
         self.fail(doc)
@@ -1134,7 +1133,7 @@ Options:
         doc = '''usage: prog [<input file>]'''
 
         sys.argv = ['prog', 'f.txt']
-        self.eq(doc, {'<input file>': 'f.txt', '--': False, '-': False})
+        self.eq(doc, {'<input file>': 'f.txt', '--': False})
 
         # Note: different from docopt: need `options:`
         doc = '''usage: prog [--input=<file name>]...
@@ -1143,7 +1142,7 @@ Options:
           --input=<file name>...'''
 
         sys.argv = ['prog', '--input', 'a.txt', '--input=b.txt']
-        self.eq(doc, {'--input': ['a.txt', 'b.txt'], '--': False, '-': False})
+        self.eq(doc, {'--input': ['a.txt', 'b.txt'], '--': False})
 
         doc = '''usage: prog [--input=<file name>]...
 
@@ -1151,7 +1150,7 @@ Options:
           --input=<file name>'''
 
         sys.argv = ['prog', '--input', 'a.txt', '--input=b.txt']
-        self.eq(doc, {'--input': ['a.txt', 'b.txt'], '--': False, '-': False})
+        self.eq(doc, {'--input': ['a.txt', 'b.txt'], '--': False})
 
     def test_docopt_issue_85_with_subcommands(self):
         doc = '''
@@ -1162,13 +1161,13 @@ Options:
 
         sys.argv = ['prog', 'fail', '--loglevel', '5']
         self.eq(doc, {'good': False, 'fail': True, '--loglevel': '5',
-                      '--': False, '-': False})
+                      '--': False})
 
     def test_usage_section_syntax(self):
         doc = '''usage:prog --foo'''
 
         sys.argv = ['prog', '--foo']
-        self.eq(doc, {'--foo': True, '--': False, '-': False})
+        self.eq(doc, {'--foo': True, '--': False})
 
         # Not support in docpie
         #
@@ -1196,7 +1195,7 @@ Options:
 NOT PART OF SECTION'''
 
         sys.argv = ['prog', '--foo']
-        self.eq(doc, {'--foo': True, '--bar': False, '--': False, '-': False})
+        self.eq(doc, {'--foo': True, '--bar': False, '--': False})
 
     def test_option_section_syntax(self):
         # Not support in docpie
@@ -1222,7 +1221,7 @@ Usage: prog <a>
        prog <b>'''
 
         sys.argv = ['prog', 'go!']
-        self.eq(doc, {'<a>': 'go!', '<b>': None, '--': False, '-': False})
+        self.eq(doc, {'<a>': 'go!', '<b>': None, '--': False})
 
         doc = '''
 Usage:
@@ -1231,7 +1230,7 @@ Usage:
 
         sys.argv = ['prog', 'c', 'd']
         self.eq(doc, {'a': False, 'b': False, 'c': True, 'd': True,
-                      '--': False, '-': False})
+                      '--': False})
 
         doc = '''
 Usage:
@@ -1242,7 +1241,7 @@ Usage:
 
         sys.argv = ['prog', 'a', 'b', 'e', 'f']
         self.eq(doc, {'a': True, 'b': True, 'c': False, 'd': False, 'e': True,
-                      'f': True, '--': False, '-': False})
+                      'f': True, '--': False})
 
     def test_option_secion_of_docpie(self):
         doc = '''Usage: prog [options]
@@ -1255,7 +1254,7 @@ Options:
 '''
         sys.argv = ['prog']
         self.eq(doc, {'-a': False, '-b': False, '-c': False,
-                      '--': False, '-': False})
+                      '--': False})
 
         doc = '''
 Usage: prog [options]
@@ -1300,7 +1299,7 @@ Options: -a, --all=<here>
                       '-e': None, '--escape': None,
                       '-t': ['Calvary', 'Brey'],
                       '--thanks': ['Calvary', 'Brey'],
-                      '--': False, '-': False})
+                      '--': False})
 
     def test_name(self):
         doc = '''Usage:
@@ -1311,17 +1310,17 @@ Options: -a, --all=<here>
         sys.argv = ['prog', 'a']
         self.assertEqual(docpie(doc, name='docpie.py'),
                          {'a': True, 'b': False, 'c': False,
-                          '--': False, '-': False})
+                          '--': False})
 
         sys.argv = ['prog', 'b']
         self.assertEqual(docpie(doc, name='docpie.py'),
                          {'a': False, 'b': True, 'c': False,
-                          '--': False, '-': False})
+                          '--': False})
 
         sys.argv = ['prog', 'c']
         self.assertEqual(docpie(doc, name='docpie.py'),
                          {'a': False, 'b': False, 'c': True,
-                          '--': False, '-': False})
+                          '--': False})
 
 
 def case():

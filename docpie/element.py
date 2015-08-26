@@ -70,6 +70,11 @@ class Atom(object):
     @classmethod
     @_cache
     def get_class(klass, atom):
+        if atom in ('-', '--'):
+            return Command
+        elif atom == '-?':
+            return Option
+
         m = klass.flag_or_upper_re.match(atom)
         if m:
             match = m.groupdict()
@@ -250,41 +255,6 @@ class Option(Atom):
 
         saver.save(self, argv)
 
-        dash_index = argv.index('-') if '-' in argv else -1
-        dashes_index = argv.index('--') if '--' in argv else -1
-
-        # TODO: check if there is buggy
-        if '-' in self._names:
-            if argv.auto_dash:
-                argv.check_dash()
-                self.value = bool(argv.dash)
-                return self.value
-
-            if dash_index == -1 or dash_index > argv.dashes_index():
-                return False
-
-            if repeat_match:
-                if self.value is None:
-                    self.value = 1
-                else:
-                    self.value += 1
-            else:
-                self.value = True
-            argv.pop(dash_index)
-            argv.dash = True
-            return True
-
-        if ('--' in self._names and
-                dashes_index != -1 and
-                not argv.auto_dashes):
-            if repeat_match:
-                self.value += 1
-            else:
-                self.value = True
-            argv.pop(dashes_index)
-            argv.dashes = True
-            return True
-
         find_it, sub_argv = \
             argv.break_for_option(self._names, Atom.stdopt, Atom.attachvalue)
 
@@ -437,8 +407,8 @@ class Command(Atom):
 
     def match(self, argv, saver, repeat_match=False):
         current = argv.current()
-        if current in (None, '-'):
-            logger.debug('%s matching %s failed', self, current)
+        if current is None:
+            logger.debug('argv ran out before matching %s', self)
             return False
 
         if not repeat_match and self.value:
@@ -1208,7 +1178,7 @@ class Either(list):
             result = each.match(clone_argv, saver, False)
             if result:
                 self.matched_branch = index
-                argv.set_by(clone_argv)
+                argv.restore(clone_argv)
                 return True
         # saver.del_save(self)
         self.reset()

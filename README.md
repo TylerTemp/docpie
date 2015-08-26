@@ -57,7 +57,7 @@ Then try `$ python example.py ship Titanic move 1 2` or
     print(docpie(__doc__, name='myscript.py'))
     ```
 
-2.  Different from `docpie, `docpie` will handle `-` and `--` automatically by
+2.  Different from `docpie, `docpie` will handle `--` automatically by
     default, you do not need to write it in your "Usage:" anymore.
     (You can also trun off this feature)
 
@@ -69,8 +69,8 @@ Then try `$ python example.py ship Titanic move 1 2` or
     print(docpie(__doc__))
     ```
 
-    Then `$ python example.py test.py - -- --world` will give you
-    `{'-': True, '--': True, '<hello>': '--world'}`
+    Then `$ python example.py test.py -- --world` will give you
+    `{'--': True, '<hello>': '--world'}`
 
 3.  Some issues in `docopt` have been solved in `dopie` (e.g.
     [#71](https://github.com/docopt/docopt/issues/71),
@@ -113,12 +113,11 @@ Then try `$ python example.py ship Titanic move 1 2` or
     ---- docopt ----
     -o is specified ambiguously 2 times
     ---- docpie ----
-    {'-': False,
-    '--': False,
-    '--long-option': False,
-    '-a': True,
-    '-b': False,
-    '-o': 'sth'}
+    {'--': False,
+     '--long-option': False,
+     '-a': True,
+     '-b': False,
+     '-o': 'sth'}
     ```
 
    <!-- `docopt` allows you to customize some flags' behavior, e.g
@@ -167,10 +166,8 @@ pip install git+git://github.com/TylerTemp/docpie.git
 pypy-2.0, pypy-2.6.0, pypy3-2.4.0
 
 
-Usage
+Basic Usage
 -------------------------------------------------------------------------------
-
-### `docpie` ###
 
 ```python
 from docpie import docpie
@@ -179,7 +176,7 @@ from docpie import docpie
 ```python
 docpie(doc, argv=None, help=True, version=None,
        stdopt=True, attachopt=True, attachvalue=True,
-       autodash=True, auto2dashes=True, name=None, extra={})
+       auto2dashes=True, name=None, case_sensitive=False, extra={})
 ```
 
 Note that it's strongly suggested that you pass keyword arguments instead of
@@ -217,34 +214,155 @@ positional arguments.
 *   `stdopt` (bool, default `True`) when set `True`(default), long flag should
     only starts with `--`, e.g. `--help`, and short flag should be `-` followed
     by a letter. This is suggested to make it `True`. When set to `False`,
-    `-flag` is also a long flag. Be careful if you need to trun it off.
-*   `attachopt` (bool, default `True`)
+    `-flag` is also a long flag. Be careful if you need to turn it off.
+*   `attachopt` (bool, default `True`) allow you to write/pass several short
+    flag into one, e.g. `-abc` can mean `-a -b -c`. This only works when
+    `stdopt=True`
 
+    ```python
+    from docpie import docpie
+    print(docpie('''Usage: prog -abc''', ['prog', '-a', '-bc']))
+    # {'--': False, '-a': True, '-b': True, '-c': True}
+    ```
 
-## Difference
+*   `attachvalue` (bool, default `True`) allow you to write short flag and its
+    value together, e.g. `-abc` can mean `-a bc`. This only works when
+    `stdopt=True`
+
+    ```python
+    '''
+    Usage:
+      prog [options]
+
+    Options:
+      -a <value>  -a expects one value
+    '''
+    from docpie import docpie
+    print(docpie(__doc__, ['prog', '-abc']))
+    # {'--': False, '-a': 'bc'}
+    ```
+
+*   `auto2dashes` (bool, default `True`) When it's set `True`, `docpie` will
+    handle `--` (which means "end of command line flag", see
+    [here](http://www.cyberciti.biz/faq/what-does-double-dash-mean-in-ssh-command/)
+    )
+
+    ```python
+    from docpie import docpie
+    print(docpie('Usage: prog <file>'), ['prog', '--', '--test'])
+    # {'--': True, '<file>': '--test'}
+    ```
+
+*   `name` (str, default `None`) is the "name" of your program. In each of your
+    "usage" the "name" will be ignored. By default `docpie` will ignore the
+    first element of your "usage"
+*   `case_sensitive` (bool, default `False`) specifies if it need case
+    sensitive when matching "Usage:" and "Options:"
+
+the return value is a dictonary. Note if a flag has alias(e.g, `-h` & `--help`
+has the same meaning, you can specify in "Options"), all the alias will also
+in the result.
+
+Format
+-------------------------------------------------------------------------------
+
+`docpie` is indent sensitive.
+
+### Usage Format
+
+"Usage" starts with `Usage:`(set `case_sensitive` to make it case
+sensitive/insensitive), ends with a *visibly* empty line.
+
+```python
+"""
+Usage: program.py
+
+"""
+```
+
+You can write more than one usage patterns
+
+```python
+"""
+Usage:
+  program.py <from> <to>...
+  program.py -s <source> <to>...
+
+"""
+```
+
+When one usage pattern goes too long you can separate into several lines,
+but the following lines need to indent more:
+
+```python
+"""
+Usage:
+    prog [--long-option-1] [--long-option-2]
+         [--long-option-3] [--long-option-4]  # Good
+    prog [--long-option-1] [--long-option-2]
+      [--long-option-3] [--long-option-4]  # Works but not so good
+    prog [--long-option-1] [--long-option-2]
+    [--long-option-3] [--long-option-4]  # Not work. Need to indent more.
+
+"""
+```
+
+Each pattern can consist of the following elements:
+
+*   **&lt;arguments&gt;**, **ARGUMENTS**. Arguments are specified as either
+    upper-case words, e.g. `my_program.py CONTENT-PATH` or words
+    surrounded by angular brackets: `my_program.py <content-path>`.
+*   **--options**. Short option starts with a dash(`-`), followed by a
+    character(`a-z`, `A-Z` and `0-9`), e.g. `-f`. Long options starts with two
+    dashes (`--`), followed by seveval characters(`a-z`, `A-Z`, `0-9` and `-`),
+    e.g. `--flag`. When `stdopt` and `attachopt` are on, you can "stack"
+    seveval of short option, e.g. `-oiv` can mean `-o -i -v`.
+
+    The option can have value. e.g. `--input=FILE`, `-i FILE`, 
+
+Difference
+-------------------------------------------------------------------------------
 
 `docpie` is not `docopt`.
 
 
-1. `docpie` will trade element in `[]` (optional) as a whole, e.g
+1.  `docpie` will trade element in `[]` (optional) as a whole, e.g
 
-   ```python
-   doc = '''Usage: prog [a a]...'''
-   print(docpie(doc, 'prog a'))  # Exit
-   print(docopt(doc, 'prog a a'))  # {'a': 2}
-   ```
+    ```python
+    doc = '''Usage: prog [a a]...'''
+    print(docpie(doc, 'prog a'))  # Exit
+    print(docopt(doc, 'prog a a'))  # {'a': 2}
+    ```
 
-   Which is equal to `Usage: prog [(a a)]...` in `docopt`.
+    Which is equal to `Usage: prog [(a a)]...` in `docopt`.
 
-2. In `docpie` if one mutually exclusive elements group matches, the rest
-   group will be skipped
+2.  In `docpie` if one mutually exclusive elements group matches, the rest
+    groups will be skipped
 
-   ```python
-   print(docpie('Usage: prog [-vvv | -vv | -v]', 'prog -vvv'))  # {'-v': 3}
-   print(docpie('Usage: prog [-v | -vv | -vvv]', 'prog -vvv'))  # Fail
-   print(docopt('Usage: prog [-v | -vv | -vvv]', 'prog -vvv'))  # {'-v': 3}
-   ```
+    ```python
+    print(docpie('Usage: prog [-vvv | -vv | -v]', 'prog -vvv'))  # {'-v': 3}
+    print(docpie('Usage: prog [-v | -vv | -vvv]', 'prog -vvv'))  # Fail
+    print(docopt('Usage: prog [-v | -vv | -vvv]', 'prog -vvv'))  # {'-v': 3}
+    ```
 
+3.  In `docpie` you can not "stack" option and value in this way
+    even you specify it in "Options":
+
+    ```python
+    """Usage: prog -iFILE
+
+    Options: -i FILE
+    """
+    ```
+
+    But you can do it in this way:
+
+    ```python
+    """Usage: prog -i<FILE>
+
+    Options: -i <FILE>
+    """
+    ```
 
 ## Known issue
 
