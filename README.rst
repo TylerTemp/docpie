@@ -546,7 +546,7 @@ Change Config
     Docpie.set_config(self, **config)
 
 ``set_config`` allows you to change the argument after you initialized
-``Docpie``. ``**config`` is a dict, and the keys can only be what in
+``Docpie``. ``**config`` is a dict, and the keys can only be what
 ``__init__`` accepts except ``doc``
 
 .. code:: python
@@ -567,8 +567,8 @@ it may lookes like:
 
 .. code:: python
 
-    {'-h': <function docpie.Docpie.short_help_handler>,
-     '--help': <function docpie.Docpie.long_help_handler>,
+    {'-h': <function docpie.Docpie.help_handler>,
+     '--help': <function docpie.Docpie.help_handler>,
      '-v': <function docpie.Docpie.version_handler>,
      '--version': <function docpie.Docpie.version_handler>,
     }
@@ -576,25 +576,29 @@ it may lookes like:
 When ``version`` is not ``None``, Docpie will do the following things:
 
 1. set ``Docpie.version`` to this value
-2. add "-v", "--version" as the key of ``Docpie.extra``, both values are
+2. check if "--version" is defined in "Options"
+3. if do, set "--version" and its synonymous flags as ``Docpie.extra``'s
+   key, the ``Docpie.version_handler`` as value
+4. if not, check if "-v" is defined in "Options", and do similar work as
+   ``3``
+5. if "-v" and "--version" are both not defined in "Options", then just
+   add "-v" & "--version" as keys of ``Docpie.extra``, the values are
    ``Docpie.version_handler``
-3. when call ``Docpie.docpie``, ``Docpie`` check if whether the keys in
+6. when call ``Docpie.docpie``, ``Docpie`` check if whether the keys in
    ``Docpie.extra`` appears in ``argv``.
-4. if find the key, to say ``-v`` for example, ``Docpie`` will check
+7. if find the key, to say ``-v`` for example, ``Docpie`` will check
    ``Docpie.extra`` and call ``Docpie.extra["-v"](docpie, "-v")``, the
    first argument is the instance
-5. By default, ``Docpie.version_handler(docpie, flag)`` will print
+8. By default, ``Docpie.version_handler(docpie, flag)`` will print
    ``Docpie.version``, and exit the program.
 
-for ``help=True``, ``Docpie`` will set
-``{'-h': Docpie.short_help_handler, '--help': Docpie.long_help_handler}``.
+for ``help=True``, ``Docpie`` will check "--help" and "-h", then set
+value as ``Docpie.help_handler``.
 
-When doing so, ``Docpie`` will not check your ``Options`` section. Which
-means even you set ``-h, -?, --help    print help message`` in
-``Options`` secion, ``Docpie`` will not handle ``-?`` automatically.
-(TODO: make this happen next version)
+extra
+^^^^^
 
-You can change this by passing ``extra`` argument, e.g.
+You can costomize this by passing ``extra`` argument, e.g.
 
 .. code:: python
 
@@ -604,7 +608,7 @@ You can change this by passing ``extra`` argument, e.g.
     Usage: example.py [options]
 
     Options:
-      -v, --obvious    print more infomation  # note the `-v` is taken
+      -v, --obvious    print more infomation  # note the `-v` is here
       --version        print version
       -h, -?, --help   print this infomation
       --moo            the Easter Eggs!
@@ -616,7 +620,7 @@ You can change this by passing ``extra`` argument, e.g.
 
 
     def moo_handler(pie, flag):
-        print("Alright you got me. I'm an Easter Eggs.\n"
+        print("Alright you got me. I'm an Easter Egg.\n"
               "You may use this program like this:\n")
         print("Usage:")
         print(pie.usage_text)
@@ -629,8 +633,6 @@ You can change this by passing ``extra`` argument, e.g.
     pie.set_config(
       extra={
         '--moo': moo_handler,  # set moo handler
-        '-?': pie.short_help_handler,  # make it same as `-h`
-        '-v': None,  # unset `-v`
       }
     )
 
@@ -646,6 +648,38 @@ now try the following command:
     example.py -?
     example.py --help
     example.py --moo
+
+set\_auto\_handler
+^^^^^^^^^^^^^^^^^^
+
+.. code:: python
+
+    Docpie.set_auto_handler(self, flag, handler)
+
+When set ``extra``, the synonymous options you defined will not be
+checked by ``Docpie``. But ``set_auto_handler`` can do the check and
+make all synonymous options have the same behavior. e.g.
+
+.. code:: python
+
+    """
+    Usage: [options]
+
+    Options: --moo, -m     the Easter Eggs!
+    """
+
+    from docpie import Docpie
+    import sys
+
+    def moo_handler(pie, flag):
+        print("I'm an Easter Egg!")
+        sys.exit()
+
+    pie = Docpie(__doc__)
+    pie.set_auto_handler('-m', moo_handler)
+    print(pie.docpie())
+
+Then ``Docpie`` will handle both ``-m`` & ``--moo``.
 
 to customize your ``extra``, the following attribute of ``Docpie`` may
 help:
@@ -765,7 +799,7 @@ preview
 ~~~~~~~
 
 after you get your ``pie=Docpie(__doc__)`` instance, you can call
-``pie.preview()`` to have a quick view of how does ``Docpie`` understand
+``pie.preview()`` to have a quick view of how ``Docpie`` understands
 your ``doc``
 
 Difference

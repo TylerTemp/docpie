@@ -39,6 +39,7 @@ class Docpie(dict):
     help = True
     version = None
     extra = {}
+    opt_names = []
 
     def __init__(self, doc=None, help=True, version=None,
                  stdopt=True, attachopt=True, attachvalue=True,
@@ -46,7 +47,6 @@ class Docpie(dict):
 
         # set config first
         self.set_config(
-            help=help, version=version,
             stdopt=stdopt, attachopt=attachopt, attachvalue=attachvalue,
             auto2dashes=auto2dashes, name=name, case_sensitive=case_sensitive,
             extra={})
@@ -65,6 +65,14 @@ class Docpie(dict):
                 OptionParser(self.option_text).get_chain(),
                 UsageParser(self.usage_text, self.name).get_chain()
             )
+
+            # don't operate on the class level list
+            self.opt_names = opt_names = []
+            for each in OptionsShortcut._ref:
+                opt_names.append(each.get_option_name())
+            logger.debug(self.opt_names)
+
+            self.set_config(help=help, version=version)
 
     @property
     def stdopt(self):
@@ -101,7 +109,7 @@ class Docpie(dict):
 
         Then use Docpie.restore_pickle to restore.
         '''
-        return self, OptionsShortcut._ref, self.extra
+        return self, OptionsShortcut._ref
 
     @staticmethod
     def restore_pickle(value):
@@ -113,8 +121,7 @@ class Docpie(dict):
         pickled = pickle.dumps(pie.need_pickle())
         cloned_pie = Docpie.restore_pickle(picked)
         '''
-        self, OptionsShortcut._ref, extra = value
-        self.extra = extra
+        self, OptionsShortcut._ref = value
         return self
 
     def docpie(self, argv=None):
@@ -267,19 +274,18 @@ class Docpie(dict):
                 handler(self, flag)
 
     @staticmethod
-    def short_help_handler(docpie, flag):
-        '''Default `-h` handler. print usage string and optiong string
-        and exit.
-        '''
-        print(DocpieException.usage_str)
-        print('')
-        print(DocpieException.opt_str)
-        sys.exit()
+    def help_handler(docpie, flag):
+        '''Default `-h` handler. print help string and exit.
 
-    @staticmethod
-    def long_help_handler(docpie, flag):
-        '''Default `--help` handler. print the whole doc and exit.'''
-        print(docpie.doc)
+        By default, flag startswith `--` will print the full `doc`,
+        otherwith, print "Usage" section and "Option" section.
+        '''
+        if flag.startswith('--'):
+            print(docpie.doc)
+        else:
+            print(DocpieException.usage_str)
+            print('')
+            print(DocpieException.opt_str)
         sys.exit()
 
     @staticmethod
@@ -329,6 +335,7 @@ class Docpie(dict):
             '__text__': text,
             'option': option,
             'usage': usage,
+            'option_names': [list(x) for x in self.opt_names],
         }
 
     @classmethod
@@ -345,7 +352,10 @@ class Docpie(dict):
         it again.
         '''
         assert dic['__class__'] == 'Docpie'
-        self = cls(None, **dic['__config__'])
+        config = dic['__config__']
+        help = config.pop('help')
+        version = config.pop('version')
+        self = cls(None, **config)
 
         text = dic['__text__']
         self.doc = text['doc']
@@ -353,6 +363,9 @@ class Docpie(dict):
         self.option_text = text['option_text']
         DocpieException.usage_str = 'Usage:\n%s' % text['usage_text']
         DocpieException.option_str = 'Options:\n%s' % text['option_text']
+
+        self.opt_names = [set(x) for x in dic['option_names']]
+        self.set_config(help=help, version=version)
 
         OptionsShortcut._ref = [convert_2_object(x) for x in dic['option']]
 
@@ -374,20 +387,14 @@ class Docpie(dict):
             self.name = config.pop('name')
         if 'help' in config:
             self.help = config.pop('help')
-            if self.help:
-                self.extra['--help'] = self.long_help_handler
-                self.extra['-h'] = self.short_help_handler
-            else:
-                self.extra.pop('--help', None)
-                self.extra.pop('-h', None)
+            self._set_or_remove_extra_handler(
+                self.help, ('--help', '-h'), self.help_handler)
         if 'version' in config:
             self.version = config.pop('version')
-            if self.version is None:
-                self.extra.pop('--version', None)
-                self.extra.pop('-v', None)
-            else:
-                self.extra['-v'] = self.version_handler
-                self.extra['--version'] = self.version_handler
+            self._set_or_remove_extra_handler(
+                self.version is not None,
+                ('--version', '-v'),
+                self.version_handler)
         if 'case_sensitive' in config:
             self.case_sensitive = config.pop('case_sensitive')
         if 'extra' in config:
@@ -396,6 +403,46 @@ class Docpie(dict):
         if config:  # should be empty
             raise ValueError(
                 '%s is/are not accepted key argument(s)' % list(config.keys()))
+
+    def _set_or_remove_extra_handler(self, set_handler, find_order, handler):
+        for flag in find_order:
+            alias = self.find_flag_alias(flag)
+            if alias is not None:
+                alias.add(flag)
+                for each in alias:
+                    if set_handler:
+                        logger.info('set %s hanlder', each)
+                        self.extra[each] = handler
+                    else:
+                        logger.info('remove %s hanlder', each)
+                        self.extra.pop(each, None)
+                break
+        else:
+            for flag in find_order:
+                if set_handler:
+                    logger.info('set %s hanlder', flag)
+                    self.extra[flag] = handler
+                else:
+                    logger.info('remove %s hanlder', flag)
+                    self.extra.pop(flag, None)
+
+    def find_flag_alias(self, flag):
+        '''Return alias set of a flag; return None if flag is not defined in
+        "Options".
+        '''
+        for each in self.opt_names:
+            if flag in each:
+                result = set(each)  # a copy
+                result.remove(flag)
+                return result
+        return None
+
+    def set_auto_handler(self, flag, handler):
+        assert flag.startswith('-') and flag not in ('-', '--')
+        alias = self.find_flag_alias(flag) or []
+        self.extra[flag] = handler
+        for each in alias:
+            self.extra[each] = handler
 
     def preview(self):
         '''A quick preview of docpie. Print all the parsed object'''
@@ -416,7 +463,9 @@ class Docpie(dict):
         print('\nOptions:')
         for each in OptionsShortcut._ref:
             print(repr(each))
-
+        print(' default handler '.center(80, '-'))
+        for key, value in self.extra.items():
+            print(key, value)
 
     def __str__(self):
         return '{%s}' % ',\n '.join('%r: %r' % i for i in sorted(self.items()))
