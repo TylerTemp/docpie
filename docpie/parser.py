@@ -21,6 +21,7 @@ class Parser(object):
 
     @classmethod
     def _parse_pattern(klass, token):
+        logger.debug('get token %s', token)
         elements = []
         while token:
             atom = token.current()
@@ -35,6 +36,7 @@ class Parser(object):
         logger.debug(elements)
         if '|' in elements:
             elements[:] = [klass._parse_pipe(elements)]
+        logger.debug('parsed result %s', elements)
         return elements
 
     @classmethod
@@ -120,7 +122,7 @@ class Parser(object):
         # check if same option announced twice in Options
         opt_2_ins = {}
         for opt in opts:
-            names = opt.get_names()
+            names = opt.get_option_name()
             for name in names:
                 if name in opt_2_ins:
                     logger.critical('name: %s, opt_2_ins: %s', name, opt_2_ins)
@@ -188,6 +190,7 @@ class Parser(object):
 
         return '\n'.join(lis)
 
+
 class OptionParser(Parser):
     split_re = re.compile(r'(<.*?>)|\s+')
     wrap_symbol_re = re.compile(r'([\|\[\]\(\)]|\.\.\.)')
@@ -226,6 +229,7 @@ class OptionParser(Parser):
 
     def get_chain(self):
         return self._chain
+        # return [Optional(x) for x in self._chain]
 
     @classmethod
     def _parse_text(klass, text):
@@ -317,9 +321,9 @@ class OptionParser(Parser):
         opts = []
         for opt_str, default in lis:
             logger.debug('%s:%r' % (opt_str, default))
-            opt = klass._parse_opt_str(opt_str)
+            opt, repeat = klass._parse_opt_str(opt_str)
             opt.set_default(default)
-            opts.append(opt)
+            opts.append(Optional(opt, repeat=repeat))
         return opts
 
     @classmethod
@@ -332,6 +336,9 @@ class OptionParser(Parser):
 
     @classmethod
     def _parse_opt_str(klass, opt):
+
+        repeat = False
+
         # -sth=<goes> ON -> -sth, <goes>, ON
         opt_lis = klass._opt_str_to_list(opt)
         logger.debug('%r -> %s' % (opt, opt_lis))
@@ -346,10 +353,23 @@ class OptionParser(Parser):
         # -sth -> name=-sth, value=''
         name, value = klass._split_short_by_cfg(first)
         opt_ins = Option(name)
-        if value:
+        if value == '...':
+            repeat = True
+            if opt_lis and not opt_lis[0].startswith('-'):
+                raise DocpieError(
+                    'option "%s" has argument following "..."', opt)
+        elif value:
             args_ins = [Required(Argument(value))]
         else:
             args_ins = []
+
+        if opt_lis and opt_lis[0] == '...':
+            repeat = True
+            opt_lis.pop(0)
+            if opt_lis and not opt_lis[0].startswith('-'):
+                raise DocpieError(
+                    'option "%s" has argument following "..."', opt)
+
         args = []    # store the current args after option
         for each in opt_lis:
             if each.startswith('-'):    # alias
@@ -358,23 +378,38 @@ class OptionParser(Parser):
                 if value:
                     args_ins.append(Required(Argument(value)))
                 if args:    # trun it into instance
-                    this_arg = Required(
-                                        *klass._parse_pattern(Token(args))
-                                       ).fix()
-                    if this_arg is not None:
-                        args_ins.append(this_arg)
+                    if args[0] == '...':
+                        if len(args) != 1:
+                            raise DocpieError(
+                                'Error in %s: "..." followed by non option',
+                                opt)
+                        repeat = True
+                    else:
+                        this_arg = Required(
+                                            *klass._parse_pattern(Token(args))
+                                           ).fix()
+                        if this_arg is not None:
+                            args_ins.append(this_arg)
                 del args[:]
             else:
                 args.append(each)
         else:
             if args:    # trun it into instance
-                this_arg = Required(*klass._parse_pattern(Token(args))).fix()
-                if this_arg is not None:
-                    args_ins.append(this_arg)
+                if args[0] == '...':
+                    if len(args) != 1:
+                        raise DocpieError(
+                            'Error in %s: "..." followed by non option',
+                            opt)
+                    repeat = True
+                else:
+                    this_arg = Required(
+                        *klass._parse_pattern(Token(args))).fix()
+                    if this_arg is not None:
+                        args_ins.append(this_arg)
 
         # option without any args
         if not args_ins:
-            return opt_ins
+            return opt_ins, repeat
 
         # in Option, there should only have one arg list
         # e.g.: -f <file> --file=FILE -> -f/--file (<file>|FILE)
@@ -397,7 +432,7 @@ class OptionParser(Parser):
 
         # TODO: check if current_ins contain Command(not allowed in fact)
         opt_ins.ref = current_ins
-        return opt_ins
+        return opt_ins, repeat
 
     @classmethod
     def _opt_str_to_list(klass, opt):

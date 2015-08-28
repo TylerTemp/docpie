@@ -690,7 +690,7 @@ class Unit(list):
                 assert len(common_names) <= 1, "fixme: %s" % common_names
                 if common_names:
                     ins_in_opt = opt_2_ins[common_names.pop()]
-                    ref_in_opt = ins_in_opt.ref
+                    ref_in_opt = ins_in_opt[0].ref
                     if ref_in_opt is not None:
                         if self[idx + 1] == ref_in_opt:
                             element.ref = self[idx + 1]
@@ -1001,7 +1001,7 @@ class OptionsShortcut(object):
         hide = self._hide
         ref = self._ref
         logger.debug('[options]/%s/%s try matching %s', ref, hide, argv)
-        for each in filter(lambda x: not hide.intersection(x._names), ref):
+        for each in filter(lambda x: not hide.intersection(x[0]._names), ref):
             if not argv:
                 logger.info('argv run out before matching [options] %s(-%s)',
                             self._ref, self._hide)
@@ -1014,7 +1014,7 @@ class OptionsShortcut(object):
         hide = self._hide
         ref = self._ref
         result = {}  # developer should ensure no same options in [options]
-        for each in filter(lambda x: not hide.intersection(x._names), ref):
+        for each in filter(lambda x: not hide.intersection(x[0]._names), ref):
             result.update(each.get_value(in_repeat))
         return result
 
@@ -1022,7 +1022,7 @@ class OptionsShortcut(object):
         hide = self._hide
         ref = self._ref
         result = {}
-        for each in filter(lambda x: not hide.intersection(x._names), ref):
+        for each in filter(lambda x: not hide.intersection(x[0]._names), ref):
             result.update(each.get_sys_default_value(in_repeat))
         return result
 
@@ -1031,7 +1031,7 @@ class OptionsShortcut(object):
             self._match_ref = ()
         if self._match_ref is None:
             self._match_ref = tuple(
-                filter(lambda x: not self.need_hide(*x.get_names()), self._ref)
+                filter(lambda x: not self.need_hide(*x[0].get_names()), self._ref)
             )
 
     @classmethod

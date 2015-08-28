@@ -1301,6 +1301,25 @@ Options: -a, --all=<here>
                       '--thanks': ['Calvary', 'Brey'],
                       '--': False})
 
+    def test_option_abnormal_usage(self):
+        doc = '''
+        Usage: prog [options]
+
+        Options:
+        -a..., --all ...               -a is countable
+        -b<sth>..., --boring=<sth>...  inf argument
+        -c <a> [<b>]                   optional & required args
+        -d [<arg>]                     optional arg
+        '''
+
+        result = docpie(doc, 'prog -aa -a -b go go go -c sth else')
+        self.assertEqual(result, {'-a': 3, '--all': 3,
+                                  '-b': ['go', 'go', 'go'],
+                                  '--boring': ['go', 'go', 'go'],
+                                  '-c': ['sth', 'else'],
+                                  '-d': None,
+                                  '--': False})
+
     def test_name(self):
         doc = '''Usage:
         python docpie.py a

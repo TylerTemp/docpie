@@ -3,7 +3,7 @@ an easy and Pythonic command-line interface parser.
  * https://github.com/TylerTemp/docpie
  * Repository and issue-tracker: https://github.com/TylerTemp/docpie
  * Licensed under terms of MIT license (see LICENSE)
- * Copyright (c) 2013 TylerTemp, tylertempdev@gmail.com
+ * Copyright (c) 2015 TylerTemp, tylertempdev@gmail.com
 """
 
 import sys
@@ -196,7 +196,8 @@ class Docpie(dict):
         logger.debug('merged rest values, now %s', value)
 
         # add left option, add default value
-        for option in options:
+        for each in options:
+            option = each[0]
             names = option._names
             default = option._default
             this_value = option.value
@@ -219,7 +220,7 @@ class Docpie(dict):
                     final_value = value_in_usage
             # just add this key-value. Note all option here never been matched
             else:
-                ref = option._ref
+                ref = option.ref
 
                 if default is not None:
                     if (this_value not in (True, False) and
@@ -233,11 +234,11 @@ class Docpie(dict):
                 else:
                     if ref is not None:
                         arg_range = ref.arg_range()
-                        if min(arg_range) != 0:
-                            # It requires at least a value
-                            logger.info('%s expects value', option)
-                            raise DocpieExit(DocpieException.usage_str)
-                        elif max(arg_range) == 1:
+                        # if min(arg_range) != 0:
+                        #     # It requires at least a value
+                        #     logger.info('%s expects value', option)
+                        #     raise DocpieExit(DocpieException.usage_str)
+                        if max(arg_range) == 1:
                             final_value = None
                         else:
                             assert max(arg_range) > 1
