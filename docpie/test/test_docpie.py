@@ -142,11 +142,11 @@ class DocpieBasicTest(unittest.TestCase):
         eq(docpie(doc, 'prog --data=this'),
            {'--data': ['this'], '-d': ['this'], '--': False})
 
-    def test_to_fix_this(self):
+    def test_fix_this(self):
         eq = self.assertEqual
-        # this WON'T work:
-        self.assertRaises(DocpieExit, docpie,
-                          'usage: prog --long=<a>', 'prog --long=')
+        # this now works:
+        eq(docpie('usage: prog --long=<a>', 'prog --long='),
+           {'--long': '', '--': False})
         # this will work:
         doc = '''
         Usage: prog --long=<a>
@@ -1319,6 +1319,34 @@ Options: -a, --all=<here>
                                   '-c': ['sth', 'else'],
                                   '-d': None,
                                   '--': False})
+        doc = '''
+        Usage:
+         test.py [options]
+
+        Options:
+         -a ...    Some help.
+         -b ...    Some help.[default: a b]
+         -c
+        '''
+        result = docpie(doc, 'prog -bb -b'.split())
+        self.assertEqual(result, {'-a': 0, '-b': 3, '-c': False, '--': False})
+
+    def test_option_dif_write(self):
+        doc = '''
+        Usage: program.py --path=<path>...
+
+        Options: --path=<path>...     the path you need'''
+
+        sys.argv = ['program.py', '--path', './here', './there']
+        self.eq(doc, {'--path': ['./here', './there'], '--': False})
+
+        doc = '''
+        Usage: program.py (--path=<path>)...
+
+        Options: --path=<path>     the path you need'''
+
+        sys.argv = ['program.py', '--path=./here', '--path', './there']
+        self.eq(doc, {'--path': ['./here', './there'], '--': False})
 
     def test_name(self):
         doc = '''Usage:

@@ -5,8 +5,8 @@ Intro
 -------------------------------------------------------------------------------
 
 Isn't it brilliant how [python-docopt](https://github.com/docopt/docopt)
-parses the `__doc__` and converts command line into python dict? `docpie` does
-the similar work, but...
+parses the `__doc__` and converts command line into a python dict? `docpie`
+does the similar work, but...
 
 **`docpie` can do more!**
 
@@ -75,19 +75,17 @@ Then try `$ python example.py ship Titanic move 1 2` or
 3.  Some issues in `docopt` have been solved in `dopie` (e.g.
     [#71](https://github.com/docopt/docopt/issues/71),
     [#282](https://github.com/docopt/docopt/issues/282),
-    [#130](https://github.com/docopt/docopt/issues/130))
+    [#130](https://github.com/docopt/docopt/issues/130),
+    [#275](https://github.com/docopt/docopt/issues/275))
 
     ```python
     '''
     Usage:
-     test.py [ --long-option ]
-       -o <value>  (-a | -b)
+     test.py [options]
 
     Options:
-     --long-option    Some help.
-     -a               Some help.
-     -b               Some help.
-     -o <value>       Some help.
+     -a ...    Some help.
+     -b       Some help.
     '''
 
     from docpie import docpie
@@ -109,15 +107,14 @@ Then try `$ python example.py ship Titanic move 1 2` or
     output:
 
     ```bash
-    $ python test.py -o sth -a
+    $ python test.py
     ---- docopt ----
-    -o is specified ambiguously 2 times
+    {'-a': 'aaa',
+     '-b': False}
     ---- docpie ----
     {'--': False,
-     '--long-option': False,
-     '-a': True,
-     '-b': False,
-     '-o': 'sth'}
+     '-a': 4,
+     '-b': False}
     ```
 
 
@@ -233,7 +230,7 @@ positional arguments.
 *   `extra` see "[Advanced Usage](#advanced-usage)" -
     "[Auto Handler](#auto-handler)"
 
-the return value is a dictonary. Note if a flag has alias(e.g, `-h` & `--help`
+the return value is a dictionary. Note if a flag has alias(e.g, `-h` & `--help`
 has the same meaning, you can specify in "Options"), all the alias will also be
 in the result.
 
@@ -361,7 +358,7 @@ Usage: program.py <file> <file> --path=<path>...
 Options: --path=<path>...     the path you need
 ```
 
-(Note you **must** specify "Options" here. See "[Known Issue](#known-issue)")
+(It's strongly suggested to specify it in "Options")
 
 Then `program.py file1 file2 --path ./here ./there` will give you
 `{'<file>': ['file1', 'file2'], '--path': ['./here', './there']}`
@@ -481,6 +478,28 @@ The rules in "Option" section are as follows:
     # will be './here ./there', because it is not repeatable
     --not-repeatable=<arg>      [default: ./here ./there]
     ```
+
+
+Though it's not POSIX standard, the following option argument format is
+accepted in `docpie`, which is not allowed in `docopt`:
+
+
+```python
+"""
+Usage: prog [options]
+
+Options:
+-a..., --all ...               -a is countable
+-b<sth>..., --boring=<sth>...  inf argument
+-c <a> [<b>]                   optional & required args
+-d [<arg>]                     optional arg
+"""
+
+from docpie import docpie
+print(docpie(__doc__, 'prog -aa -a -b go go go -c sth else'.split()))
+# {'-a': 3, '--all': 3, '-b': ['go', 'go', 'go'], '--': False,
+#  '--boring': ['go', 'go', 'go'], '-c': ['sth', 'else'], '-d': None}
+```
 
 
 Advanced Usage
@@ -828,26 +847,6 @@ Difference
 
 5.  Subparsers are not supported currently.
 
-
-Known Issue
--------------------------------------------------------------------------------
-
-the following situation:
-
-```
-Usage: --long=<arg>
-```
-
-without announcing `Options` will match `--long sth` and `sth --long`. To
-avoid, simply write an announcement in `Options`
-
-```
-Usage: --long=<arg>
-
-Options:
- --long=<sth>    this flag requires a value
-```
-
 More features
 -------------------------------------------------------------------------------
 
@@ -858,8 +857,6 @@ This feature can be expected in the future `docpie`
 ```
 Usage: cp.py <source_file>... <target_directory>
 ```
-
-And the "known issue" may also be solved in the future `docpie`
 
 
 Developing

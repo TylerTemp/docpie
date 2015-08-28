@@ -53,7 +53,7 @@ class UsageParserTest(unittest.TestCase):
 
     def test_arg_with_space(self):
         self.eq('app --has-space=<    >',
-                [Option('--has-space'), Argument('<    >')])
+                [Option('--has-space', ref=Required(Argument('<    >')))])
 
     def test_wrongflag_not_format(self):
         self.eq('app --not-in-format=<arg>here',
@@ -93,7 +93,9 @@ class UsageParserTest(unittest.TestCase):
 
     def test_flag_eq_arg_in_brancket(self):
         self.eq('app [--hello=<world>]',
-                [Optional(Option('--hello'), Argument('<world>'))])
+                [Optional(
+                    Option('--hello', ref=Required(Argument('<world>')))
+                )])
 
     def test_multi_option(self):
         self.eq('app [-v -v]',
@@ -118,8 +120,10 @@ class UsageParserTest(unittest.TestCase):
 
     def test_arg_with_slash(self):
         self.eq('app go <d> --sp=<km/h>',
-                [Command('go'), Argument('<d>'), Option('--sp'),
-                 Argument('<km/h>')])
+                [Command('go'), Argument('<d>'),
+                 Option('--sp', ref=Required(Argument('<km/h>')))
+                ]
+        )
 
     def test_pipe_count(self):
         self.eq(
@@ -160,8 +164,8 @@ class UsageParserTest(unittest.TestCase):
             'app (--xx=<x>|--yy=<y>)',
             [Required(
                 Either(
-                    Required(Option('--xx'), Argument('<x>')),
-                    Required(Option('--yy'), Argument('<y>')),
+                    Required(Option('--xx', ref=Required(Argument('<x>')))),
+                    Required(Option('--yy', ref=Required(Argument('<y>')))),
                 )
             )]
         )

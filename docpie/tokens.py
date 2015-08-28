@@ -1,4 +1,5 @@
 import logging
+from docpie.error import DocpieError
 
 logger = logging.getLogger('docpie.tokens')
 

@@ -690,9 +690,15 @@ class Unit(list):
                 assert len(common_names) <= 1, "fixme: %s" % common_names
                 if common_names:
                     ins_in_opt = opt_2_ins[common_names.pop()]
-                    ref_in_opt = ins_in_opt[0].ref
+                    ref_in_opt = ins_in_opt.ref
                     if ref_in_opt is not None:
-                        if self[idx + 1] == ref_in_opt:
+                        if element.ref is not None:
+                            if element.ref != ref_in_opt:
+                                raise DocpieError(
+                                    "%s announced differently "
+                                    "in usage(%s) and option(%s)" % (
+                                        element, self, ins_in_opt))
+                        elif self[idx + 1] == ref_in_opt:
                             element.ref = self[idx + 1]
                             logger.debug('%s set ref %s', element, element.ref)
                             skip = 1

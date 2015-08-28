@@ -76,13 +76,42 @@ class Parser(object):
             else:
                 ins = OptionsShortcut()
             return (ins,)
-        if atom.startswith('-') and '<' in atom:
+        # --all=<sth>... -> --all=<sth> ...
+        # --all=(<sth> <else>)... -> --all= ( <sth> <else> ) ...
+        if atom.startswith('--') and '=' in atom:
+            flag, arg = atom.split('=', 1)
+            if Atom.get_class(flag) is Option:
+                # --all=<sth>
+                if arg and Atom.get_class(arg) is Argument:
+                    if token and token.current() == '...':
+                        repeat = True
+                        token.next()
+                    else:
+                        repeat = False
+                    return (Option(flag,
+                                   ref=Required(Argument(arg),
+                                                repeat=repeat)),)
+                # --all= ( <sth> <else> ) ...
+                else:
+                    if token and token.current() in '([':
+                        bracket = token.next()
+                        flag_args = token.till_end_bracket(bracket)
+                        flag_args.insert(0, bracket)
+                        flag_args.append(')' if bracket == '(' else ']')
+                        if token.current() == '...':
+                            flag_args.append(token.next())
+                        flag_arg_ins = cls._parse_bracket(Token(flag_args))
+                        return (Option(flag, ref=flag_arg_ins),)
+        # -a<sth>
+        elif atom.startswith('-') and '<' in atom:
             flag, partly_arg = atom.split('<', 1)
             flag_class = Atom.get_class(flag)
             arg_class = Atom.get_class('<' + partly_arg)
             if flag_class is Option and arg_class is Argument:
                 # maybe return as ref?
-                return (Option(flag), Argument('<' + partly_arg))
+                # return (Option(flag), Argument('<' + partly_arg))
+                return (Option(flag, ref=Argument('<' + partly_arg)),)
+
         atom_class = Atom.get_class(atom)
         if (atom_class is Option and
                 not atom.startswith('--') and
@@ -121,7 +150,8 @@ class Parser(object):
     def fix(cls, opts, usages):
         # check if same option announced twice in Options
         opt_2_ins = {}
-        for opt in opts:
+        for each in opts:
+            opt = each[0]
             names = opt.get_option_name()
             for name in names:
                 if name in opt_2_ins:
@@ -503,14 +533,15 @@ class UsageParser(Parser):
     def _parse_line_to_lis(klass, line, name=None):
         wrapped_space = klass.wrap_symbol_re.sub(r' \1 ', line.strip())
         logger.debug(wrapped_space)
-        sepa_to_iter = (x for x in klass.split_re.split(wrapped_space) if x)
-        result = []
-
-        for atom in sepa_to_iter:
-            if atom.startswith('-') and '=' in atom:
-                result.extend(klass._format_flag_with_eq(atom))
-            else:
-                result.append(atom)
+        result = [x for x in klass.split_re.split(wrapped_space) if x]
+        # sepa_to_iter = (x for x in klass.split_re.split(wrapped_space) if x)
+        # result = []
+        #
+        # for atom in sepa_to_iter:
+        #     if atom.startswith('-') and '=' in atom:
+        #         result.extend(klass._format_flag_with_eq(atom))
+        #     else:
+        #         result.append(atom)
 
         # drop name
         if name is None:

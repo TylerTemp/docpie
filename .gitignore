@@ -1,7 +1,7 @@
 *.pyc
 __pycache__
 __pycache__/*
-test/tmp_test.py
+docpie/test/tmp_test.py
 .python-version
 /dist
 /build

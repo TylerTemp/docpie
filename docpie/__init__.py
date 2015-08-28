@@ -19,7 +19,7 @@ from docpie.saver import Saver
 
 __all__ = ('docpie', 'Docpie', 'DocpieException', 'DocpieExit', 'DocpieError')
 
-__version__ = '0.0.1'
+__version__ = '0.0.2'
 
 try:
     StrType = basestring
@@ -211,20 +211,24 @@ class Docpie(dict):
                 if not value_in_usage:  # need default
                     if default is None:  # no default, use old matched one
                         final_value = value_in_usage
-                    elif (value_in_usage not in (True, False) and
-                            isinstance(value_in_usage, (int, list))):
+                    elif (each.repeat or
+                            (value_in_usage not in (True, False) and
+                             isinstance(value_in_usage, (int, list)))):
                         final_value = default.split()
                     else:
                         final_value = default
                 else:
                     final_value = value_in_usage
+                if option.ref is None and each.repeat:
+                    final_value = int(final_value or 0)
             # just add this key-value. Note all option here never been matched
             else:
                 ref = option.ref
 
                 if default is not None:
-                    if (this_value not in (True, False) and
-                            isinstance(this_value, (int, list))):
+                    if (each.repeat or
+                            (this_value not in (True, False) and
+                             isinstance(this_value, (int, list)))):
                         final_value = default.split()
                     else:
                         if ref is not None and max(ref.arg_range()) > 1:
@@ -245,9 +249,10 @@ class Docpie(dict):
                             final_value = []
                     # ref is None
                     elif this_value is None:
-                        final_value = False
+                        final_value = 0 if each.repeat else False
                     else:
-                        final_value = this_value
+                        final_value = \
+                            int(this_value) if each.repeat else this_value
 
             logger.debug('set %s value %s', names, final_value)
             # Not work on py2.6
