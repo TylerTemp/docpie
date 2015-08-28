@@ -593,18 +593,18 @@ When ``version`` is not ``None``, Docpie will do the following things:
 
 1. set ``Docpie.version`` to this value
 2. check if "--version" is defined in "Options"
-3. if do, set "--version" and its synonymous flags as ``Docpie.extra``'s
-   key, the ``Docpie.version_handler`` as value
+3. if it is, set "--version" and its synonymous flags as
+   ``Docpie.extra``'s key, the ``Docpie.version_handler`` as value
 4. if not, check if "-v" is defined in "Options", and do similar work as
    ``3``
-5. if "-v" and "--version" are both not defined in "Options", then just
+5. if neither "-v" nor "--version" is defined in "Options", then just
    add "-v" & "--version" as keys of ``Docpie.extra``, the values are
    ``Docpie.version_handler``
-6. when call ``Docpie.docpie``, ``Docpie`` check if whether the keys in
+6. when call ``Docpie.docpie``, ``Docpie`` checks if the keys in
    ``Docpie.extra`` appears in ``argv``.
-7. if find the key, to say ``-v`` for example, ``Docpie`` will check
+7. if it finds the key, to say ``-v`` for example, ``Docpie`` will check
    ``Docpie.extra`` and call ``Docpie.extra["-v"](docpie, "-v")``, the
-   first argument is the instance
+   first argument is the ``Docpie`` instance.
 8. By default, ``Docpie.version_handler(docpie, flag)`` will print
    ``Docpie.version``, and exit the program.
 
@@ -710,7 +710,7 @@ Serialization
 ~~~~~~~~~~~~~
 
 ``Docpie.need_pickle(self)`` give you everything you need to pickle.
-``Docpie.restore_pickle(value)`` restore everything which already
+``Docpie.restore_pickle(value)`` restore everything which is already
 converted back by pickle
 
 ``Docpie.convert_2_dict(self)`` can convert ``Docpie`` instance into a
@@ -718,7 +718,7 @@ dict so you can JSONlizing it. Use ``Docpie.convert_2_docpie(cls, dic)``
 to convert back to ``Docpie`` instance.
 
 **Note:** if you change ``extra`` directly or by passing ``extra``
-argument, the infomation will be lost because JOSN can not save function
+argument, the infomation will be lost because JSON can not save function
 object. You need to call ``set_config(extra={...})`` after
 ``convert_2_docpie``.
 
@@ -861,8 +861,8 @@ Difference
        Options: -i <FILE>
        """
 
-4. ``docpie`` use ``Options:`` to find the current "Option" section,
-   however ``docopt`` will treat any line in ``doc`` starts with ``-``
+4. ``docpie`` uses ``Options:`` to find the current "Option" section,
+   however ``docopt`` treats any line in ``doc`` that starts with ``-``
    (not counting spaces) as "Options"
 
 5. Subparsers are not supported currently.
