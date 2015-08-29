@@ -267,7 +267,7 @@ class Docpie(dict):
 
         self.clear()
         self.update(value)
-        return value
+        return self
 
     def check_flag_and_handler(self, token):
         for flag, handler in self.extra.items():
