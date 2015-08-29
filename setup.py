@@ -16,10 +16,11 @@ setup(
     license='MIT',
     description="An easy and Pythonic way to create your POSIX command line",
     keywords='option arguments parsing optparse argparse getopt',
-    # long_description=open(os.path.join(os.path.dirname(__file__), 'README.rst')).read(),
+    long_description=open(os.path.join(os.path.dirname(__file__), 'README.rst')).read(),
     # package_data={'': ['../LICENSE', 'test/*']},
     package_data={'': ['test/*']},
     # data_files=[('docpie', ['./LICENSE'])],
+    platforms = 'any',
     classifiers=[
         'Development Status :: 2 - Pre-Alpha',
         'License :: OSI Approved :: MIT License',
