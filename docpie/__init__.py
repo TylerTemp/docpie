@@ -119,7 +119,7 @@ class Docpie(dict):
 
         pie = Docpie(__doc__)
         pickled = pickle.dumps(pie.need_pickle())
-        cloned_pie = Docpie.restore_pickle(picked)
+        cloned_pie = Docpie.restore_pickle(pickle.loads(picked))
         '''
         self, OptionsShortcut._ref = value
         return self
@@ -281,7 +281,7 @@ class Docpie(dict):
 
     @staticmethod
     def help_handler(docpie, flag):
-        '''Default `-h` handler. print help string and exit.
+        '''Default help(`--help`, `-h`) handler. print help string and exit.
 
         By default, flag startswith `--` will print the full `doc`,
         otherwith, print "Usage" section and "Option" section.
@@ -313,6 +313,7 @@ class Docpie(dict):
 
         Note the `extra` info will be lost if you costomize that,
         because a function is not JSONlizable.
+        You can use `set_config(extra={...})` to set it back.
         '''
         config = {
             'stdopt': self.stdopt,
@@ -354,8 +355,8 @@ class Docpie(dict):
             json.dumps(pie.convert_2_dict())
         ))
 
-        Note if you changed `extra`, it will be lost. You need to change
-        it again.
+        Note if you changed `extra`, it will be lost.
+        You can use `set_config(extra={...})` to set it back.
         '''
         assert dic['__class__'] == 'Docpie'
         config = dic['__config__']
@@ -444,6 +445,16 @@ class Docpie(dict):
         return None
 
     def set_auto_handler(self, flag, handler):
+        '''Set pre-auto-handler for a flag.
+
+        the handler must accept two argument: first the `pie` which
+        referent to the current `Docpie` instance, second, the `flag`
+        which is the flag found in `argv`.
+
+        Different from `extra` argument, this will set the alias
+        option you defined in `Option` section with the same
+        behavior.
+        '''
         assert flag.startswith('-') and flag not in ('-', '--')
         alias = self.find_flag_alias(flag) or []
         self.extra[flag] = handler

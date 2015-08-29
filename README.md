@@ -813,7 +813,7 @@ Difference
     ```python
     doc = '''Usage: prog [a a]...'''
     print(docpie(doc, 'prog a'))  # Exit
-    print(docopt(doc, 'prog a a'))  # {'a': 2}
+    print(docpie(doc, 'prog a a'))  # {'a': 2}
     ```
 
     Which is equal to `Usage: prog [(a a)]...` in `docopt`.
