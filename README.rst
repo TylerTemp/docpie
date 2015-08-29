@@ -121,6 +121,12 @@ Then try ``$ python example.py ship Titanic move 1 2`` or
 Installation
 ------------
 
+.. code:: python
+
+    pip install docpie
+
+or
+
 .. code:: bash
 
     pip install git+git://github.com/TylerTemp/docpie.git

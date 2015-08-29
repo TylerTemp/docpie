@@ -120,6 +120,12 @@ Then try `$ python example.py ship Titanic move 1 2` or
 Installation
 -------------------------------------------------------------------------------
 
+```python
+pip install docpie
+```
+
+or
+
 ```bash
 pip install git+git://github.com/TylerTemp/docpie.git
 ```
