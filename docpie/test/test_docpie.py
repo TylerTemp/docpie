@@ -1369,6 +1369,32 @@ Options: -a, --all=<here>
                          {'a': False, 'b': False, 'c': True,
                           '--': False})
 
+    def test_easy_balance_required(self):
+        doc = '''Usage: prog <a>... <b> <c>'''
+
+        sys.argv = ['prog', '1', '2', '3', '4']
+        self.eq(doc, {'<a>': ['1', '2'], '<b>': '3', '<c>': '4', '--': False})
+
+        sys.argv = ['prog', '1', '2', '3']
+        self.eq(doc, {'<a>': ['1'], '<b>': '2', '<c>': '3', '--': False})
+
+        sys.argv = ['prog', '1', '2']
+        self.fail(doc)
+
+    def test_easy_balance_optional(self):
+        doc = '''Usage: prog [<a>]... <b> <c>'''
+
+        sys.argv = ['prog', '1', '2', '3', '4']
+        self.eq(doc, {'<a>': ['1', '2'], '<b>': '3', '<c>': '4', '--': False})
+
+        sys.argv = ['prog', '1', '2', '3']
+        self.eq(doc, {'<a>': ['1'], '<b>': '2', '<c>': '3', '--': False})
+
+        sys.argv = ['prog', '1', '2']
+        self.eq(doc, {'<a>': [], '<b>': '1', '<c>': '2', '--': False})
+
+        sys.argv = ['prog', '1']
+        self.fail(doc)
 
 def case():
     return (unittest.TestLoader().loadTestsFromTestCase(DocpieBasicTest),

@@ -1,5 +1,6 @@
 import logging
 import re
+import itertools    # product, takewhile
 try:
     from itertools import product
 except ImportError:
@@ -800,6 +801,9 @@ class Unit(list):
                 logger.debug('%s matched', self)
                 return True
             logger.debug('%s matching failed %s', self, matched_status)
+            if self.balace_value_for_ellipsis_args():
+                logger.debug('%s balace value succeed', self)
+                return True
             saver.rollback(self, argv)
             return False
 
@@ -831,6 +835,59 @@ class Unit(list):
         else:
             saver.rollback(self, argv)
         return full_match_count
+
+    # TODO: better solution
+    def balace_value_for_ellipsis_args(self):
+        # This method is very simple now. It only works for:
+        # (<arg>)... <arg>
+        # [<arg>]... <arg>
+        # (<arg>)... <arg> <arg>
+        # This even won't for:
+        # (<arg>)... (<arg> <arg>)
+        # (<arg> <arg>)... <arg>
+
+        collected = []
+        for index, element in enumerate(self):
+            if (isinstance(element, Unit) and
+                    element.repeat and
+                    len(element) == 1 and
+                    isinstance(element[0], Argument) and
+                    element[0].value):
+
+                rest = self[index + 1:]
+                need_balance = []
+                take_arg = True
+                for each in rest:
+                    if take_arg:
+                        if isinstance(each, Argument):
+                            need_balance.append(each)
+                        else:
+                            take_arg = False
+                            # check if ret is matched
+                            if isinstance(each, (Optional, OptionsShortcut)):
+                                continue
+                            elif each.match(Argv(), Saver(), False):
+                                # use an empty token to test
+                                continue
+                            return False
+
+                need_arg_number = len(need_balance)
+                to_rent_arg = element[0]
+                to_rent_value = to_rent_arg.value
+                can_borrow_number = len(to_rent_value)
+                if isinstance(element, Required):
+                    can_borrow_number -= 1
+                if can_borrow_number < need_arg_number:
+                    return False
+
+                logger.debug('balance %s(%s) -> %s', element, to_rent_arg,
+                             need_balance)
+
+                for need_value_arg in need_balance[::-1]:
+                    need_value_arg.value = to_rent_value.pop()
+                    logger.debug('set %s value %s',
+                                 need_value_arg, need_value_arg.value)
+                return True
 
     # TODO: check if this is buggy
     def merge_value(self, value_list):

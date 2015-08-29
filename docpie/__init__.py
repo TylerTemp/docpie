@@ -19,7 +19,7 @@ from docpie.saver import Saver
 
 __all__ = ('docpie', 'Docpie', 'DocpieException', 'DocpieExit', 'DocpieError')
 
-__version__ = '0.0.2'
+__version__ = '0.0.3'
 
 try:
     StrType = basestring

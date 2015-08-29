@@ -57,7 +57,7 @@ Then try `$ python example.py ship Titanic move 1 2` or
     print(docpie(__doc__, name='myscript.py'))
     ```
 
-2.  Different from `docpie`, `docpie` will handle `--` automatically by
+2.  Different from `docopt`, `docpie` will handle `--` automatically by
     default, you do not need to write it in your "Usage:" anymore.
     (You can also trun off this feature)
 
@@ -76,16 +76,15 @@ Then try `$ python example.py ship Titanic move 1 2` or
     [#71](https://github.com/docopt/docopt/issues/71),
     [#282](https://github.com/docopt/docopt/issues/282),
     [#130](https://github.com/docopt/docopt/issues/130),
-    [#275](https://github.com/docopt/docopt/issues/275))
+    [#275](https://github.com/docopt/docopt/issues/275),
+    [#209](https://github.com/docopt/docopt/issues/209))
+
+    **Note**: For this example, please see "[Known Issues](#known-issues)" for
+    the details you need to pay attention to.
 
     ```python
     '''
-    Usage:
-     test.py [options]
-
-    Options:
-     -a ...    Some help.
-     -b       Some help.
+    Usage: mycopy.py <source_file>... <target_directory> <config_file>
     '''
 
     from docpie import docpie
@@ -107,14 +106,14 @@ Then try `$ python example.py ship Titanic move 1 2` or
     output:
 
     ```bash
-    $ python test.py
+    $ python mycopy.py ./docpie/*.py ./docpie/test/*.py ~/my_project ~/config.cfg
     ---- docopt ----
-    {'-a': 'aaa',
-     '-b': False}
+    Usage: mycopy.py <source_file>... <target_directory> <config_file>
     ---- docpie ----
     {'--': False,
-     '-a': 4,
-     '-b': False}
+     '<config_file>': '/Users/tyler/config.cfg',
+     '<source_file>': ['./docpie/setup.py', './docpie/test/*.py'],
+     '<target_directory>': '/Users/tyler/my_project'}
     ```
 
 
@@ -847,16 +846,31 @@ Difference
 
 5.  Subparsers are not supported currently.
 
-More features
+Known Issues
 -------------------------------------------------------------------------------
 
-This feature can be expected in the future `docpie`
-
-(Not support currently)
+Currently, `docpie` can support arguments after repeated argument, but this
+feature has a very strict limit.
 
 ```
-Usage: cp.py <source_file>... <target_directory>
+Usage: cp.py <source_file>... <target_directory> [-f] [-r]
 ```
+
+1. the repeated argument should be and only be one `ARGUMENT`, which means:
+
+   * YES: `(<arg1>)... <arg2> <arg3>`
+   * YES: `[<arg1]... <arg2>`
+   * NO: `(<arg1> <arg2>)... <arg3>`
+   * NO: `-a... -a`
+   * NO: `cmd... cmd`
+
+2. the elements that can "borrow" values from the repeatable argument can
+   only be `ARGUMENT` (even can not be grouped by `()` or `[]`)
+
+   * `<arg1>... <arg1> <arg2> command`: the `command` can't
+     "borrow" value from `<arg1>`, it won't match `val1 val2 val3 command`
+   * `<arg1>... (<arg2>)` won't work,
+
 
 
 Developing

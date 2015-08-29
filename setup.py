@@ -12,7 +12,7 @@ setup(
     author="TylerTemp",
     author_email="tylertempdev@gmail.com",
     url="https://github.com/TylerTemp/docpie",
-    download_url="https://github.com/TylerTemp/docpie/tarball/0.0.2/",
+    download_url="https://github.com/TylerTemp/docpie/tarball/0.0.3/",
     license='MIT',
     description="An easy and Pythonic way to create your POSIX command line",
     keywords='option arguments parsing optparse argparse getopt',
@@ -21,7 +21,7 @@ setup(
     package_data={'': ['test/*']},
     # data_files=[('docpie', ['./LICENSE'])],
     classifiers=[
-        'Development Status :: 1 - Alpha',
+        'Development Status :: 2 - Pre-Alpha',
         'License :: OSI Approved :: MIT License',
         'Topic :: Utilities',
         'Operating System :: OS Independent',
