@@ -59,7 +59,8 @@ class Docpie(dict):
                                                     self.case_sensitive)
             assert self.usage_text is not None
             DocpieException.usage_str = 'Usage:\n%s' % self.usage_text
-            DocpieException.opt_str = 'Options:\n%s' % self.option_text
+            if self.option_text:
+                DocpieException.opt_str = 'Options:\n%s' % self.option_text
 
             _, self.usages = Parser.fix(
                 OptionParser(self.option_text).get_chain(),
@@ -125,7 +126,7 @@ class Docpie(dict):
         return self
 
     def docpie(self, argv=None):
-        '''match the argv for each usages, return None.
+        '''match the argv for each usages, return dict.
 
         if argv is None, it will use sys.argv instead.
         if argv is str, it will call argv.split() first.
@@ -267,7 +268,7 @@ class Docpie(dict):
 
         self.clear()
         self.update(value)
-        return self
+        return value
 
     def check_flag_and_handler(self, token):
         for flag, handler in self.extra.items():
@@ -290,8 +291,10 @@ class Docpie(dict):
             print(docpie.doc)
         else:
             print(DocpieException.usage_str)
-            print('')
-            print(DocpieException.opt_str)
+            opt_str = DocpieException.opt_str
+            if opt_str:
+                print('')
+                print(opt_str)
         sys.exit()
 
     @staticmethod
@@ -369,7 +372,8 @@ class Docpie(dict):
         self.usage_text = text['usage_text']
         self.option_text = text['option_text']
         DocpieException.usage_str = 'Usage:\n%s' % text['usage_text']
-        DocpieException.option_str = 'Options:\n%s' % text['option_text']
+        if self.option_text:
+            DocpieException.option_str = 'Options:\n%s' % text['option_text']
 
         self.opt_names = [set(x) for x in dic['option_names']]
         self.set_config(help=help, version=version)
