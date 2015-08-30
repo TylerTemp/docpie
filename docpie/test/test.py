@@ -17,8 +17,8 @@ def suite():
 
 def case():
     lis = []
-    for case in (u_case, e_case, s_case, t_case, d_case):
-        lis.extend(case())
+    for each_case in (u_case, e_case, s_case, t_case, d_case):
+        lis.extend(each_case())
     return lis
 
 

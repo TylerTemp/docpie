@@ -1413,6 +1413,34 @@ Options: -a, --all=<here>
         sys.argv = 'prog -bb -aa -cc'.split()
         self.eq(doc, {'-a': 'a', '-b': 'b', '-c': 'c', '--': False})
 
+    def test_order(self):
+        doc = '''
+        Usage:
+            prog -a cmd1 -b cmd2 -c cmd3
+        '''
+
+        sys.argv = 'prog -a cmd1 -b cmd2 -c cmd3'.split()
+        self.eq(doc, {'-a': True, '-b': True, '-c': True,
+                      'cmd1': True, 'cmd2': True, 'cmd3': True,
+                      '--': False})
+
+        sys.argv = 'prog -c cmd1 -b cmd2 -a cmd3'.split()
+        self.eq(doc, {'-a': True, '-b': True, '-c': True,
+                      'cmd1': True, 'cmd2': True, 'cmd3': True,
+                      '--': False})
+
+        sys.argv = 'prog -c cmd1 cmd2 -a -b cmd3'.split()
+        self.eq(doc, {'-a': True, '-b': True, '-c': True,
+                      'cmd1': True, 'cmd2': True, 'cmd3': True,
+                      '--': False})
+
+        sys.argv = 'prog -a cmd2 cmd1 -b -c cmd3'.split()
+        self.fail(doc)
+
+        sys.argv = 'prog -a -b -c cmd3 cmd2 cmd1'.split()
+        self.fail(doc)
+
+
 def case():
     return (unittest.TestLoader().loadTestsFromTestCase(DocpieBasicTest),
             unittest.TestLoader().loadTestsFromTestCase(DocpieRunDefaultTest))
@@ -1424,6 +1452,7 @@ def suite():
 
 def main():
     unittest.TextTestRunner().run(suite())
+
 
 if __name__ == '__main__':
     # bashlog.stdoutlogger(None, bashlog.DEBUG, True)

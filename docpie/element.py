@@ -288,7 +288,7 @@ class Option(Atom):
             logger.debug('%s matched %s / %s', self, self.value, argv)
             return True
 
-        # option (e.g. `--flag`) expects a value, but the argv looks like
+        # option expects a value(e.g. `--flag=<sth>`), but the argv looks like
         # --flag -- sth
         # then it should fail
         if (attached_value is None and

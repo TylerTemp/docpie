@@ -1,6 +1,10 @@
 docpie
 ======
 
+Please read this
+`issue#1 <https://github.com/TylerTemp/docpie/issues/1>`__ before using.
+I'm still woking on it.
+
 Intro
 -----
 
@@ -835,7 +839,7 @@ Difference
 
        doc = '''Usage: prog [a a]...'''
        print(docpie(doc, 'prog a'))  # Exit
-       print(docopt(doc, 'prog a a'))  # {'a': 2}
+       print(docpie(doc, 'prog a a'))  # {'a': 2}
 
    Which is equal to ``Usage: prog [(a a)]...`` in ``docopt``.
 
