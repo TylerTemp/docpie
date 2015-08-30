@@ -10,34 +10,19 @@ USAGE:
 
 OPTIONS:
        -inform DER|PEM
-           This specifies the input format. The DER option with a private key
-           uses an ASN1 DER encoded form of an ASN.1 SEQUENCE consisting of
-           the values of version (currently zero), p, q, g, the public and
-           private key components respectively as ASN.1 INTEGERs. When used
-           with a public key it uses a SubjectPublicKeyInfo structure: it is
-           an error if the key is not DSA.
-
-           The PEM form is the default format: it consists of the DER format
-           base64 encoded with additional header and footer lines. In the case
-           of a private key PKCS#8 format is also accepted.
+           This specifies the input format.
        -outform DER|PEM
-           This specifies the output format, the options have the same meaning
-           as the -inform option.
+           This specifies the output format
        -in <filename>
            This specifies the input filename to read a key from or standard
-           input if this option is not specified. If the key is encrypted a
-           pass phrase will be prompted for.
+           input if this option is not specified.
        -passin <arg>
-           the input file password source. For more information about the
-           format of arg see the PASS PHRASE ARGUMENTS section in openssl(1).
+           the input file password source.
        -out <filename>
            This specifies the output filename to write a key to or standard
-           output by is not specified. If any encryption options are set then
-           a pass phrase will be prompted for. The output filename should not
-           be the same as the input filename.
+           output by is not specified.
        -passout <arg>
-           the output file password source. For more information about the
-           format of arg see the PASS PHRASE ARGUMENTS section in openssl(1).
+           the output file password source.
        -text
            prints out the public, private key components and parameters.
        -noout
@@ -49,46 +34,33 @@ OPTIONS:
            by default a private key is read from the input file: with this
            option a public key is read instead.
        -pubout
-           by default a private key is output. With this option a public key
-           will be output instead. This option is automatically set if the
-           input is a public key.
+           by default a private key is output.
        -engine <id>
            specifying an engine (by its unique id string) will cause dsa to
            attempt to obtain a functional reference to the specified engine,
-           thus initialising it if needed. The engine will then be set as the
-           default for all available algorithms.
+           thus initialising it if needed.
 
-NOTES
-       The PEM private key format uses the header and footer lines:
-
-        -----BEGIN DSA PRIVATE KEY-----
-        -----END DSA PRIVATE KEY-----
-
-       The PEM public key format uses the header and footer lines:
-
-        -----BEGIN PUBLIC KEY-----
-        -----END PUBLIC KEY-----
 
 EXAMPLES
        To remove the pass phrase on a DSA private key:
 
-        openssl dsa -in key.pem -out keyout.pem
+           dsa -in key.pem -out keyout.pem
 
        To encrypt a private key using triple DES:
 
-        openssl dsa -in key.pem -des3 -out keyout.pem
+           dsa -in key.pem -des3 -out keyout.pem
 
        To convert a private key from PEM to DER format:
 
-        openssl dsa -in key.pem -outform DER -out keyout.der
+           dsa -in key.pem -outform DER -out keyout.der
 
        To print out the components of a private key to standard output:
 
-        openssl dsa -in key.pem -text -noout
+           dsa -in key.pem -text -noout
 
        To just output the public part of a private key:
 
-        openssl dsa -in key.pem -pubout -out pubkey.pem
+           dsa -in key.pem -pubout -out pubkey.pem
 """
 
 from docpie import docpie, bashlog

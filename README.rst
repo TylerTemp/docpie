@@ -926,7 +926,3 @@ the code in ``bashlog.py`` is taken from
 `tornado <https://github.com/tornadoweb/tornado>`__, and
 ``tracemore.py`` is from `python
 Cookbook <http://www.amazon.com/Python-Cookbook-Third-David-Beazley/dp/1449340377/ref=sr_1_1?ie=UTF8&qid=1440593849&sr=8-1&keywords=python+cookbook>`__
-
-<!-- Use
-``pandoc --from=markdown --to=rst --output=README.rst README.md`` to
-convert this into rst -->

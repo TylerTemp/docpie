@@ -282,7 +282,7 @@ class Option(Atom):
                     logger.debug('%s matched %s / %s', self, self.value, argv)
                     return True
                 logger.debug("%s doesn't have ref but argv is %s",
-                             self, sub_argv)
+                             self, attached_value)
                 return False
                 # raise DocpieExit(DocpieException.usage_str)
             logger.debug('%s matched %s / %s', self, self.value, argv)
