@@ -52,36 +52,33 @@ class Argv(list):
         auto_dashes = self.auto_dashes
         for index, option in enumerate(self):
             if option == '--' and auto_dashes:
-                return False, None
+                return False, None, 0
             for name in names:
                 if option.startswith(name):
-
+                    value = None
                     self.pop(index)
                     # `-flag=sth` -> `-flag =sth`
                     if not stdopt:
                         _, _, value = option.partition(name)
-                        if value:
-                            sub_argv = Argv([value],
-                                            self.autodashes)
-                        else:
-                            sub_argv = None
+                        if not value:
+                            value = None
 
                     # `-flag` -> `-f lag`
                     # `--flag=sth` -> `--flag sth`
                     # `--flag=` -> `--flag ""`
+                    # `-f` -> `-f None`
                     elif attachvalue:
                         _, _, value = option.partition(name)
                         if name.startswith('--') and value.startswith('='):
-                            sub_argv = Argv([value[1:]],
-                                            self.auto_dashes)
-                        elif value:
-                            sub_argv = Argv([value],
-                                            self.auto_dashes)
+                            value = value[1:]
+                        elif not value:
+                            value = None
 
-                    logger.debug('find %s, sub_argv=%s', name, sub_argv)
-                    return True, sub_argv
+                    logger.debug('find %s, attached %s, index %s of %s',
+                                 name, value, index, self)
+                    return True, value, index
 
-        return False, None
+        return False, None, 0
 
     def next(self, offset=0):
 

@@ -1396,6 +1396,23 @@ Options: -a, --all=<here>
         sys.argv = ['prog', '1']
         self.fail(doc)
 
+    def test_option_order(self):
+        doc = '''
+        Usage:
+            prog [options] -a <a> -b <b> -c <c>
+
+        Options:
+            -a <a>
+            -b <b>
+            -c <c>'''
+
+        sys.argv = 'prog -c c -b b -a a'.split()
+        self.eq(doc, {'-a': 'a', '-b': 'b', '-c': 'c', '--': False})
+        sys.argv = 'prog -c c -aa -bb'.split()
+        self.eq(doc, {'-a': 'a', '-b': 'b', '-c': 'c', '--': False})
+        sys.argv = 'prog -bb -aa -cc'.split()
+        self.eq(doc, {'-a': 'a', '-b': 'b', '-c': 'c', '--': False})
+
 def case():
     return (unittest.TestLoader().loadTestsFromTestCase(DocpieBasicTest),
             unittest.TestLoader().loadTestsFromTestCase(DocpieRunDefaultTest))

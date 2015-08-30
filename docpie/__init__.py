@@ -274,7 +274,7 @@ class Docpie(dict):
         for flag, handler in self.extra.items():
             if not callable(handler):
                 continue
-            find_it, _ = token.clone().break_for_option(
+            find_it, _, _ = token.clone().break_for_option(
                 (flag,), self.stdopt, self.attachvalue)
             if find_it:
                 logger.info('find %s, auto handle it', flag)

@@ -17,6 +17,7 @@ except ImportError:
 
 from docpie.error import DocpieError, DocpieExit, DocpieException
 from docpie.saver import Saver
+from docpie.tokens import Argv
 
 logger = logging.getLogger('docpie.element')
 
@@ -256,7 +257,7 @@ class Option(Atom):
 
         saver.save(self, argv)
 
-        find_it, sub_argv = \
+        find_it, attached_value, index = \
             argv.break_for_option(self._names, Atom.stdopt, Atom.attachvalue)
 
         if not find_it:
@@ -273,12 +274,11 @@ class Option(Atom):
             self.value = True
 
         if self.ref is None:
-            if sub_argv is not None:
+            if attached_value is not None:
                 if Atom.stdopt and Atom.attachopt:
-                    sub_argv[0] = '-' + sub_argv[0]
-                    logger.debug("%s put %s pack to argv %s",
-                                 self, sub_argv, argv)
-                    argv[:0] = sub_argv
+                    logger.debug("%s put -%s pack to argv %s",
+                                 self, attached_value, argv)
+                    argv.insert(index, '-' + attached_value)
                     logger.debug('%s matched %s / %s', self, self.value, argv)
                     return True
                 logger.debug("%s doesn't have ref but argv is %s",
@@ -291,23 +291,35 @@ class Option(Atom):
         # option (e.g. `--flag`) expects a value, but the argv looks like
         # --flag -- sth
         # then it should fail
-        if (sub_argv is None and
-                argv.current() == '--' and
+        if (attached_value is None and
+                argv.current(index) == '--' and
                 argv.auto_dashes and
                 min(self.ref.arg_range()) > 0):
             logger.info(
                 '%s ref must fully match but failed because `--`', self)
             raise DocpieExit(DocpieException.usage_str)
-        result = self.ref.match(sub_argv or argv, saver, repeat_match)
-        if sub_argv:
+
+        if attached_value is None:
+            to_match_ref_argv = Argv(argv[index:], argv.auto_dashes)
+            to_match_ref_argv.dashes = argv.dashes
+            del argv[index:]
+        else:
+            to_match_ref_argv = Argv([attached_value], argv.auto_dashes)
+
+        result = self.ref.match(to_match_ref_argv, saver, repeat_match)
+
+        if attached_value is not None and to_match_ref_argv:
             logger.info('%s ref must fully match but failed for %s',
-                        self, sub_argv)
+                        self, to_match_ref_argv)
             raise DocpieExit(DocpieException.usage_str)
 
         if not result:
-            logger.debug('%s ref match failed %s', self, sub_argv or argv)
+            logger.debug('%s ref match failed %s', self, to_match_ref_argv)
             saver.rollback(self, argv)
             return False
+        # merge argv
+        if attached_value is None:
+            argv.extend(to_match_ref_argv)
         logger.debug('%s matched %s / %s', self, self.value, argv)
         return True
 
@@ -615,8 +627,7 @@ class Unit(list):
         result = {}
         for each in self:
             this_result = each.get_value(in_repeat or self.repeat)
-            repeated_keys = set(
-                result.keys()).intersection(this_result.keys())
+            repeated_keys = set(result).intersection(this_result)
             for key in repeated_keys:
                 old_value = result[key]
                 new_value = this_result[key]
