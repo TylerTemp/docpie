@@ -42,6 +42,8 @@ class Argv(list):
         self[:] = argv
         self.auto_dashes = auto2dashes
         self.dashes = False
+        # when this is on, only --option can try to match.
+        self.option_only = False
         # self.index = 0
 
     def current(self, offset=0):
@@ -93,18 +95,20 @@ class Argv(list):
     def clone(self):
         result = Argv(self, self.auto_dashes)
         result.dashes = self.dashes
+        result.option_only = self.option_only
         return result
 
     def restore(self, ins):
         self[:] = ins
         self.dashes = ins.dashes
+        self.option_only = ins.option_only
 
     def status(self):
         # return len(self)
         return list(self)
 
     def dump_value(self):
-        return (list(self), self.dashes)
+        return (list(self), self.dashes, self.option_only)
 
     def load_value(self, value):
-        self[:], self.dashes = value
+        self[:], self.dashes, self.option_only = value

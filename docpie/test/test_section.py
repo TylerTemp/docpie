@@ -55,6 +55,7 @@ class DocpieTest(unittest.TestCase):
 
 
 class OptionParserTest(unittest.TestCase):
+
     def eq(self, doc, expected):
         self.assertEqual(OptionParser(doc)._opt_and_default_str, expected)
 

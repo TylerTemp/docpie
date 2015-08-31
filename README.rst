@@ -1,10 +1,6 @@
 docpie
 ======
 
-Please read this
-`issue#1 <https://github.com/TylerTemp/docpie/issues/1>`__ before using.
-I'm still woking on it.
-
 Intro
 -----
 

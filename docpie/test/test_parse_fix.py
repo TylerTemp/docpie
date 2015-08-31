@@ -11,18 +11,18 @@ class ParseFixTest(unittest.TestCase):
     def eq(self, usage_txt, options_txt, usage, options):
         usage_chain = UsageParser(usage_txt).get_chain()
         option_chain = OptionParser(options_txt).get_chain()
-        fixusage, fixoption = Parser.fix(option_chain, usage_chain)
+        fixoption, fixusage = Parser.fix(option_chain, usage_chain)
         self.assertEqual(fixusage, usage)
         self.assertEqual(fixoption, options)
 
     def test(self):
         opt_a = Option('-a')
-        ref = Required(Required(Argument('<>'), repeat=True), Argument('<>'))
+        ref = Required(Required(Argument('<here>'), repeat=True), Argument('<around>'))
         opt_a.ref = ref
-        self.eq('app -a <here>... <around>', '-a <go>... <go>    description',
-                [opt_a],
-                [Required(opt_a)])
-
+        self.eq('app -a <here>... <around>',
+                '-a <here>... <around>    description',
+                [Required(opt_a)],
+                [Optional(opt_a)])
 
 def suite():
     return unittest.TestSuite(case())

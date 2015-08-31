@@ -428,6 +428,10 @@ class Command(Atom):
             logger.debug('%s already has a value %s', self, self.value)
             return True
 
+        if argv.option_only:
+            logger.debug('option only, %s skipped.', self)
+            return False
+
         skip = 0
         if current == '--':
             argv.check_dash()
@@ -506,13 +510,17 @@ class Argument(Atom):
 
     def match(self, argv, saver, repeat_match):
         current = argv.current()
-        if current in (None, '-'):
-            logger.debug('%s matching %s failed', self, current)
+        if current is None:
+            logger.debug('argv ran out when matching %s', self)
             return False
 
         if not repeat_match and (self.value is not None and self.value != []):
             logger.info('%s already has a value %s', self, self.value)
             return True
+
+        if argv.option_only:
+            logger.debug('option only, %s skipped.', self)
+            return False
 
         if current == '--':
             argv.check_dash()
@@ -793,8 +801,8 @@ class Unit(list):
         new_status = argv.status()
         matched_status = [isinstance(x, (Optional, OptionsShortcut))
                           for x in self]
+        last_opt_or_arg = -1
         while old_status != new_status and argv:  # the token is moving
-
             old_status = new_status
             for index, each in enumerate(self):
                 if not argv:
@@ -802,9 +810,16 @@ class Unit(list):
                     break
 
                 saver.save(each, argv)
+                argv.option_only = (index <= last_opt_or_arg)
                 result = each.match(argv, saver, False)
                 if result:
+                    old_mathcing_status = matched_status[index]
                     matched_status[index] = True
+                    if (not old_mathcing_status and
+                            isinstance(each, (Argument, Command))):
+                        last_opt_or_arg = index
+                        logger.debug('set last matched %s in %s at %s',
+                                     each, self, index)
             new_status = argv.status()
         else:
             logger.debug('out of loop matching %s, argv %s', self, argv)
