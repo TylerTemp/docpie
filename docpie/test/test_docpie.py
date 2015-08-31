@@ -1440,6 +1440,15 @@ Options: -a, --all=<here>
         sys.argv = 'prog -a -b -c cmd3 cmd2 cmd1'.split()
         self.fail(doc)
 
+    def test_balace_value_bug(self):
+        doc = '''
+        Usage:
+            prog a b <c>...
+        '''
+
+        sys.argv = 'c c c'.split()
+        self.fail(doc)
+
 
 def case():
     return (unittest.TestLoader().loadTestsFromTestCase(DocpieBasicTest),

@@ -892,7 +892,7 @@ class Unit(list):
                             # check if ret is matched
                             if isinstance(each, (Optional, OptionsShortcut)):
                                 continue
-                            elif each.match(Argv(), Saver(), False):
+                            elif each.match(Argv([]), Saver(), False):
                                 # use an empty token to test
                                 continue
                             return False
@@ -914,6 +914,10 @@ class Unit(list):
                     logger.debug('set %s value %s',
                                  need_value_arg, need_value_arg.value)
                 return True
+
+            elif not isinstance(element, (Optional, OptionsShortcut)) \
+                    and not element.match(Argv([]), Saver(), False):
+                return False
 
     # TODO: check if this is buggy
     def merge_value(self, value_list):
