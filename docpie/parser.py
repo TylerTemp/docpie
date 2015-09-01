@@ -108,9 +108,13 @@ class Parser(object):
             flag_class = Atom.get_class(flag)
             arg_class = Atom.get_class('<' + partly_arg)
             if flag_class is Option and arg_class is Argument:
-                # maybe return as ref?
-                # return (Option(flag), Argument('<' + partly_arg))
-                return (Option(flag, ref=Argument('<' + partly_arg)),)
+                repeat = False
+                if token.current() == '...':
+                    token.next()
+                    repeat = True
+                return (Option(flag,
+                               ref=Required(Argument('<' + partly_arg),
+                                            repeat=repeat)),)
 
         atom_class = Atom.get_class(atom)
         if (atom_class is Option and

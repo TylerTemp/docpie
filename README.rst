@@ -21,7 +21,7 @@ your command line according to the ``__doc__`` string:
 
     Usage:
       naval_fate.py ship new <name>...
-      naval_fate.py ship <name> move <x> <y> [--speed=<kn>]
+      naval_fate.py ship <name> move <x> <y> [--speed=<km/h>]
       naval_fate.py ship shoot <x> <y>
       naval_fate.py mine (set|remove) <x> <y> [--moored | --drifting]
       naval_fate.py (-h | --help)
@@ -30,7 +30,7 @@ your command line according to the ``__doc__`` string:
     Options:
       -h --help     Show this screen.
       --version     Show version.
-      --speed=<kn>  Speed in knots. [default: 10]
+      --speed=<km/h>  Speed in knots. [default: 10]
       --moored      Moored (anchored) mine.
       --drifting    Drifting mine.
 
@@ -39,6 +39,8 @@ your command line according to the ``__doc__`` string:
 
     argument = docpie(__doc__, version='Naval Fate 2.0')
     print(argument)
+
+`try it now >> <http://docpie.comes.today/try/?example=ship>`__
 
 Then try ``$ python example.py ship Titanic move 1 2`` or
 ``$ python example.py --help``, see what you get.
@@ -58,6 +60,9 @@ Then try ``$ python example.py ship Titanic move 1 2`` or
        '''
        print(docpie(__doc__, name='myscript.py'))
 
+   `try it now
+   >> <http://docpie.comes.today/try/?example=myscript.py>`__
+
 2. Different from ``docopt``, ``docpie`` will handle ``--``
    automatically by default, you do not need to write it in your
    "Usage:" anymore. (You can also trun off this feature)
@@ -70,15 +75,17 @@ Then try ``$ python example.py ship Titanic move 1 2`` or
        from docpie import docpie
        print(docpie(__doc__))
 
+   `try it now >> <http://docpie.comes.today/try/?example=helloworld>`__
+
    Then ``$ python example.py test.py -- --world`` will give you
    ``{'--': True, '<hello>': '--world'}``
 
-3. Some issues in ``docopt`` have been solved in ``dopie`` (e.g.
-   `#71 <https://github.com/docopt/docopt/issues/71>`__,
-   `#282 <https://github.com/docopt/docopt/issues/282>`__,
-   `#130 <https://github.com/docopt/docopt/issues/130>`__,
-   `#275 <https://github.com/docopt/docopt/issues/275>`__,
-   `#209 <https://github.com/docopt/docopt/issues/209>`__)
+3. Some issues in ``docopt`` have been solved in ``dopie`` (try `#71
+   >> <http://docpie.comes.today/try/?example=opt71>`__, `#282
+   >> <http://docpie.comes.today/try/?example=opt282>`__, `#130
+   >> <http://docpie.comes.today/try/?example=opt130>`__, `#275
+   >> <http://docpie.comes.today/try/?example=opt275>`__, `#209
+   >> <http://docpie.comes.today/try/?example=opt209>`__)
 
    **Note**: For this example, please see "`Known
    Issues <#known-issues>`__\ " for the details you need to pay
@@ -117,6 +124,8 @@ Then try ``$ python example.py ship Titanic move 1 2`` or
         '<config_file>': '/Users/tyler/config.cfg',
         '<source_file>': ['./docpie/setup.py', './docpie/test/*.py'],
         '<target_directory>': '/Users/tyler/my_project'}
+
+   `try it now >> <http://docpie.comes.today/try/?example=mycopy.py>`__
 
 Installation
 ------------
@@ -163,7 +172,7 @@ instead of positional arguments.
    .. code:: python
 
        """
-       Usage: my_program.py [-hso FILE] [--quiet | --verbose] [INPUT ...]
+       Usage: my_program.py [-h][-s][-o FILE] [--quiet | --verbose] [INPUT ...]
 
        Options:
         -h --help    show this
@@ -202,6 +211,8 @@ instead of positional arguments.
        print(docpie('''Usage: prog -abc''', ['prog', '-a', '-bc']))
        # {'--': False, '-a': True, '-b': True, '-c': True}
 
+   `try it now >> <http://docpie.comes.today/try/?example=attachopt>`__
+
 -  ``attachvalue`` (bool, default ``True``) allow you to write short
    flag and its value together, e.g. ``-abc`` can mean ``-a bc``. This
    only works when ``stdopt=True``
@@ -219,6 +230,9 @@ instead of positional arguments.
        print(docpie(__doc__, ['prog', '-abc']))
        # {'--': False, '-a': 'bc'}
 
+   `try it now
+   >> <http://docpie.comes.today/try/?example=attachvalue>`__
+
 -  ``auto2dashes`` (bool, default ``True``) When it's set ``True``,
    ``docpie`` will handle ``--`` (which means "end of command line
    flag", see
@@ -230,6 +244,8 @@ instead of positional arguments.
        from docpie import docpie
        print(docpie('Usage: prog <file>'), ['prog', '--', '--test'])
        # {'--': True, '<file>': '--test'}
+
+   `try it now >> <http://docpie.comes.today/try/?example=testfile>`__
 
 -  ``name`` (str, default ``None``) is the "name" of your program. In
    each of your "usage" the "name" will be ignored. By default
@@ -271,6 +287,8 @@ You can write more than one usage patterns
       program.py -s <source> <to>...
 
     """
+
+`try it now >> <http://docpie.comes.today/try/?example=from_to>`__
 
 When one usage pattern goes too long you can separate into several
 lines, but the following lines need to indent more:
@@ -328,6 +346,9 @@ Use the following constructs to specify patterns:
        print(docpie('Usage: prog (<a> | <b>)', 'prog py'.split()))
        # {'--': False, '<a>': 'py', '<b>': 'py'}
 
+   `try it now
+   >> <http://docpie.comes.today/try/?example=either_args>`__
+
 -  **...** (ellipsis) **repeatable** elements. To specify that arbitrary
    number of repeating elements could be accepted, use ellipsis
    (``...``), e.g. ``my_program.py FILE ...`` means one or more
@@ -350,6 +371,9 @@ times:
 
     Usage: my_program.py [-vvv | -vv | -v]
 
+`try it now
+>> <http://docpie.comes.today/try/?example=exclusive_good>`__
+
 then number of occurrences of the option will be counted. I.e.
 ``args['-v']`` will be ``2`` if program was invoked as
 ``my_program -vv``. Same works for commands.
@@ -358,7 +382,8 @@ Note that the ``|`` acts like ``or`` in python, which means if one
 elements group matched, the following groups will be skipped. usage like
 ``program.py [-v | -vv | -vvv]`` will not match ``program.py -vv``,
 because the first ``-v`` matches first part of ``-vv``, and then nothing
-left to match the rest argv, so it fails.
+left to match the rest argv, so it fails. `try it now
+>> <http://docpie.comes.today/try/?example=exclusive_bad>`__
 
 If your usage patterns allows to match same-named option with argument
 or positional argument several times, the matched arguments will be
@@ -369,6 +394,8 @@ collected into a list:
     Usage: program.py <file> <file> --path=<path>...
 
     Options: --path=<path>...     the path you need
+
+`try it now >> <http://docpie.comes.today/try/?example=same_name>`__
 
 (It's strongly suggested to specify it in "Options")
 
@@ -383,6 +410,9 @@ write in this way:
     Usage: program.py <file> <file> (--path=<path>)...
 
     Options: --path=<path>     the path you need
+
+`try it now
+>> <http://docpie.comes.today/try/?example=same_name_repeat_option>`__
 
 Then it can match
 ``program.py file1 file2 --path=./here --path=./there`` with the same
@@ -462,6 +492,9 @@ The rules in "Option" section are as follows:
            long long long long long description of
            -a & --all    # Good. New line & indent 2 more spaces
 
+   `try it now
+   >> <http://docpie.comes.today/try/?example=option_format>`__
+
 -  Use ``[default: <your-default-value>]`` at the end of the description
    if you need to provide a default value for an option. Note ``docpie``
    has a very strict format of default: it must start with
@@ -476,6 +509,9 @@ The rules in "Option" section are as follows:
        --directory=DIR  Some directory [default:  ]        # a space
        --input=FILE     Input file[default: sys.stdout].   # not work because of the dot
 
+   `try it now
+   >> <http://docpie.comes.today/try/?example=example_default>`__
+
 -  If the option is not repeatable, the value inside ``[default: ...]``
    will be interpreted as string. If it *is* repeatable, it will be
    splited into a list on whitespace:
@@ -486,14 +522,17 @@ The rules in "Option" section are as follows:
                             [--another-repeatable=<arg>]...
                             [--not-repeatable=<arg>]
 
-       # will be ['./here', './there']
-       --repeatable=<arg>          [default: ./here ./there]
+       Options:
+         --repeatable=<arg>          # will be ['./here', './there']
+                                     [default: ./here ./there]
+         --another-repeatable=<arg>  # will be ['./here']
+                                     [default: ./here]
+         --not-repeatable=<arg>      # will be './here ./there',
+                                     # because it is not repeatable
+                                     [default: ./here ./there]
 
-       # will be ['./here']
-       --another-repeatable=<arg>  [default: ./here]
-
-       # will be './here ./there', because it is not repeatable
-       --not-repeatable=<arg>      [default: ./here ./there]
+   `try it now
+   >> <http://docpie.comes.today/try/?example=repeat_default>`__
 
 Though it's not POSIX standard, the following option argument format is
 accepted in ``docpie``, which is not allowed in ``docopt``:
@@ -514,6 +553,9 @@ accepted in ``docpie``, which is not allowed in ``docopt``:
     print(docpie(__doc__, 'prog -aa -a -b go go go -c sth else'.split()))
     # {'-a': 3, '--all': 3, '-b': ['go', 'go', 'go'], '--': False,
     #  '--boring': ['go', 'go', 'go'], '-c': ['sth', 'else'], '-d': None}
+
+`try it now
+>> <http://docpie.comes.today/try/?example=non_posix_option>`__
 
 Advanced Usage
 --------------
@@ -829,17 +871,7 @@ Difference
 
 ``docpie`` is not ``docopt``.
 
-1. ``docpie`` will trade element in ``[]`` (optional) as a whole, e.g
-
-   .. code:: python
-
-       doc = '''Usage: prog [a a]...'''
-       print(docpie(doc, 'prog a'))  # Exit
-       print(docpie(doc, 'prog a a'))  # {'a': 2}
-
-   Which is equal to ``Usage: prog [(a a)]...`` in ``docopt``.
-
-2. In ``docpie`` if one mutually exclusive elements group matches, the
+1. In ``docpie`` if one mutually exclusive elements group matches, the
    rest groups will be skipped
 
    .. code:: python
@@ -848,7 +880,7 @@ Difference
        print(docpie('Usage: prog [-v | -vv | -vvv]', 'prog -vvv'))  # Fail
        print(docopt('Usage: prog [-v | -vv | -vvv]', 'prog -vvv'))  # {'-v': 3}
 
-3. In ``docpie`` you can not "stack" option and value in this way even
+2. In ``docpie`` you can not "stack" option and value in this way even
    you specify it in "Options":
 
    .. code:: python
@@ -867,11 +899,15 @@ Difference
        Options: -i <FILE>
        """
 
-4. ``docpie`` uses ``Options:`` to find the current "Option" section,
+3. ``docpie`` uses ``Options:`` to find the current "Option" section,
    however ``docopt`` treats any line in ``doc`` that starts with ``-``
    (not counting spaces) as "Options"
 
-5. Subparsers are not supported currently.
+4. Subparsers are not supported currently.
+
+5. When you announce ``--verbose``, ``docpie`` will not try to guess if
+   ``--verb`` means ``--verbose``. Use **MUST** input the same name as
+   you announcement.
 
 Known Issues
 ------------
@@ -899,6 +935,18 @@ this feature has a very strict limit.
 -  ``<arg1>... <arg1> <arg2> command``: the ``command`` can't "borrow"
    value from ``<arg1>``, it won't match ``val1 val2 val3 command``
 -  ``<arg1>... (<arg2>)`` won't work,
+
+**Note** this will soon be changed to the same behavior as ``docopt``
+
+``docpie`` will trade element in ``[]`` (optional) as a whole, e.g
+
+.. code:: python
+
+    doc = '''Usage: prog [a a]...'''
+    print(docpie(doc, 'prog a'))  # Exit
+    print(docpie(doc, 'prog a a'))  # {'a': 2}
+
+Which is equal to ``Usage: prog [(a a)]...`` in ``docopt``.
 
 Developing
 ----------

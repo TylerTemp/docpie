@@ -1446,8 +1446,29 @@ Options: -a, --all=<here>
             prog a b <c>...
         '''
 
-        sys.argv = 'c c c'.split()
+        sys.argv = 'prog c c c'.split()
         self.fail(doc)
+
+    def test_double_dashes_when_has_element(self):
+        doc = '''
+        Usage:
+            prog [cmd] [--option] [<arg>]...'''
+
+        sys.argv = 'prog cmd --option arg -- -- - arg -arg --arg'.split()
+        self.eq(doc, {'--': True,
+                      '--option': True,
+                      '<arg>': ['arg', '--', '-', 'arg', '-arg', '--arg'],
+                      'cmd': True})
+
+        sys.argv = 'prog cmd arg -- - -- -arg --arg'.split()
+        self.eq(doc, {'--': True,
+                      '--option': False,
+                      '<arg>': ['arg', '-', '--', '-arg', '--arg'],
+                      'cmd': True})
+
+        doc = '''Usage: pie.py [-v] [<file>...]'''
+        sys.argv = 'pie.py -- -v --help'.split()
+        self.eq(doc, {'-v': False, '<file>': ['-v', '--help'], '--': True})
 
 
 def case():

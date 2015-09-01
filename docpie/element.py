@@ -246,14 +246,15 @@ class Option(Atom):
         return result
 
     def match(self, argv, saver, repeat_match=False):
+        if not repeat_match and self.value:
+            logger.debug('%s already has a value', self)
+            return True
+
         current = argv.current()
         if current is None:
             logger.info('no argv left')
             return False
 
-        if not repeat_match and self.value:
-            logger.debug('%s already has a value', self)
-            return True
 
         saver.save(self, argv)
 
@@ -419,14 +420,14 @@ class Command(Atom):
         self.value = False
 
     def match(self, argv, saver, repeat_match=False):
+        if not repeat_match and self.value:
+            logger.debug('%s already has a value %s', self, self.value)
+            return True
+
         current = argv.current()
         if current is None:
             logger.debug('argv ran out before matching %s', self)
             return False
-
-        if not repeat_match and self.value:
-            logger.debug('%s already has a value %s', self, self.value)
-            return True
 
         if argv.option_only:
             logger.debug('option only, %s skipped.', self)
@@ -509,11 +510,6 @@ class Argument(Atom):
     dump_value = set_save_point
 
     def match(self, argv, saver, repeat_match):
-        current = argv.current()
-        if current is None:
-            logger.debug('argv ran out when matching %s', self)
-            return False
-
         if not repeat_match and (self.value is not None and self.value != []):
             logger.info('%s already has a value %s', self, self.value)
             return True
@@ -522,13 +518,18 @@ class Argument(Atom):
             logger.debug('option only, %s skipped.', self)
             return False
 
+        current = argv.current()
+        if current is None:
+            logger.debug('argv ran out when matching %s', self)
+            return False
+
         if current == '--':
             argv.check_dash()
             if argv.auto_dashes and argv.dashes:
                 current = argv.current(1)
                 # nothing left
                 if current is None:
-                    logger.debug('argv %s ran out when matchins %s',
+                    logger.debug('argv %s ran out when matching %s',
                                  argv, self)
                     return False
                 # force to be command/arg
@@ -830,6 +831,13 @@ class Unit(list):
             if self.balace_value_for_ellipsis_args():
                 logger.debug('%s balace value succeed', self)
                 return True
+            # for each in saver.points:
+            #     elem = subelem = each[0]
+            #     if isinstance(subelem, Optional):
+            #         subelem = elem[0]
+            #
+            #     if isinstance(subelem, Argument):
+            #         print((elem, subelem.value))
             saver.rollback(self, argv)
             return False
 
@@ -842,6 +850,7 @@ class Unit(list):
         new_status = argv.status()
         full_match_count = 0
         history_values = []
+        logger.debug('matching %s repeatedly, start: %s', self, argv)
         while old_status != new_status and argv:
             self.reset()
             # saver.save(self, argv)
@@ -928,10 +937,11 @@ class Unit(list):
         return result
 
     def set_save_point(self):
-        return None
+        return [each.set_save_point() for each in self]
 
     def load_save_point(self, value):
-        pass
+        for ins, val in zip(self, value):
+            ins.load_save_point(val)
 
     def dump_value(self):
         return [x.dump_value() for x in self]

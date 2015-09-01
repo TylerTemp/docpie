@@ -57,7 +57,8 @@ class Docpie(dict):
                                                    self.case_sensitive)
             self.option_text = Parser.parse_section(doc, self.option_name,
                                                     self.case_sensitive)
-            assert self.usage_text is not None
+            if self.usage_text is None:
+                raise DocpieError('"Usage:" not found')
             DocpieException.usage_str = 'Usage:\n%s' % self.usage_text
             if self.option_text:
                 DocpieException.opt_str = 'Options:\n%s' % self.option_text
