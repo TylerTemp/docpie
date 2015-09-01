@@ -1528,6 +1528,18 @@ Options: -a, --all=<here>
         self.eq(doc, {'cmd': True, '--flag': True, '<arg>': 'sth',
                        '--': False})
 
+    def test_either_in_repeat(self):
+        doc = '''Usage: prog (a [this | that])...'''
+
+        sys.argv = 'prog a'.split()
+        self.eq(doc, {'--': False, 'a': 1, 'that': 0, 'this': 0})
+
+        sys.argv = 'prog a this a this a this a'.split()
+        self.eq(doc, {'--': False, 'a': 4, 'that': 0, 'this': 3})
+
+        sys.argv = 'prog a this a this a that a'.split()
+        self.fail(doc)
+
 def case():
     return (unittest.TestLoader().loadTestsFromTestCase(DocpieBasicTest),
             unittest.TestLoader().loadTestsFromTestCase(DocpieRunDefaultTest))

@@ -482,7 +482,7 @@ class Command(Atom):
 
     def get_sys_default_value(self, in_repeat=False):
         if in_repeat:
-            value = []
+            value = 0
         else:
             value = False
         # Not work on py2.6
@@ -1372,11 +1372,11 @@ class Either(list):
         return self[matched_branch].dump_value()
 
     def merge_value(self, values):
-        matched_branch = self.matched_branch
-        if matched_branch == -1:
-            return
+        # matched_branch = self.matched_branch
+        # if matched_branch == -1:
+            # return
 
-        return self[matched_branch].merge_value(
+        return self[self.matched_branch].merge_value(
             list(filter(lambda x: x is not None, values)))
 
     def arg_range(self):
@@ -1387,7 +1387,8 @@ class Either(list):
 
     def load_value(self, value):
         matched_branch = self.matched_branch
-        assert matched_branch != -1, 'fixme'
+        if matched_branch == -1:
+            return None
         self[matched_branch].load_value(value)
 
     def get_flat_list_value(self):
