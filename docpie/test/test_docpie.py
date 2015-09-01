@@ -40,7 +40,6 @@ class DocpieBasicTest(unittest.TestCase):
         eq(docpie(doc, 'prog -v arg'), {'-v': True, 'A': 'arg',
                                         '--': False})
 
-        # Note: different from docpie
         doc = '''
         Usage: prog [-vqr] [FILE]
                prog INPUT OUTPUT
@@ -58,7 +57,10 @@ class DocpieBasicTest(unittest.TestCase):
                'FILE': 'file.py', 'INPUT': None, 'OUTPUT': None,
                '--': False})
 
-        self.assertRaises(DocpieExit, docpie, doc, 'prog -v')
+        eq(docpie(doc, 'prog -v'),
+           {'-v': True, '-q': False, '-r': False, '--help': False,
+            'FILE': None, 'INPUT': None, 'OUTPUT': None,
+            '--': False})
         #
         self.assertRaises(DocpieExit, docpie, doc,
                           'prog -v input.py output.py')
@@ -95,7 +97,8 @@ class DocpieBasicTest(unittest.TestCase):
            {'-v': 0, '--': False})
         eq(docpie('usage: prog [-v]', 'prog -v'),
            {'-v': True, '--': False})
-        self.assertRaises(DocpieExit, docpie, 'usage: prog [-vv]', 'prog -v')
+        self.assertRaises(DocpieExit, docpie, 'usage: prog [(-vv)]', 'prog -v')
+        eq(docpie('usage: prog [-vv]', 'prog -v'), {'-v': 1, '--': False})
         eq(docpie('usage: prog [-vv]', 'prog -vv'),
            {'-v': 2, '--': False})
         # Note it's different from docpie
@@ -637,10 +640,9 @@ options: -a
         self.eq(doc, {'<kind>': '10', '<name>': '20', '<type>': '40',
                       '--': False})
 
-        # Note: different from docopt
-        # that `<name>` & `<type>` should both present or omit
         sys.argv = ['prog', '10', '20']
-        self.fail(doc)
+        self.eq(doc, {'<kind>': '10', '<name>': '20', '<type>': None,
+                      '--': False})
 
         sys.argv = ['prog', '10']
         self.eq(doc, {'<kind>': '10', '<name>': None, '<type>': None,
@@ -706,15 +708,13 @@ options:
         sys.argv = ['prog', '10', '20']
         self.eq(doc, {'<name>': ['10', '20'], '--': False})
 
-        # Different from docopt:
-        # `<name>` should appear even time(s)
         sys.argv = ['prog', '10']
-        self.fail(doc)
+        self.eq(doc, {'<name>': ['10'], '--': False})
 
         sys.argv = ['prog']
         self.eq(doc, {'<name>': [], '--': False})
 
-        # But you can write in this way
+        # equal to
         doc = '''usage: prog [<name>] [<name>]'''
         sys.argv = ['prog', '10']
         self.eq(doc, {'<name>': ['10'], '--': False})
@@ -899,6 +899,14 @@ Options:
         self.eq(doc, {'-v': True, '--': False})
 
         doc = '''usage: prog [-v -v]'''
+        sys.argv = ['prog']
+        self.eq(doc, {'-v': 0, '--': False})
+        sys.argv = ['prog', '-v']
+        self.eq(doc, {'-v': 1, '--': False})
+        sys.argv = ['prog', '-vv']
+        self.eq(doc, {'-v': 2, '--': False})
+
+        doc = '''usage: prog [(-v -v)]'''
         sys.argv = ['prog']
         self.eq(doc, {'-v': 0, '--': False})
         sys.argv = ['prog', '-v']
@@ -1470,6 +1478,55 @@ Options: -a, --all=<here>
         sys.argv = 'pie.py -- -v --help'.split()
         self.eq(doc, {'-v': False, '<file>': ['-v', '--help'], '--': True})
 
+    def test_new_bracket_meaning(self):
+        doc = '''Usage: prog [cmd --opt <arg>]'''
+
+        sys.argv = 'prog arg --opt cmd'.split()
+        self.fail(doc)
+
+        sys.argv = 'prog arg cmd --opt'.split()
+        self.fail(doc)
+
+        sys.argv = 'prog --opt arg cmd'.split()
+        self.fail(doc)
+
+        sys.argv = 'prog --opt cmd arg'.split()
+        self.eq(doc, {'--opt': True, '<arg>': 'arg', 'cmd': True, '--': False})
+
+        sys.argv = 'prog cmd --opt arg'.split()
+        self.eq(doc, {'--opt': True, '<arg>': 'arg', 'cmd': True, '--': False})
+
+        sys.argv = 'prog cmd arg --opt'.split()
+        self.eq(doc, {'--opt': True, '<arg>': 'arg', 'cmd': True, '--': False})
+
+    def test_new_bracket_meaning_in_opt(self):
+        doc = 'Usage: prog [-dir]'
+        pa_doc = 'Usage: prog (-dir)'
+        sys.argv = 'prog -rid'.split()
+        self.eq(doc, {'-r': True, '-i': True, '-d': True, '--': False})
+        self.eq(pa_doc, {'-r': True, '-i': True, '-d': True, '--': False})
+
+        sys.argv = 'prog -id'.split()
+        self.eq(doc, {'-r': False, '-i': True, '-d': True, '--': False})
+        self.fail(pa_doc)
+
+        sys.argv = 'prog -i'.split()
+        self.eq(doc, {'-r': False, '-i': True, '-d': False, '--': False})
+        self.fail(pa_doc)
+
+        sys.argv = 'prog'.split()
+        self.eq(doc, {'-r': False, '-i': False, '-d': False, '--': False})
+        self.fail(pa_doc)
+
+    def test_arg_shadow_cmd(self):
+        doc = 'Usage: prog cmd --flag <arg>'
+        # <arg> should not take `cmd`
+        sys.argv = 'prog cmd --flag sth'.split()
+        self.eq(doc, {'cmd': True, '--flag': True, '<arg>': 'sth',
+                       '--': False})
+        doc = 'Usage: prog [cmd --flag <arg>]'
+        self.eq(doc, {'cmd': True, '--flag': True, '<arg>': 'sth',
+                       '--': False})
 
 def case():
     return (unittest.TestLoader().loadTestsFromTestCase(DocpieBasicTest),

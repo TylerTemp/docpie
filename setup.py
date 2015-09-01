@@ -18,7 +18,7 @@ setup(
     keywords='option arguments parsing optparse argparse getopt',
     long_description=open(os.path.join(os.path.dirname(__file__), 'README.rst')).read(),
     # package_data={'': ['../LICENSE', 'test/*']},
-    package_data={'': ['test/*']},
+    package_data={'': ['test/*', 'README.*', '*.md']},
     # data_files=[('docpie', ['./LICENSE'])],
     platforms = 'any',
     classifiers=[

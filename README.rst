@@ -172,7 +172,7 @@ instead of positional arguments.
    .. code:: python
 
        """
-       Usage: my_program.py [-h][-s][-o FILE] [--quiet | --verbose] [INPUT ...]
+       Usage: my_program.py [-hso FILE] [--quiet | --verbose] [INPUT ...]
 
        Options:
         -h --help    show this
@@ -181,6 +181,8 @@ instead of positional arguments.
         --quiet      print less text
         --verbose    print more text
        """
+
+   `try it now >> <http://docpie.comes.today/try/?example=docexample>`__
 
 -  ``argv`` (sequence) is the command line your program accepted and it
    should be a list or tuple. By default ``docpie`` will use
@@ -326,10 +328,9 @@ Each pattern can consist of the following elements:
 
 Use the following constructs to specify patterns:
 
--  **[ ]** (brackets) **optional** elements. Note the elements in
-   brackets should either be all omitted or provided. e.g.
-   ``program.py [-ab]`` will only match ``-ab``, ``-a -b`` or \`
-   \`(empty argument)
+-  **[ ]** (brackets) **optional** elements. It does not matter if the
+   elements are in the same pair of brackets or not. e.g.
+   ``program.py [-abc]`` equals to ``program.py [-a] [-b] [-c]``
 -  **( )** (parens) **required** elements. All elements that are *not*
    put in **[ ]** are also required, e.g.:
    ``my_program.py --path=<path> <file>...`` is the same as
@@ -935,18 +936,6 @@ this feature has a very strict limit.
 -  ``<arg1>... <arg1> <arg2> command``: the ``command`` can't "borrow"
    value from ``<arg1>``, it won't match ``val1 val2 val3 command``
 -  ``<arg1>... (<arg2>)`` won't work,
-
-**Note** this will soon be changed to the same behavior as ``docopt``
-
-``docpie`` will trade element in ``[]`` (optional) as a whole, e.g
-
-.. code:: python
-
-    doc = '''Usage: prog [a a]...'''
-    print(docpie(doc, 'prog a'))  # Exit
-    print(docpie(doc, 'prog a a'))  # {'a': 2}
-
-Which is equal to ``Usage: prog [(a a)]...`` in ``docopt``.
 
 Developing
 ----------

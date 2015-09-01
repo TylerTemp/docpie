@@ -166,16 +166,21 @@ class Parser(object):
         # set the option shortcut
         OptionsShortcut.set_ref(opts)
 
+        usage_result = []
+
         for usage in usages:
-            if usage is not None:
+            if usage is None:
+                usage = Optional()
+            else:
                 usage.fix_optional(opt_2_ins)
                 opts_in_usage, shortcuts = \
                     cls.find_option_names_no_shortcut_and_shortcut(usage)
                 if opts_in_usage and shortcuts:
                     for cut in shortcuts:
                         cut.set_hide(opts_in_usage)
+            usage_result.append(usage)
 
-        return opts, usages
+        return opts, usage_result
 
     @classmethod
     def find_option_names_no_shortcut_and_shortcut(cls, element):

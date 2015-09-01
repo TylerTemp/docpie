@@ -19,7 +19,7 @@ from docpie.saver import Saver
 
 __all__ = ('docpie', 'Docpie', 'DocpieException', 'DocpieExit', 'DocpieError')
 
-__version__ = '0.0.4'
+__version__ = '0.0.5'
 
 try:
     StrType = basestring
@@ -148,7 +148,7 @@ class Docpie(dict):
             logger.debug('matching usage %s', each)
             argv_clone = token.clone()
             saver = Saver()
-            if each.match(argv_clone, saver):
+            if each.match(argv_clone, saver, False):
                 logger.debug('matched usage %s, checking rest argv %s',
                              each, argv_clone)
                 if (not argv_clone or

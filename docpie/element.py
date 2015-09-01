@@ -298,7 +298,9 @@ class Option(Atom):
                 min(self.ref.arg_range()) > 0):
             logger.info(
                 '%s ref must fully match but failed because `--`', self)
-            raise DocpieExit(DocpieException.usage_str)
+            raise DocpieExit('%s requires argument(s) but hits "--"\n%s' %
+                             ('/'.join(self._names),
+                              DocpieException.usage_str))
 
         if attached_value is None:
             to_match_ref_argv = Argv(argv[index:], argv.auto_dashes)
@@ -312,7 +314,9 @@ class Option(Atom):
         if attached_value is not None and to_match_ref_argv:
             logger.info('%s ref must fully match but failed for %s',
                         self, to_match_ref_argv)
-            raise DocpieExit(DocpieException.usage_str)
+            raise DocpieExit('%s requires argument(s)\n%s' %
+                             ('/'.join(self._names),
+                              DocpieException.usage_str))
 
         if not result:
             logger.debug('%s ref match failed %s', self, to_match_ref_argv)
@@ -687,7 +691,7 @@ class Unit(list):
 
     def fix(self):
         if not self:
-            return Optional()
+            return None
         if len(self) == 1:
             return self._fix_single_element()
         else:
@@ -747,11 +751,12 @@ class Unit(list):
         # None, Atom, Unit
 
         # None
+        # TODO: check if it's ok to return None
         if this_element is None:
             return None
 
         # Atom, Unit
-        self[:] = [this_element]
+        self[0] = this_element
 
         # Unit
         if isinstance(this_element, Unit):
@@ -777,27 +782,48 @@ class Unit(list):
 
     def fix_nest(self):
         assert len(self) == 1, '%s need not fix nest' % self
-        if isinstance(self[0], Unit):
-            repeat = self.repeat or self[0].repeat
-            if type(self) is not type(self[0]):
-                # Not work on py2.6
-                # return Optional(*self[0], repeat=repeat).fix()
-                return Optional(*self[0], **{'repeat': repeat}).fix()
-            else:
-                result = self[0]
-                result.repeat = repeat
+        inside = self[0]
+        if isinstance(inside, Unit):
+            if len(inside) == 0:  # [()], ([]), (()), [[]]
+                return None
+            elif len(inside) == 1:  # [[sth]], ((sth)), ([sth]), [(sth)]
+                innder_inside = inside[0].fix()
+                if innder_inside is None:
+                    return None
+                if any(isinstance(x, Optional) for x in (self, inside)):
+                    # [[sth]], ([sth]), [(sth)] -> (sth)
+                    cls = Optional
+                else:
+                    # ((sth)) -> (sth)
+                    cls = Required
+                result = cls(innder_inside,
+                             repeat=self.repeat or inside.repeat)
                 return result.fix()
+
+            repeat = self.repeat or inside.repeat
+            # [(...)]
+            if isinstance(self, Optional) and isinstance(inside, Required):
+                fixed_inside = inside.fix()
+                # [?]
+                if fixed_inside is not inside:  # new
+                    self[0] = fixed_inside
+                    return self.fix()
+                # inside does not need fix at all
+                # [(...)] -> [(...)]
+                return self
+            # ([...]), ((...)), [[...]]
+            else:
+                inside.repeat = repeat
+                return inside.fix()
         return self
 
-    def match_oneline(self, argv, saver):
+    def _match_oneline(self, argv, saver):
         # Though it's one line matching
         # It still need to deal with situation like:
         # `-b cmd1 -a cmd2 -b`
         # to match argv like `-b -a cmd1 cmd2 -b` or `-b cmd1 -a cmd2 -b`
         # it still check the line more than once
-        saver.save(self, argv)
-        # logger.info('argv ran out when matching %s at %s', self, each)
-        # need_match = list(self)
+
         old_status = None
         new_status = argv.status()
         matched_status = [isinstance(x, (Optional, OptionsShortcut))
@@ -814,42 +840,31 @@ class Unit(list):
                 argv.option_only = (index <= last_opt_or_arg)
                 result = each.match(argv, saver, False)
                 if result:
-                    old_mathcing_status = matched_status[index]
+                    old_matching_status = matched_status[index]
                     matched_status[index] = True
-                    if (not old_mathcing_status and
-                            isinstance(each, (Argument, Command))):
-                        last_opt_or_arg = index
-                        logger.debug('set last matched %s in %s at %s',
-                                     each, self, index)
+                    if not old_matching_status:
+                        if isinstance(each, (Argument, Command)):
+                            last_opt_or_arg = index
+                            logger.debug('set last matched %s in %s at %s',
+                                         each, self, index)
+                        # jump to the first, avoid
+                        # `Usage: cmd --flag <arg>`
+                        # matching `cmd --flag sth` fails.
+                        elif isinstance(each, Option):
+                            logger.debug('jump')
+                            break
             new_status = argv.status()
         else:
             logger.debug('out of loop matching %s, argv %s', self, argv)
-            if all(matched_status):
-                logger.debug('%s matched', self)
-                return True
-            logger.debug('%s matching failed %s', self, matched_status)
-            if self.balace_value_for_ellipsis_args():
-                logger.debug('%s balace value succeed', self)
-                return True
-            # for each in saver.points:
-            #     elem = subelem = each[0]
-            #     if isinstance(subelem, Optional):
-            #         subelem = elem[0]
-            #
-            #     if isinstance(subelem, Argument):
-            #         print((elem, subelem.value))
-            saver.rollback(self, argv)
-            return False
+            return matched_status
 
     # TODO: balance the value for `<a>... <b>`
     def match_repeat(self, argv, saver):
-        saver.save(self, argv)
-        # logger.info('argv ran out when matching %s at %s', self, each)
-        # need_match = list(self)
+        # saver.save(self, argv)
         old_status = None
         new_status = argv.status()
         full_match_count = 0
-        history_values = []
+        history_values = [self.dump_value()]
         logger.debug('matching %s repeatedly, start: %s', self, argv)
         while old_status != new_status and argv:
             self.reset()
@@ -865,14 +880,19 @@ class Unit(list):
 
         logger.debug('matching %s %s time(s)', self, full_match_count)
         if full_match_count:
-            merged_value = self.merge_value(history_values)
+            if len(history_values) == 1:
+                merged_value = history_values[0]
+            else:
+                merged_value = self.merge_value(history_values)
+            logger.debug('restore merged value %s for %s', merged_value, self)
             self.load_value(merged_value)
         else:
-            saver.rollback(self, argv)
+            assert len(history_values) == 1
+            self.load_value(history_values[0])
         return full_match_count
 
     # TODO: better solution
-    def balace_value_for_ellipsis_args(self):
+    def balance_value_for_ellipsis_args(self):
         # This method is very simple now. It only works for:
         # (<arg>)... <arg>
         # [<arg>]... <arg>
@@ -937,11 +957,13 @@ class Unit(list):
         return result
 
     def set_save_point(self):
-        return [each.set_save_point() for each in self]
+        return None
+        # return [each.set_save_point() for each in self]
 
     def load_save_point(self, value):
-        for ins, val in zip(self, value):
-            ins.load_save_point(val)
+        pass
+        # for ins, val in zip(self, value):
+        #     ins.load_save_point(val)
 
     def dump_value(self):
         return [x.dump_value() for x in self]
@@ -1039,6 +1061,19 @@ class Required(Unit):
         logger.debug('try to match %s repeatedly', self)
         return bool(self.match_repeat(argv, saver))
 
+    def match_oneline(self, argv, saver):
+        saver.save(self, argv)
+        matched_status = self._match_oneline(argv, saver)
+        if all(matched_status):
+            logger.debug('%s matched', self)
+            return True
+        logger.debug('%s matching failed %s / %s', self, matched_status, argv)
+        if self.balance_value_for_ellipsis_args():
+            logger.debug('%s balace value succeed', self)
+            return True
+        saver.rollback(self, argv)
+        return False
+
     def __str__(self):
         return '(%s)%s' % (' '.join(map(str, self)),
                            '...' if self.repeat else '')
@@ -1051,6 +1086,26 @@ class Optional(Unit):
         if 0 not in this_range:
             this_range.append(0)
         return this_range
+
+    # def match_oneline(self, argv, saver):
+    #     old_status = None
+    #     new_status = argv.status()
+    #     saver.save(self, argv)
+    #
+    #     while argv and old_status != new_status:
+    #         old_status = new_status
+    #         for each in self:
+    #             if not argv:
+    #                 break
+    #             each.match(argv, saver, False)
+    #         new_status = argv.status()
+    #
+    #     return True
+
+    def match_oneline(self, argv, saver):
+        saver.save(self, argv)
+        self._match_oneline(argv, saver)
+        return True
 
     def match(self, argv, saver, repeat_match=False):
         repeat = repeat_match or self.repeat
@@ -1312,13 +1367,17 @@ class Either(list):
 
     def dump_value(self):
         matched_branch = self.matched_branch
-        assert matched_branch != -1, 'fixme'
+        if matched_branch == -1:
+            return None
         return self[matched_branch].dump_value()
 
     def merge_value(self, values):
         matched_branch = self.matched_branch
-        assert matched_branch != -1, 'fixme'
-        return self[matched_branch].merge_value(values)
+        if matched_branch == -1:
+            return
+
+        return self[matched_branch].merge_value(
+            list(filter(lambda x: x is not None, values)))
 
     def arg_range(self):
         result = set()
