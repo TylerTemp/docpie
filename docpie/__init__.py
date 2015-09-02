@@ -62,6 +62,8 @@ class Docpie(dict):
             DocpieException.usage_str = 'Usage:\n%s' % self.usage_text
             if self.option_text:
                 DocpieException.opt_str = 'Options:\n%s' % self.option_text
+            else:
+                DocpieException.opt_str = None
 
             _, self.usages = Parser.fix(
                 OptionParser(self.option_text).get_chain(),
@@ -375,6 +377,8 @@ class Docpie(dict):
         DocpieException.usage_str = 'Usage:\n%s' % text['usage_text']
         if self.option_text:
             DocpieException.option_str = 'Options:\n%s' % text['option_text']
+        else:  # avoid cache
+            DocpieException.opt_str = None
 
         self.opt_names = [set(x) for x in dic['option_names']]
         self.set_config(help=help, version=version)
