@@ -750,17 +750,11 @@ to customize your ``extra``, the following attribute of ``Docpie`` may
 help:
 
 -  ``Docpie.version`` is the version you set. (default ``None``)
--  ``Docpie.usage_text`` is the usage section. ("Usage:" is not
-   contained)
--  ``Docpie.option_text`` is the options section. ("Options:" is not
-   contained)
+-  ``Docpie.usage_text`` is the usage section.
+-  ``Docpie.option_text`` is the options section.
 
 Serialization
 ~~~~~~~~~~~~~
-
-``Docpie.need_pickle(self)`` give you everything you need to pickle.
-``Docpie.restore_pickle(value)`` restore everything which is already
-converted back by pickle
 
 ``Docpie.convert_2_dict(self)`` can convert ``Docpie`` instance into a
 dict so you can JSONlizing it. Use ``Docpie.convert_2_docpie(cls, dic)``
@@ -803,7 +797,7 @@ In developing:
     pie = Docpie(__doc__)
 
     with open('myscript.docpie.pickle', 'wb') as pkf:
-        pickle.dump(pie.need_pickle(), pkf)
+        pickle.dump(pie, pkf)
 
     # omit `encoding` if you're using python2
     with open('myscript.docpie.json', 'w', encoding='utf-8') as jsf:
@@ -840,7 +834,7 @@ In release:
     if os.path.exists('myscript.docpie.pickle'):
         with open('myscript.docpie.pickle', 'rb') as pkf:
             try:
-                pie = Docpie.restore_pickle(pickle.load(pkf))
+                pie = pickle.load(pkf)
             except BaseException:
                 pass
 

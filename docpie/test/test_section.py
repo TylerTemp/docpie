@@ -1,12 +1,13 @@
 import unittest
 
 from docpie import Docpie
-from docpie.parser import OptionParser
+from docpie.parser import Parser, OptionParser
 
 
 class DocpieTest(unittest.TestCase):
     def eq(self, doc, expected):
-        self.assertEqual(Docpie(doc).usage_text, expected)
+        result, _ = Parser.parse_section(doc, "Usage:")
+        self.assertEqual(result, expected)
 
     def test_singleline(self):
         doc = '''Usage: test'''
@@ -57,7 +58,8 @@ class DocpieTest(unittest.TestCase):
 class OptionParserTest(unittest.TestCase):
 
     def eq(self, doc, expected):
-        self.assertEqual(OptionParser(doc)._opt_and_default_str, expected)
+        self.assertEqual(
+            OptionParser(doc, True)._opt_and_default_str, expected)
 
     def test_default(self):
         doc = '''\

@@ -34,9 +34,6 @@ class Atom(object):
     # and `-flag=sth` will be considered as `-flag` and `=sth`
     # and attachopt won't work
     # and attachvalue is forced to be `True`
-    stdopt = True
-    attachopt = True    # `-rf` can stand for `-r -f`. Not for long options
-    attachvalue = True    # `-rf` can stand for `-r f`. Not for long options
 
     # short option should not use `=`,
     # `-asth` equals `-a sth`, `-a=sth` equals `-a =sth`
@@ -44,6 +41,7 @@ class Atom(object):
     flag_or_upper_re = re.compile(r'^(?P<hyphen>-{0,2})'
                                   r'($|[\da-zA-Z_][\da-zA-Z_\-]*$)')
     angular_bracket_re = re.compile(r'^<.*?>$')
+    error = None
 
     def __init__(self, *names, **kwargs):
         self._names = set(names)
@@ -171,7 +169,7 @@ class Option(Atom):
         self.ref = kwargs.get('ref', None)    # a instance, not a list
         # self.countable = False
 
-    def get_value(self, in_repeat=False):
+    def get_value(self, options, in_repeat):
         # default = self._default
         names = self._names
         value = self.value
@@ -224,7 +222,7 @@ class Option(Atom):
             result[name] = value
         return result
 
-    def get_sys_default_value(self, in_repeat=False):
+    def get_sys_default_value(self, options, in_repeat):
         if in_repeat:
             value = []
         elif self.ref is not None:
@@ -245,7 +243,11 @@ class Option(Atom):
             result[name] = value
         return result
 
-    def match(self, argv, saver, repeat_match=False):
+    def match(self, argv, saver, options, repeat_match):
+        if self.error is not None:
+            logger.info('error in %s - %s', self, self.error)
+            return False
+
         if not repeat_match and self.value:
             logger.debug('%s already has a value', self)
             return True
@@ -259,7 +261,7 @@ class Option(Atom):
         saver.save(self, argv)
 
         find_it, attached_value, index = \
-            argv.break_for_option(self._names, Atom.stdopt, Atom.attachvalue)
+            argv.break_for_option(self._names)
 
         if not find_it:
             logger.debug('not found matching %s in %s', self, argv)
@@ -276,7 +278,7 @@ class Option(Atom):
 
         if self.ref is None:
             if attached_value is not None:
-                if Atom.stdopt and Atom.attachopt:
+                if argv.stdopt and argv.attachopt:
                     logger.debug("%s put -%s pack to argv %s",
                                  self, attached_value, argv)
                     argv.insert(index, '-' + attached_value)
@@ -285,7 +287,6 @@ class Option(Atom):
                 logger.debug("%s doesn't have ref but argv is %s",
                              self, attached_value)
                 return False
-                # raise DocpieExit(DocpieException.usage_str)
             logger.debug('%s matched %s / %s', self, self.value, argv)
             return True
 
@@ -298,25 +299,27 @@ class Option(Atom):
                 min(self.ref.arg_range()) > 0):
             logger.info(
                 '%s ref must fully match but failed because `--`', self)
-            raise DocpieExit('%s requires argument(s) but hits "--"\n%s' %
-                             ('/'.join(self._names),
-                              DocpieException.usage_str))
+            self.error = ('/'.join(self._names) +
+                          ' requires argument(s) but hits "--".')
+
+            return False
 
         if attached_value is None:
-            to_match_ref_argv = Argv(argv[index:], argv.auto_dashes)
-            to_match_ref_argv.dashes = argv.dashes
+            to_match_ref_argv = argv.clone()
+            to_match_ref_argv[:] = argv[index:]
             del argv[index:]
         else:
-            to_match_ref_argv = Argv([attached_value], argv.auto_dashes)
+            to_match_ref_argv = argv.clone()
+            to_match_ref_argv[:] = [attached_value]
 
-        result = self.ref.match(to_match_ref_argv, saver, repeat_match)
+        result = self.ref.match(to_match_ref_argv,
+                                saver, options, repeat_match)
 
         if attached_value is not None and to_match_ref_argv:
             logger.info('%s ref must fully match but failed for %s',
                         self, to_match_ref_argv)
-            raise DocpieExit('%s requires argument(s)\n%s' %
-                             ('/'.join(self._names),
-                              DocpieException.usage_str))
+            self.error = ('%s requires argument(s).' % ('/'.join(self._names)))
+            return False
 
         if not result:
             logger.debug('%s ref match failed %s', self, to_match_ref_argv)
@@ -401,11 +404,9 @@ class Option(Atom):
     def __eq__(self, other):
         if type(self) is not type(other):
             return False
-        if not Atom.stdopt:
-            equal = super(Option, self).__eq__(other)
-        else:
-            equal = self.get_option_name().intersection(
-                        other.get_option_name())
+
+        equal = self.get_option_name().intersection(
+                    other.get_option_name())
 
         if equal:
             equal = (self.ref == other.ref)
@@ -423,7 +424,11 @@ class Command(Atom):
     def reset(self):
         self.value = False
 
-    def match(self, argv, saver, repeat_match=False):
+    def match(self, argv, saver, options, repeat_match):
+        if self.error is not None:
+            logger.info('error in %s - %s', self, self.error)
+            return False
+
         if not repeat_match and self.value:
             logger.debug('%s already has a value %s', self, self.value)
             return True
@@ -467,7 +472,7 @@ class Command(Atom):
         else:
             return sum(filter(None, values))
 
-    def get_value(self, in_repeat=False):
+    def get_value(self, options, in_repeat):
         if in_repeat:
             value = int(self.value)
         else:
@@ -480,7 +485,7 @@ class Command(Atom):
             result[name] = value
         return result
 
-    def get_sys_default_value(self, in_repeat=False):
+    def get_sys_default_value(self, options, in_repeat=False):
         if in_repeat:
             value = 0
         else:
@@ -513,7 +518,11 @@ class Argument(Atom):
 
     dump_value = set_save_point
 
-    def match(self, argv, saver, repeat_match):
+    def match(self, argv, saver, options, repeat_match):
+        if self.error is not None:
+            logger.info('error in %s - %s', self, self.error)
+            return False
+
         if not repeat_match and (self.value is not None and self.value != []):
             logger.info('%s already has a value %s', self, self.value)
             return True
@@ -580,7 +589,7 @@ class Argument(Atom):
         logger.debug('%s matched %s/%s', self, self.value, argv)
         return True
 
-    def get_value(self, in_repeat=False):
+    def get_value(self, options, in_repeat):
         value = self.value
         if in_repeat:
             if value is None:
@@ -594,7 +603,7 @@ class Argument(Atom):
             result[name] = value
         return result
 
-    def get_sys_default_value(self, in_repeat=False):
+    def get_sys_default_value(self, options, in_repeat):
         if in_repeat:
             value = []
         else:
@@ -627,6 +636,7 @@ class Argument(Atom):
 
 
 class Unit(list):
+    error = None
 
     def __init__(self, *atoms, **kwargs):
         super(Unit, self).__init__(atoms)
@@ -636,10 +646,10 @@ class Unit(list):
         for each in self:
             each.reset()
 
-    def get_value(self, in_repeat=False):
+    def get_value(self, options, in_repeat):
         result = {}
         for each in self:
-            this_result = each.get_value(in_repeat or self.repeat)
+            this_result = each.get_value(options, in_repeat or self.repeat)
             repeated_keys = set(result).intersection(this_result)
             for key in repeated_keys:
                 old_value = result[key]
@@ -817,7 +827,7 @@ class Unit(list):
                 return inside.fix()
         return self
 
-    def _match_oneline(self, argv, saver):
+    def _match_oneline(self, argv, saver, options):
         # Though it's one line matching
         # It still need to deal with situation like:
         # `-b cmd1 -a cmd2 -b`
@@ -829,16 +839,19 @@ class Unit(list):
         matched_status = [isinstance(x, (Optional, OptionsShortcut))
                           for x in self]
         last_opt_or_arg = -1
-        while old_status != new_status and argv:  # the token is moving
+
+        # the token is moving
+        while self.error is None and old_status != new_status and argv:
             old_status = new_status
             for index, each in enumerate(self):
                 if not argv:
+                    self.error = each.error
                     logger.debug('argv run out when matching %s', each)
                     break
 
                 saver.save(each, argv)
                 argv.option_only = (index <= last_opt_or_arg)
-                result = each.match(argv, saver, False)
+                result = each.match(argv, saver, options, False)
                 if result:
                     old_matching_status = matched_status[index]
                     matched_status[index] = True
@@ -853,13 +866,15 @@ class Unit(list):
                         elif isinstance(each, Option):
                             logger.debug('jump')
                             break
+                else:
+                    self.error = each.error
             new_status = argv.status()
-        else:
-            logger.debug('out of loop matching %s, argv %s', self, argv)
-            return matched_status
+
+        logger.debug('out of loop matching %s, argv %s', self, argv)
+        return matched_status
 
     # TODO: balance the value for `<a>... <b>`
-    def match_repeat(self, argv, saver):
+    def match_repeat(self, argv, saver, options):
         # saver.save(self, argv)
         old_status = None
         new_status = argv.status()
@@ -870,13 +885,16 @@ class Unit(list):
             self.reset()
             # saver.save(self, argv)
             old_status = new_status
-            result = self.match_oneline(argv, saver)
+            result = self.match_oneline(argv, saver, options)
             if result:
                 full_match_count += 1
             else:
                 break
             history_values.append(self.dump_value())
             new_status = argv.status()
+
+        if self.error is not None:
+            return 0
 
         logger.debug('matching %s %s time(s)', self, full_match_count)
         if full_match_count:
@@ -921,7 +939,9 @@ class Unit(list):
                             # check if ret is matched
                             if isinstance(each, (Optional, OptionsShortcut)):
                                 continue
-                            elif each.match(Argv([]), Saver(), False):
+                            elif each.match(Argv([], True, True,
+                                                 True, True),
+                                            Saver(), [], False):
                                 # use an empty token to test
                                 continue
                             return False
@@ -944,8 +964,9 @@ class Unit(list):
                                  need_value_arg, need_value_arg.value)
                 return True
 
-            elif not isinstance(element, (Optional, OptionsShortcut)) \
-                    and not element.match(Argv([]), Saver(), False):
+            elif (not isinstance(element, (Optional, OptionsShortcut)) and
+                        not element.match(Argv([], True, True, True, True),
+                                          Saver(), [], False)):
                 return False
 
     # TODO: check if this is buggy
@@ -990,15 +1011,15 @@ class Unit(list):
                     result.append(value)
         return result
 
-    def get_sys_default_value(self, in_repeat=False):
+    def get_sys_default_value(self, options, in_repeat):
         result = {}
         if in_repeat or self.repeat:
             for each in self:
-                result.update(each.get_sys_default_value(True))
+                result.update(each.get_sys_default_value(options, True))
             return result
 
         for each in self:
-            this_result = each.get_sys_default_value(False)
+            this_result = each.get_sys_default_value(options, False)
             common_keys = set(result).intersection(this_result)
             for key in common_keys:
                 old_value = result[key]
@@ -1052,18 +1073,28 @@ class Unit(list):
 
 class Required(Unit):
 
-    def match(self, argv, saver, repeat_match=False):
+    def match(self, argv, saver, options, repeat_match):
+        if self.error is not None:
+            logger.info('error in %s - %s', self, self.error)
+            return False
+
         if not (repeat_match or self.repeat):
             logger.debug('try to match %s once, %s', self, argv)
-            result = self.match_oneline(argv, saver)
+            result = self.match_oneline(argv, saver, options)
             logger.debug('%s matching status: %s', self, result)
-            return result
-        logger.debug('try to match %s repeatedly', self)
-        return bool(self.match_repeat(argv, saver))
+            return (self.error is None) and result
 
-    def match_oneline(self, argv, saver):
+        logger.debug('try to match %s repeatedly', self)
+        return self.match_repeat(argv, saver, options) and self.error is None
+
+    def match_oneline(self, argv, saver, options):
         saver.save(self, argv)
-        matched_status = self._match_oneline(argv, saver)
+        matched_status = self._match_oneline(argv, saver, options)
+
+        if self.error is not None:
+            logger.info('error in %s - %s', self, self.error)
+            return False
+
         if all(matched_status):
             logger.debug('%s matched', self)
             return True
@@ -1102,19 +1133,25 @@ class Optional(Unit):
     #
     #     return True
 
-    def match_oneline(self, argv, saver):
+    def match_oneline(self, argv, saver, options):
         saver.save(self, argv)
-        self._match_oneline(argv, saver)
+        self._match_oneline(argv, saver, options)
+        if self.error is not None:
+            logger.info('error in %s - %s', self, self.error)
+            return False
         return True
 
-    def match(self, argv, saver, repeat_match=False):
+    def match(self, argv, saver, options, repeat_match):
+        if self.error is not None:
+            logger.info('error in %s - %s', self, self.error)
+            return False
         repeat = repeat_match or self.repeat
         logging.debug('matching %s with %s%s',
                       self, argv, ', repeatedly' if repeat else '')
         func = (self.match_repeat if repeat else self.match_oneline)
 
-        func(argv, saver)
-        return True
+        func(argv, saver, options)
+        return self.error is None
 
     def __str__(self):
         if len(self) == 1:
@@ -1133,7 +1170,7 @@ class Optional(Unit):
 
 
 class OptionsShortcut(object):
-    _ref = None        # option instances (list)
+    error = None
 
     def __init__(self):
         self._hide = set()
@@ -1155,46 +1192,51 @@ class OptionsShortcut(object):
         return [0]
 
     # repeat_match will be ignored
-    def match(self, argv, saver, repeat_match=False):
+    def match(self, argv, saver, options, repeat_match):
+        if self.error is not None:
+            logger.info('error in %s - %s', self, self.error)
+            return False
+
         hide = self._hide
-        ref = self._ref
-        logger.debug('[options]/%s/%s try matching %s', ref, hide, argv)
-        for each in filter(lambda x: not hide.intersection(x[0]._names), ref):
+        logger.debug('[options]/%s/%s try matching %s', options, hide, argv)
+        for each in filter(
+                lambda x: not hide.intersection(x[0]._names), options):
+
             if not argv:
                 logger.info('argv run out before matching [options] %s(-%s)',
-                            self._ref, self._hide)
-                return True
+                            options, self._hide)
+                self.error = each.error
+                return self.error is None
             logger.debug('[options] try %s matching %s', each, argv)
-            each.match(argv, saver, repeat_match)
-        return True
+            each.match(argv, saver, options, repeat_match)
+            if each.error is not None:
+                self.error = each.error
+                return False
+        return self.error is None
 
-    def get_value(self, in_repeat=False):
+    def get_value(self, options, in_repeat):
         hide = self._hide
-        ref = self._ref
         result = {}  # developer should ensure no same options in [options]
-        for each in filter(lambda x: not hide.intersection(x[0]._names), ref):
-            result.update(each.get_value(in_repeat))
+        for each in filter(
+                lambda x: not hide.intersection(x[0]._names), options):
+            result.update(each.get_value(options, in_repeat))
         return result
 
-    def get_sys_default_value(self, in_repeat=False):
+    def get_sys_default_value(self, options, in_repeat):
         hide = self._hide
-        ref = self._ref
         result = {}
-        for each in filter(lambda x: not hide.intersection(x[0]._names), ref):
-            result.update(each.get_sys_default_value(in_repeat))
+        for each in filter(
+                lambda x: not hide.intersection(x[0]._names), options):
+            result.update(each.get_sys_default_value(options, in_repeat))
         return result
 
     def set_need_match(self):
-        if self._ref is None:
-            self._match_ref = ()
-        if self._match_ref is None:
-            self._match_ref = tuple(
-                filter(lambda x: not self.need_hide(*x[0].get_names()), self._ref)
+        if self.ref is None:
+            self._matchref = ()
+        if self._matchref is None:
+            self._matchref = tuple(
+                filter(lambda x: not self.need_hide(*x[0].get_names()), self.ref)
             )
-
-    @classmethod
-    def set_ref(klass, ref_lis):
-        klass._ref = ref_lis
 
     @classmethod
     def reset(klass):
@@ -1233,7 +1275,7 @@ class OptionsShortcut(object):
     def convert_2_dict(cls, obj):
         return {
             '__class__': obj.__class__.__name__,
-            # 'ref': [x.convert_2_dict(x) for x in obj._ref],
+            # 'ref': [x.convert_2_dict(x) for x in obj.ref],
             'hide': tuple(obj._hide),
         }
 
@@ -1259,6 +1301,7 @@ class OptionsShortcut(object):
 
 # branch
 class Either(list):
+    error = None
 
     def __init__(self, *branch):
         assert(all(isinstance(x, Unit) for x in branch))
@@ -1322,10 +1365,10 @@ class Either(list):
             logger.debug('fix %r -> %r', self, result)
             return result
 
-    def match_oneline(self, argv, saver):
+    def match_oneline(self, argv, saver, options):
         if self.matched_branch != -1:
             branch = self[self.matched_branch]
-            return branch.match(argv, saver, False)
+            return branch.match(argv, saver, options, False)
 
         # do not need saver, when failed, just reset
         # saver.save(self, argv)
@@ -1333,31 +1376,41 @@ class Either(list):
         for index, each in enumerate(self):
             clone_argv = argv.clone()
             logger.debug('try matching %s in %s', each, argv)
-            result = each.match(clone_argv, saver, False)
+            result = each.match(clone_argv, saver, options, False)
             if result:
                 self.matched_branch = index
                 argv.restore(clone_argv)
-                return True
+                return self.error is None
+            else:
+                self.error = each.error
         # saver.del_save(self)
         self.reset()
         return False
 
-    def match_repeat(self, argv, saver):
+    def match_repeat(self, argv, saver, options):
         at_least_once = False
         if self.matched_branch == -1:
-            result = self.match_oneline(self, argv, saver)
+            result = self.match_oneline(self, argv, saver, options)
             if not result:
                 return False
             at_least_once = True
 
-        return self.matched_branch.match(argv, saver, True) or at_least_once
+        branch = self[self.matched_branch]
+        result = branch.match(argv, saver, options, True)
+        self.error = branch.error
+        return result or at_least_once
 
-    def match(self, argv, saver, repeat_match):
+    def match(self, argv, saver, options, repeat_match):
+        if self.error is not None:
+            logger.info('error in %s - %s', self, self.error)
+            return False
+
         if not repeat_match:
             logger.debug('try matching %s once in %s', self, argv)
-            return self.match_oneline(argv, saver)
+            result = self.match_oneline(argv, saver, options)
+            return result and (self.error is None)
         logger.debug('try matching %s repeatedly in %s', self, argv)
-        return self.match_repeat(argv, saver)
+        return self.match_repeat(argv, saver, options) and (self.error is None)
 
     def set_save_point(self):
         return self.matched_branch
@@ -1397,14 +1450,17 @@ class Either(list):
         current = self[self.matched_branch]
         return current.get_flat_list_value()
 
-    def get_value(self, in_repeat=False):
+    def get_value(self, options, in_repeat):
         if self.matched_branch != -1:
             rest = list(self)
-            value_dict = rest.pop(self.matched_branch).get_value(in_repeat)
-            rest_dict = [x.get_sys_default_value(in_repeat) for x in rest]
+            value_dict = rest.pop(
+                self.matched_branch).get_value(options, in_repeat)
+            rest_dict = [x.get_sys_default_value(options, in_repeat)
+                         for x in rest]
         else:
             value_dict = {}
-            rest_dict = [x.get_sys_default_value(in_repeat) for x in self]
+            rest_dict = [x.get_sys_default_value(options, in_repeat)
+                         for x in self]
 
         for dft_dict in rest_dict:
             common_keys = set(value_dict).intersection(dft_dict)
@@ -1428,8 +1484,8 @@ class Either(list):
             value_dict.update(dft_dict)
         return value_dict
 
-    def get_sys_default_value(self, in_repeat=False):
-        rest = [x.get_sys_default_value(in_repeat) for x in self]
+    def get_sys_default_value(self, options, in_repeat):
+        rest = [x.get_sys_default_value(options, in_repeat) for x in self]
         result = rest.pop()
 
         for rest_dict in rest:
@@ -1464,9 +1520,9 @@ class Either(list):
         }
 
     @classmethod
-    def convert_2_object(cls, dic):
+    def convert_2_object(cls, dic, options):
         assert dic['__class__'] == 'Either'
-        branch = (convert_2_object(x) for x in dic['branch'])
+        branch = (convert_2_object(x, options) for x in dic['branch'])
         return Either(*branch)
 
     def __eq__(self, other):

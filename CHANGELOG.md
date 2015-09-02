@@ -1,3 +1,14 @@
+## 0.0.6
+
+*   [change] now Docpie.option_text will be exactly the same as the
+    "Option" section (contains "Option" title).
+*   [change] now Docpie.usage_text will be exactly the same as the
+    "Usage" section (contains "Usage" title).
+*   [change] Change the data storage to `Docpie` instance, now you can
+    initialize several `Docpie` instances in one program with different configurations.
+*   [change] Allow `pickle` the `Docpie` instance directly.
+    Deprecate `need_pickle` & `restore_pickle`
+
 ## 0.0.5
 
 *   [change] **break-change**: `[]` means anything in it is optional.

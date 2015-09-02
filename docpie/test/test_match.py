@@ -17,9 +17,14 @@ class MatchTest(unittest.TestCase):
     def false(self, expr):
         self.assertFalse(expr)
 
+    def argv(self, value):
+        return Argv(value, True, True, True, True)
+
     def test_option(self):
-        self.true(Option('-a').match(Argv(['-a']), Saver(), False))
-        self.false(Option('-a').match(Argv(['--alter']), Saver(), False))
+        self.true(
+            Option('-a').match(self.argv(['-a']), Saver(), [], False))
+        self.false(
+            Option('-a').match(self.argv(['--alter']), Saver(), [], False))
 #         self.true(Option('-a', '--alter').match(Argv(['--alter'])))
 #         self.true(Option('-').match(Argv(['-'])))
 #         self.true(Option('--').match(Argv(['--'])))

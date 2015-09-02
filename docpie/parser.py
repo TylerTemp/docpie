@@ -13,34 +13,34 @@ logger = logging.getLogger('docpie.parser')
 class Parser(object):
 
     section_re_str = (r'(?:^|\n)'
+                      r'(?P<raw>'
                       r'(?P<name>[\ \t]*{0}[\ \t]*)'
                       r'(?P<sep>\n?)'
                       r'(?P<section>.*?)'
+                      r')'
                       r'\s*'
                       r'(?:\n\s*\n|\n\s*$|$)')
 
-    @classmethod
-    def _parse_pattern(klass, token):
+    def _parse_pattern(self, token):
         logger.debug('get token %s', token)
         elements = []
         while token:
             atom = token.current()
             if atom in ('(', '['):
-                elements.append(klass._parse_bracket(token))
+                elements.append(self._parse_bracket(token))
             elif atom == '|':
                 elements.append(token.next())
             else:
                 assert atom != '...', 'fix me: unexpected "..." when parsing'
-                elements.extend(klass._parse_element(token))
+                elements.extend(self._parse_element(token))
 
         logger.debug(elements)
         if '|' in elements:
-            elements[:] = [klass._parse_pipe(elements)]
+            elements[:] = [self._parse_pipe(elements)]
         logger.debug('parsed result %s', elements)
         return elements
 
-    @classmethod
-    def _parse_bracket(cls, token):
+    def _parse_bracket(self, token):
         elements = []
         start = token.next()
         instance_type = Required if start == '(' else Optional
@@ -54,15 +54,13 @@ class Parser(object):
 
         bracket_token = Token(lis)
 
-        instances = cls._parse_pattern(bracket_token)
+        instances = self._parse_pattern(bracket_token)
 
         # Not support on py2.5
         # return instance_type(*instances, repeat=repeat)
         return instance_type(*instances, **{'repeat': repeat})
 
-
-    @classmethod
-    def _parse_element(cls, token):
+    def _parse_element(self, token):
         atom = token.next()
         assert atom is not None
         if atom == '[options]':
@@ -100,7 +98,7 @@ class Parser(object):
                         flag_args.append(')' if bracket == '(' else ']')
                         if token.current() == '...':
                             flag_args.append(token.next())
-                        flag_arg_ins = cls._parse_bracket(Token(flag_args))
+                        flag_arg_ins = self._parse_bracket(Token(flag_args))
                         return (Option(flag, ref=flag_arg_ins),)
         # -a<sth>
         elif atom.startswith('-') and '<' in atom:
@@ -120,7 +118,7 @@ class Parser(object):
         if (atom_class is Option and
                 not atom.startswith('--') and
                 len(atom) > 2 and
-                Atom.stdopt):
+                self.stdopt):
             ins_lis = [Option('-' + short) for short in atom[1:]]
         else:
             ins_lis = [atom_class(atom)]
@@ -134,8 +132,7 @@ class Parser(object):
             return (ins,)
         return ins_lis
 
-    @classmethod
-    def _parse_pipe(klass, lis):
+    def _parse_pipe(self, lis):
         assert '...' not in lis
         assert len(lis) >= 3
         assert lis[0] != '|' != lis[-1]
@@ -164,7 +161,7 @@ class Parser(object):
                                       'in Options' % name)
                 opt_2_ins[name] = opt
         # set the option shortcut
-        OptionsShortcut.set_ref(opts)
+        # OptionsShortcut.set_ref(opts)
 
         usage_result = []
 
@@ -180,7 +177,7 @@ class Parser(object):
                         cut.set_hide(opts_in_usage)
             usage_result.append(usage)
 
-        return opts, usage_result
+        return usage_result
 
     @classmethod
     def find_option_names_no_shortcut_and_shortcut(cls, element):
@@ -208,15 +205,15 @@ class Parser(object):
             flags=re.DOTALL | (0 if case_sensitive else re.IGNORECASE))
         match = section_re.search(text)
         if match is None:
-            return None
+            return None, None
         dic = match.groupdict()
         logger.debug(dic)
         if dic['sep'] == '\n':
-            return dic['section']
+            return dic['section'], dic['raw']
         reallen = len(dic['name'])
         replace = ''.ljust(reallen)
         drop_name = match.expand('%s\g<sep>\g<section>' % replace)
-        return cls.drop_started_empty_lines(drop_name).rstrip()
+        return cls.drop_started_empty_lines(drop_name).rstrip(), dic['raw']
 
     @staticmethod
     def drop_started_empty_lines(text):
@@ -257,12 +254,12 @@ class OptionParser(Parser):
     default_re = re.compile(r'\[default: (?P<default>.*?)\] *$',
                             flags=re.IGNORECASE)
 
-    def __init__(self, text=None):
-        self.text = text
-        if self.text is None or not self.text.strip():    # empty
+    def __init__(self, text, stdopt):
+        self.stdopt = stdopt
+        if text is None or not text.strip():    # empty
             self._opt_and_default_str = []
         else:
-            self._opt_and_default_str = list(self._parse_text(self.text))
+            self._opt_and_default_str = list(self._parse_text(text))
 
         self._chain = self._parse_to_instance(self._opt_and_default_str)
 
@@ -270,8 +267,7 @@ class OptionParser(Parser):
         return self._chain
         # return [Optional(x) for x in self._chain]
 
-    @classmethod
-    def _parse_text(klass, text):
+    def _parse_text(self, text):
         collect = []
         to_list = text.splitlines()
 
@@ -279,10 +275,10 @@ class OptionParser(Parser):
         # this will ensure in `[default: xxx]`,
         # the `xxx`(e.g: `\t`, `,`) will not be changed by _format_line
         previous_line = to_list.pop(0)
-        collect.append(klass._parse_line(previous_line))
+        collect.append(self._parse_line(previous_line))
 
         for line in to_list:
-            indent_match = klass.indent_re.match(line)
+            indent_match = self.indent_re.match(line)
             this_indent = len(indent_match.groupdict()['indent'])
 
             if this_indent >= collect[-1]['indent']:
@@ -292,21 +288,21 @@ class OptionParser(Parser):
 
             # new option line
             # deal the default for previous option
-            collect[-1]['default'] = klass._parse_default(previous_line)
+            collect[-1]['default'] = self._parse_default(previous_line)
             # deal this option
-            collect.append(klass._parse_line(line))
+            collect.append(self._parse_line(line))
             logger.debug(collect[-1])
             previous_line = line
         else:
-            collect[-1]['default'] = klass._parse_default(previous_line)
+            collect[-1]['default'] = self._parse_default(previous_line)
 
         return ((each['option'], each['default']) for each in collect)
 
     spaces_re = re.compile(r'(\ \ \s*|\t\s*)')
 
     @classmethod
-    def _cut_first_spaces_outside_bracket(klass, string):
-        right = klass.spaces_re.split(string)
+    def _cut_first_spaces_outside_bracket(cls, string):
+        right = cls.spaces_re.split(string)
         left = []
         if right and right[0] == '':    # re matches the start of the string
             right.pop(0)
@@ -332,9 +328,9 @@ class OptionParser(Parser):
         return ''.join(left), cutted, ''.join(right)
 
     @classmethod
-    def _parse_line(klass, line):
+    def _parse_line(cls, line):
         opt_str, separater, description_str = \
-                klass._cut_first_spaces_outside_bracket(line)
+                cls._cut_first_spaces_outside_bracket(line)
 
         logger.debug('%(line)s -> %(opt_str)r, '
                      '%(separater)r, '
@@ -342,44 +338,40 @@ class OptionParser(Parser):
         if description_str.strip():
             indent = len(opt_str.expandtabs()) + len(separater.expandtabs())
         else:
-            indent = 2 + len(
-                             klass.indent_re.match(
+            indent = 2 + len(cls.indent_re.match(
                                  opt_str.expandtabs()
-                             ).groupdict()['indent'])
+                            ).groupdict()['indent'])
         return {'option': opt_str.strip(), 'indent': indent}
 
     @classmethod
-    def _parse_default(klass, line):
-        m = klass.default_re.search(line)
+    def _parse_default(cls, line):
+        m = cls.default_re.search(line)
         if m is None:
             return None
         return m.groupdict()['default']
 
-    @classmethod
-    def _parse_to_instance(klass, lis):
+    def _parse_to_instance(self, lis):
         opts = []
         for opt_str, default in lis:
             logger.debug('%s:%r' % (opt_str, default))
-            opt, repeat = klass._parse_opt_str(opt_str)
+            opt, repeat = self._parse_opt_str(opt_str)
             opt.set_default(default)
             opts.append(Optional(opt, repeat=repeat))
         return opts
 
-    @classmethod
-    def _split_short_by_cfg(klass, s):
-        if Atom.stdopt:
+    def _split_short_by_cfg(self, s):
+        if self.stdopt:
             if (not s.startswith('--') and
                     len(s) > 1):
                 return s[:2], s[2:]
         return (s, '')
 
-    @classmethod
-    def _parse_opt_str(klass, opt):
+    def _parse_opt_str(self, opt):
 
         repeat = False
 
         # -sth=<goes> ON -> -sth, <goes>, ON
-        opt_lis = klass._opt_str_to_list(opt)
+        opt_lis = self._opt_str_to_list(opt)
         logger.debug('%r -> %s' % (opt, opt_lis))
 
         first = opt_lis.pop(0)
@@ -390,10 +382,11 @@ class OptionParser(Parser):
         # -sth -> name=-s, value=sth
         # else:
         # -sth -> name=-sth, value=''
-        name, value = klass._split_short_by_cfg(first)
+        name, value = self._split_short_by_cfg(first)
         opt_ins = Option(name)
         if value == '...':
             repeat = True
+            # -f... <sth>
             if opt_lis and not opt_lis[0].startswith('-'):
                 raise DocpieError(
                     'option "%s" has argument following "..."', opt)
@@ -412,7 +405,7 @@ class OptionParser(Parser):
         args = []    # store the current args after option
         for each in opt_lis:
             if each.startswith('-'):    # alias
-                name, value = klass._split_short_by_cfg(each)
+                name, value = self._split_short_by_cfg(each)
                 opt_ins.set_alias(name)
                 if value:
                     args_ins.append(Required(Argument(value)))
@@ -425,7 +418,7 @@ class OptionParser(Parser):
                         repeat = True
                     else:
                         this_arg = Required(
-                                            *klass._parse_pattern(Token(args))
+                                            *self._parse_pattern(Token(args))
                                            ).fix()
                         if this_arg is not None:
                             args_ins.append(this_arg)
@@ -442,7 +435,7 @@ class OptionParser(Parser):
                     repeat = True
                 else:
                     this_arg = Required(
-                        *klass._parse_pattern(Token(args))).fix()
+                        *self._parse_pattern(Token(args))).fix()
                     if this_arg is not None:
                         args_ins.append(this_arg)
 
@@ -465,7 +458,7 @@ class OptionParser(Parser):
                                   opt_ins, this_range, current_range))
 
         if len(current_range) > 1:
-            logger.warning('too many possibilities: '
+            logger.info('too many possibilities: '
                            'option %s expect %s arguments',
                            name, '/'.join(map(str, current_range)))
 
@@ -473,14 +466,11 @@ class OptionParser(Parser):
         opt_ins.ref = current_ins
         return opt_ins, repeat
 
-    @classmethod
-    def _opt_str_to_list(klass, opt):
+    def _opt_str_to_list(self, opt):
         dropped_comma_and_equal = opt.replace(',', ' ').replace('=', ' ')
-        wrapped_space = klass.wrap_symbol_re.sub(
-                                                 r' \1 ',
-                                                 dropped_comma_and_equal
-                                                )
-        opt_lis = [x for x in klass.split_re.split(wrapped_space) if x]
+        wrapped_space = self.wrap_symbol_re.sub(
+            r' \1 ', dropped_comma_and_equal)
+        opt_lis = [x for x in self.split_re.split(wrapped_space) if x]
         return opt_lis
 
 
@@ -496,23 +486,21 @@ class UsageParser(Parser):
                                     r'(?P<arg><.*?>)'
                                     r'$')
 
-    def __init__(self, text=None, name=None):
-        self.text = text
-        self._chain = self._parse_text(self.text, name)
+    def __init__(self, text, name, stdopt):
+        self.stdopt = stdopt
+        self._chain = self._parse_text(text, name)
 
-    @classmethod
-    def _parse_text(klass, text, name):
+    def _parse_text(self, text, name):
         result = []
-        for each_line in klass._split_line_by_indent(text):
-            raw_str_lis = klass._parse_line_to_lis(each_line, name)
-            chain = klass._parse_pattern(Token(raw_str_lis))
+        for each_line in self._split_line_by_indent(text):
+            raw_str_lis = self._parse_line_to_lis(each_line, name)
+            chain = self._parse_pattern(Token(raw_str_lis))
             result.append(chain)
         return result
 
     indent_re = re.compile(r'^ *')
 
-    @classmethod
-    def _split_line_by_indent(klass, text):
+    def _split_line_by_indent(self, text):
         lines = text.splitlines()
         if len(lines) == 1:
             yield lines[0]
@@ -521,11 +509,11 @@ class UsageParser(Parser):
         first_line = lines.pop(0)
         line_to_join = [first_line]
         indent = len(
-            klass.indent_re.match(first_line.expandtabs()).group())
+            self.indent_re.match(first_line.expandtabs()).group())
         while lines:
             this_line = lines.pop(0)
             this_indent = len(
-                klass.indent_re.match(this_line.expandtabs()).group())
+                self.indent_re.match(this_line.expandtabs()).group())
 
             if this_indent > indent:
                 line_to_join.append(this_line)
@@ -533,44 +521,27 @@ class UsageParser(Parser):
                 yield ''.join(line_to_join)
                 line_to_join[:] = (this_line,)
                 indent = len(
-                    klass.indent_re.match(this_line.expandtabs()).group())
+                    self.indent_re.match(this_line.expandtabs()).group())
 
         else:
             yield ' '.join(line_to_join)
 
-    @classmethod
-    def _parse_line_to_lis(klass, line, name=None):
-        wrapped_space = klass.wrap_symbol_re.sub(r' \1 ', line.strip())
+    def _parse_line_to_lis(self, line, name=None):
+        if name is not None:
+            if name not in line:
+                raise DocpieError(
+                    '%s is not in usage pattern %s' % (name, line))
+
+            _, line = line.split(name, 1)
+        wrapped_space = self.wrap_symbol_re.sub(r' \1 ', line.strip())
         logger.debug(wrapped_space)
-        result = [x for x in klass.split_re.split(wrapped_space) if x]
-        # sepa_to_iter = (x for x in klass.split_re.split(wrapped_space) if x)
-        # result = []
-        #
-        # for atom in sepa_to_iter:
-        #     if atom.startswith('-') and '=' in atom:
-        #         result.extend(klass._format_flag_with_eq(atom))
-        #     else:
-        #         result.append(atom)
+        result = [x for x in self.split_re.split(wrapped_space) if x]
 
         # drop name
         if name is None:
             result.pop(0)
-        else:
-            if name not in result:
-                raise DocpieError('%s is not in usage pattern %s' % (name,
-                                                                     line))
-            result[:] = result[result.index(name) + 1:]
 
         return result
-
-    @classmethod
-    def _format_flag_with_eq(klass, flag):
-        if not flag.startswith('---'):
-            match = klass.std_flag_eq_arg_re.match(flag)
-            if match:
-                mdic = match.groupdict()
-                return (mdic['flag'], mdic['arg'])
-        return (flag,)    # it's a strange-format command
 
     def get_chain(self):
         # if not self._chain:

@@ -9,17 +9,19 @@ an easy and Pythonic command-line interface parser.
 import sys
 import re
 import logging
+import warnings
 
 from docpie.error import DocpieException, DocpieExit, DocpieError
 from docpie.parser import UsageParser, OptionParser, Parser
-from docpie.element import Atom, OptionsShortcut, \
-                           convert_2_object, convert_2_dict
+from docpie.element import convert_2_object, convert_2_dict
 from docpie.tokens import Argv
 from docpie.saver import Saver
 
 __all__ = ('docpie', 'Docpie', 'DocpieException', 'DocpieExit', 'DocpieError')
 
-__version__ = '0.0.5'
+__version__ = '0.0.6'
+
+__TIMESTAMP__ = 1441188808.780277  # last sumbit
 
 try:
     StrType = basestring
@@ -38,6 +40,9 @@ class Docpie(dict):
     name = None
     help = True
     version = None
+    stdopt = True
+    attachopt = True
+    attachvalue = True
     extra = {}
     opt_names = []
 
@@ -53,80 +58,44 @@ class Docpie(dict):
 
         if doc is not None:
             self.doc = doc
-            self.usage_text = Parser.parse_section(doc, self.usage_name,
-                                                   self.case_sensitive)
-            self.option_text = Parser.parse_section(doc, self.option_name,
-                                                    self.case_sensitive)
+            usage_str, self.usage_text = Parser.parse_section(
+                doc, self.usage_name, self.case_sensitive)
+            opt_str, self.option_text = Parser.parse_section(
+                doc, self.option_name, self.case_sensitive)
             if self.usage_text is None:
                 raise DocpieError('"Usage:" not found')
-            DocpieException.usage_str = 'Usage:\n%s' % self.usage_text
-            if self.option_text:
-                DocpieException.opt_str = 'Options:\n%s' % self.option_text
-            else:
-                DocpieException.opt_str = None
-
-            _, self.usages = Parser.fix(
-                OptionParser(self.option_text).get_chain(),
-                UsageParser(self.usage_text, self.name).get_chain()
-            )
+            # DocpieException.usage_str = 'Usage:\n%s' % self.usage_text
+            # if self.option_text:
+            #     DocpieException.opt_str = 'Options:\n%s' % self.option_text
+            # else:
+            #     DocpieException.opt_str = None
+            self.options = OptionParser(opt_str, self.stdopt).get_chain()
+            usages = UsageParser(
+                usage_str, self.name, self.stdopt).get_chain()
+            self.usages = Parser.fix(self.options, usages)
 
             # don't operate on the class level list
             self.opt_names = opt_names = []
-            for each in OptionsShortcut._ref:
+            for each in self.options:
                 opt_names.append(each.get_option_name())
             logger.debug(self.opt_names)
 
             self.set_config(help=help, version=version)
 
-    @property
-    def stdopt(self):
-        return Atom.stdopt
-
-    @stdopt.setter
-    def stdopt(self, value):
-        Atom.stdopt = value
-
-    @property
-    def attachopt(self):
-        return Atom.attachopt
-
-    @attachopt.setter
-    def attachopt(self, value):
-        Atom.attachopt = value
-
-    @property
-    def attachvalue(self):
-        return Atom.attachvalue
-
-    @attachvalue.setter
-    def attachvalue(self, value):
-        Atom.attachvalue = value
-
     def need_pickle(self):
-        '''Return all the obejct that needs serialization by pickle.
-
-        You can use it like:
-
-        pie = Docpie(__doc__)
-        with open("save.pickle", "rb") as f:
-            pickle.dump(f, pie.need_pickle())
-
-        Then use Docpie.restore_pickle to restore.
-        '''
-        return self, OptionsShortcut._ref
+        '''This function is deprecated, use pickle.dump() directly'''
+        warnings.warn('This function is deprecated, '
+                      'use pickle.dump(docpie_instance) directly',
+                      DeprecationWarning)
+        return self
 
     @staticmethod
     def restore_pickle(value):
-        '''Fully restore Docpie, return Docpie instance
-
-        You can use it like:
-
-        pie = Docpie(__doc__)
-        pickled = pickle.dumps(pie.need_pickle())
-        cloned_pie = Docpie.restore_pickle(pickle.loads(picked))
-        '''
-        self, OptionsShortcut._ref = value
-        return self
+        '''This function is deprecated, use pickle.load() directly'''
+        warnings.warn('This function is deprecated, '
+                      'use pickle.load() directly',
+                      DeprecationWarning)
+        return value
 
     def docpie(self, argv=None):
         '''match the argv for each usages, return dict.
@@ -141,21 +110,22 @@ class Docpie(dict):
         elif isinstance(argv, StrType):
             argv = argv.split()
 
-        token = Argv(argv[1:], self.auto2dashes)
+        token = Argv(argv[1:], self.auto2dashes,
+                     self.stdopt, self.attachopt, self.attachvalue)
 
         self.check_flag_and_handler(token)
-        token.check_dash()
+        options = self.options
 
         for each in self.usages:
             logger.debug('matching usage %s', each)
             argv_clone = token.clone()
-            saver = Saver()
-            if each.match(argv_clone, saver, False):
+            if each.match(argv_clone, Saver(), options, False):
                 logger.debug('matched usage %s, checking rest argv %s',
                              each, argv_clone)
                 if (not argv_clone or
                         (argv_clone.auto_dashes and
                          list(argv_clone) == ['--'])):
+                    argv_clone.check_dash()
                     logger.info('matched usage %s / %s', each, argv_clone)
                     matched = each
                     break
@@ -163,19 +133,25 @@ class Docpie(dict):
                             each, argv_clone)
                 continue
             else:
+                if each.error is not None:
+                    logger.info('error in %s - %s', each, each.error)
+                    raise DocpieExit(
+                        '%s%s\n\n%s' % (
+                        each.error,
+                        ' Use `--help` to see more' if self.help else '',
+                        self.usage_text))
                 logger.info('failed matching usage %s / %s', each, argv_clone)
         else:
             logger.info('none matched')
-            raise DocpieExit(DocpieException.usage_str)
+            raise DocpieExit(self.usage_text)
 
-        value = matched.get_value(False)
+        value = matched.get_value(options, False)
         logger.debug('get all matched value %s', value)
         rest = self.usages
         rest.remove(matched)
-        options = OptionsShortcut._ref
 
         for each in rest:  # add left command/argv
-            default_values = each.get_sys_default_value()
+            default_values = each.get_sys_default_value(options, False)
             logger.debug('get rest values %s', default_values)
             common_keys = set(value).intersection(default_values)
 
@@ -277,8 +253,7 @@ class Docpie(dict):
         for flag, handler in self.extra.items():
             if not callable(handler):
                 continue
-            find_it, _, _ = token.clone().break_for_option(
-                (flag,), self.stdopt, self.attachvalue)
+            find_it, _, _ = token.clone().break_for_option((flag,))
             if find_it:
                 logger.info('find %s, auto handle it', flag)
                 handler(self, flag)
@@ -293,11 +268,11 @@ class Docpie(dict):
         if flag.startswith('--'):
             print(docpie.doc)
         else:
-            print(DocpieException.usage_str)
-            opt_str = DocpieException.opt_str
-            if opt_str:
+            print(docpie.usage_text)
+            option_text = docpie.option_text
+            if option_text:
                 print('')
-                print(opt_str)
+                print(option_text)
         sys.exit()
 
     @staticmethod
@@ -338,7 +313,7 @@ class Docpie(dict):
             'option_text': self.option_text,
         }
 
-        option = [convert_2_dict(x) for x in OptionsShortcut._ref]
+        option = [convert_2_dict(x) for x in self.options]
 
         usage = [convert_2_dict(x) for x in self.usages]
 
@@ -374,16 +349,11 @@ class Docpie(dict):
         self.doc = text['doc']
         self.usage_text = text['usage_text']
         self.option_text = text['option_text']
-        DocpieException.usage_str = 'Usage:\n%s' % text['usage_text']
-        if self.option_text:
-            DocpieException.option_str = 'Options:\n%s' % text['option_text']
-        else:  # avoid cache
-            DocpieException.opt_str = None
 
         self.opt_names = [set(x) for x in dic['option_names']]
         self.set_config(help=help, version=version)
 
-        OptionsShortcut._ref = [convert_2_object(x) for x in dic['option']]
+        self.options = [convert_2_object(x) for x in dic['option']]
 
         self.usages = [convert_2_object(x) for x in dic['usage']]
 
@@ -479,7 +449,7 @@ class Docpie(dict):
         for each in self.usages:
             print(each)
         print('\nOptions:')
-        for each in OptionsShortcut._ref:
+        for each in self.options:
             print(each)
 
         print(' repr '.center(80, '-'))
@@ -487,7 +457,7 @@ class Docpie(dict):
         for each in self.usages:
             print(repr(each))
         print('\nOptions:')
-        for each in OptionsShortcut._ref:
+        for each in self.options:
             print(repr(each))
         print(' default handler '.center(80, '-'))
         for key, value in self.extra.items():

@@ -37,21 +37,25 @@ class Token(list):
 
 class Argv(list):
 
-    def __init__(self, argv, auto2dashes=True):
+    def __init__(self, argv, auto2dashes, stdopt, attachopt, attachvalue):
         # self._full = argv
         self[:] = argv
         self.auto_dashes = auto2dashes
         self.dashes = False
         # when this is on, only --option can try to match.
         self.option_only = False
-        # self.index = 0
+        self.stdopt = stdopt
+        self.attachopt = attachopt
+        self.attachvalue = attachvalue
 
     def current(self, offset=0):
         return self[offset] if len(self) > offset else None
 
-    def break_for_option(self, names, stdopt, attachvalue):
+    def break_for_option(self, names):
         sub_argv = None
         auto_dashes = self.auto_dashes
+        stdopt = self.stdopt
+        attachvalue = self.attachvalue
         for index, option in enumerate(self):
             if option == '--' and auto_dashes:
                 return False, None, 0
@@ -93,7 +97,8 @@ class Argv(list):
             self.dashes = True
 
     def clone(self):
-        result = Argv(self, self.auto_dashes)
+        result = Argv(self, self.auto_dashes,
+                      self.stdopt, self.attachopt, self.attachvalue)
         result.dashes = self.dashes
         result.option_only = self.option_only
         return result

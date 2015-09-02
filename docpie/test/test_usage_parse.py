@@ -16,7 +16,7 @@ class UsageParserTest(unittest.TestCase):
     def eq(self, txt, *obj, **kwargs):
         name = kwargs.get('name', None)
         parsed = []
-        for each in UsageParser(txt, name=name)._chain:
+        for each in UsageParser(txt, name, True)._chain:
             parsed.append([x.fix() for x in each])
         self.assertEqual(parsed, list(obj))
 

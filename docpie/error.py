@@ -1,7 +1,5 @@
 class DocpieException(BaseException):
     '''Basic exception of docpie'''
-    usage_str = None
-    opt_str = None
 
 
 class DocpieExit(SystemExit, DocpieException):

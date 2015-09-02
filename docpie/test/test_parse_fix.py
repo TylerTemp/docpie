@@ -9,11 +9,11 @@ from docpie.element import Atom, Argument, Command, Option, Optional, Required
 class ParseFixTest(unittest.TestCase):
 
     def eq(self, usage_txt, options_txt, usage, options):
-        usage_chain = UsageParser(usage_txt).get_chain()
-        option_chain = OptionParser(options_txt).get_chain()
-        fixoption, fixusage = Parser.fix(option_chain, usage_chain)
+        usage_chain = UsageParser(usage_txt, None, True).get_chain()
+        option_chain = OptionParser(options_txt, True).get_chain()
+        fixusage = Parser.fix(option_chain, usage_chain)
         self.assertEqual(fixusage, usage)
-        self.assertEqual(fixoption, options)
+        self.assertEqual(option_chain, options)
 
     def test(self):
         opt_a = Option('-a')
