@@ -827,6 +827,21 @@ class Unit(list):
                 return inside.fix()
         return self
 
+    def push_option_ahead(self):
+        options = []
+        others = []
+        for each in self:
+            if isinstance(each, (Option, OptionsShortcut)):
+                options.append(each)
+            elif isinstance(each, Atom):
+                others.append(each)
+            elif each.push_option_ahead():
+                options.append(each)
+            else:
+                others.append(each)
+        self[:] = options + others
+        return not others
+
     def _match_oneline(self, argv, saver, options):
         # Though it's one line matching
         # It still need to deal with situation like:
@@ -1364,6 +1379,17 @@ class Either(list):
             result = first_type(first)
             logger.debug('fix %r -> %r', self, result)
             return result
+
+    def push_option_ahead(self):
+        options = []
+        others = []
+        for each in self:
+            if each.push_option_ahead():
+                options.append(each)
+            else:
+                others.append(each)
+        self[:] = options + others
+        return not others
 
     def match_oneline(self, argv, saver, options):
         if self.matched_branch != -1:

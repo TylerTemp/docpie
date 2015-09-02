@@ -1,5 +1,12 @@
 ## 0.0.6
 
+### 1441214390.257887
+
+*   [fix] `Docpie` will try to push all options ahead. It fixed
+    `test.test_docpie.DocpieRunDefaultTest.test_option_unit_stack`
+
+### 1441188808.780277
+
 *   [change] now Docpie.option_text will be exactly the same as the
     "Option" section (contains "Option" title).
 *   [change] now Docpie.usage_text will be exactly the same as the

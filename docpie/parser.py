@@ -175,6 +175,7 @@ class Parser(object):
                 if opts_in_usage and shortcuts:
                     for cut in shortcuts:
                         cut.set_hide(opts_in_usage)
+                usage.push_option_ahead()
             usage_result.append(usage)
 
         return usage_result

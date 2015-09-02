@@ -1540,6 +1540,19 @@ Options: -a, --all=<here>
         sys.argv = 'prog a this a this a that a'.split()
         self.fail(doc)
 
+    def test_option_unit_stack(self):
+        doc = '''Usage: pie.py [command] [--option] [<argument>]'''
+
+        sys.argv = 'prog --option command arg'.split()
+        self.eq(doc, {'--option': True, 'command': True, '<argument>': 'arg', '--': False})
+
+        sys.argv = 'prog --option command -- arg'.split()
+        self.eq(doc, {'--option': True, 'command': True, '<argument>': 'arg', '--': True})
+
+        sys.argv = 'prog --option -- command arg'.split()
+        self.eq(doc, {'--option': True, 'command': True, '<argument>': 'arg', '--': True})
+
+
 def case():
     return (unittest.TestLoader().loadTestsFromTestCase(DocpieBasicTest),
             unittest.TestLoader().loadTestsFromTestCase(DocpieRunDefaultTest))

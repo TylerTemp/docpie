@@ -861,6 +861,10 @@ after you get your ``pie=Docpie(__doc__)`` instance, you can call
 ``pie.preview()`` to have a quick view of how ``Docpie`` understands
 your ``doc``
 
+*Note* because the ``option``-s position does not effect the result of
+matching, ``Docpie`` will push all ``option``-s to the front, which will
+cause the preview is not the same as what you write.
+
 Difference
 ----------
 
