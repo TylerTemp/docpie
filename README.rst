@@ -1,8 +1,38 @@
 docpie
 ======
 
-Intro
------
+View on: `HomePage <http://docpie.comes.today>`__ /
+`GitHub <https://github.com/TylerTemp/docpie/>`__ /
+`PyPi <https://pypi.python.org/pypi/docpie>`__
+
+-  `Introduction <#introduction>`__
+-  `Installation <#installation>`__
+-  `Basic Usage <#basic-usage>`__
+
+   -  `API <#api>`__
+   -  `Format <#format>`__
+
+      -  `Usage Format <#usage-format>`__
+      -  `Options Format <#options-format>`__
+
+-  `Advanced Usage <#advanced-usage>`__
+
+   -  `Basic <#basic>`__
+   -  `Change Configuration <#change-configuration>`__
+   -  `Auto Handler <#auto-handler>`__
+
+      -  ```extra`` Argument <#extra>`__
+      -  ```set-auto-handler`` Method <#set_auto_handler>`__
+
+   -  `Serialization <#serialization>`__
+   -  `Preview <#preview>`__
+
+-  `Difference to docopt <#difference>`__
+-  `Known Issues <#known-issues>`__
+-  `Development <#development>`__
+
+Introduction
+------------
 
 Isn't it brilliant how
 `python-docopt <https://github.com/docopt/docopt>`__ parses the
@@ -155,6 +185,12 @@ Basic Usage
 
     from docpie import docpie
 
+Note that you can visit `HomePage <http://docpie.comes.today>`__ to have
+a quick tutorial.
+
+API
+~~~
+
 .. code:: python
 
     docpie(doc, argv=None, help=True, version=None,
@@ -262,12 +298,12 @@ the return value is a dictionary. Note if a flag has alias(e.g, ``-h`` &
 alias will also be in the result.
 
 Format
-------
+~~~~~~
 
 ``docpie`` is indent sensitive.
 
 Usage Format
-~~~~~~~~~~~~
+^^^^^^^^^^^^
 
 "Usage" starts with ``Usage:``\ (set ``case_sensitive`` to make it case
 sensitive/insensitive), ends with a *visibly* empty line.
@@ -420,7 +456,7 @@ Then it can match
 result.
 
 Options Format
-~~~~~~~~~~~~~~
+^^^^^^^^^^^^^^
 
 **Option descriptions** consist of a list of options that you put below
 your usage patterns.
@@ -568,8 +604,8 @@ Normally the ``docpie`` is all you need, But you can do more tricks with
 
     from docpie import Docpie
 
-Basic Usage
-~~~~~~~~~~~
+Basic
+~~~~~
 
 when call
 
@@ -603,8 +639,8 @@ the ``argv``.
 ``Docpie.docpie`` accepts ``argv`` which is the same ``argv`` in
 ``docpie``
 
-Change Config
-~~~~~~~~~~~~~
+Change Configuration
+~~~~~~~~~~~~~~~~~~~~
 
 .. code:: python
 
@@ -935,8 +971,8 @@ this feature has a very strict limit.
    value from ``<arg1>``, it won't match ``val1 val2 val3 command``
 -  ``<arg1>... (<arg2>)`` won't work,
 
-Developing
-----------
+Development
+-----------
 
 execute ``/test/test.py`` to run the test
 
