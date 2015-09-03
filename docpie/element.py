@@ -878,9 +878,9 @@ class Unit(list):
                         # jump to the first, avoid
                         # `Usage: cmd --flag <arg>`
                         # matching `cmd --flag sth` fails.
-                        elif isinstance(each, Option):
-                            logger.debug('jump')
-                            break
+                        # elif isinstance(each, Option):
+                        #     logger.debug('jump')
+                        #     break
                 else:
                     self.error = each.error
             new_status = argv.status()

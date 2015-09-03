@@ -21,7 +21,7 @@ __all__ = ('docpie', 'Docpie', 'DocpieException', 'DocpieExit', 'DocpieError')
 
 __version__ = '0.0.6'
 
-__timestamp__ = 1441214390.257887  # last sumbit
+__timestamp__ = 1441240382.379768  # last sumbit
 
 try:
     StrType = basestring
