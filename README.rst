@@ -21,8 +21,8 @@ View on: `HomePage <http://docpie.comes.today>`__ /
    -  `Change Configuration <#change-configuration>`__
    -  `Auto Handler <#auto-handler>`__
 
-      -  ```extra`` Argument <#extra>`__
-      -  ```set-auto-handler`` Method <#set_auto_handler>`__
+      -  `extra Argument <#extra>`__
+      -  `set-auto-handler Method <#set_auto_handler>`__
 
    -  `Serialization <#serialization>`__
    -  `Preview <#preview>`__
