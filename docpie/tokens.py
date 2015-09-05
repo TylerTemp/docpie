@@ -50,7 +50,10 @@ class Argv(list):
 
     def auto_expand(self, long_names):
         result = []
-        for each in self:
+        for index, each in enumerate(self):
+            if each == '--' and self.auto_dashes:
+                result.extend(self[index:])
+                break
             if not each.startswith('--') or each in long_names:
                 result.append(each)
             else:

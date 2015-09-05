@@ -19,9 +19,9 @@ from docpie.saver import Saver
 
 __all__ = ('docpie', 'Docpie', 'DocpieException', 'DocpieExit', 'DocpieError')
 
-__version__ = '0.0.7'
+__version__ = '0.0.8'
 
-__timestamp__ = 1441437156.867239  # last sumbit
+__timestamp__ = 1441439767.635588  # last sumbit
 
 try:
     StrType = basestring
@@ -348,7 +348,11 @@ class Docpie(dict):
         Note if you changed `extra`, it will be lost.
         You can use `set_config(extra={...})` to set it back.
         '''
-        if dic.get('__version__', None) != __version__:
+        if '__version__' not in doc:
+            raise ValueError('Not support old docpie data')
+
+        data_version = int(dic['__version__'].replace('.', ''))
+        if data_version < 7:
             raise ValueError('Not support old docpie data')
         assert dic['__class__'] == 'Docpie'
         config = dic['__config__']

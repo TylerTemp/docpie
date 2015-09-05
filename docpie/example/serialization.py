@@ -58,7 +58,7 @@ if result['dump']:
         full_file = file + '.pickle'
         with open(full_file, 'wb') as f:
             pickle.dump(pie, f)
-        print('save json in %s' % full_file)
+        print('save pickle in %s' % full_file)
 
     if result['preview']:
         pie.preview()
@@ -89,7 +89,7 @@ if result['load']:
         with open(full_file, 'rb') as f:
             pie = pickle.load(f)
         pies['pickle'] = pie
-        print('save json in %s' % full_file)
+        print('load pickle from %s' % full_file)
 
     if result['preview']:
         for k, pie in pies.items():

@@ -1582,6 +1582,19 @@ Options: -a, --all=<here>
         self.eq(doc, {'--prefix': False, '--prefer': False, '--prepare': True,
                       '--': False})
 
+    def test_auto_expand(self):
+        doc = 'Usage: prog [--prefix --prefer --prepare] [<args>...]'
+
+        sys.argv = 'prog -- --prefi --prefe --prep'.split()
+        self.eq(doc, {'--prefix': False, '--prefer': False, '--prepare': False,
+                      '--': True, '<args>': ['--prefi', '--prefe', '--prep']})
+
+        doc = 'Usage: prog [--prefix --prefer --prepare] [<args>...]'
+
+        sys.argv = \
+            'prog --prepare --prefer --prefix -- --prefi --prefe --prep'.split()
+        self.eq(doc, {'--prefix': True, '--prefer': True, '--prepare': True,
+                      '--': True, '<args>': ['--prefi', '--prefe', '--prep']})
 
 class EmptyWriter(object):
     def write(self, *a, **k):

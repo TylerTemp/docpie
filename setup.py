@@ -12,7 +12,7 @@ setup(
     author="TylerTemp",
     author_email="tylertempdev@gmail.com",
     url="http://docpie.comes.today/",
-    download_url="https://github.com/TylerTemp/docpie/tarball/0.0.7/",
+    download_url="https://github.com/TylerTemp/docpie/tarball/0.0.8/",
     license='MIT',
     description="An easy and Pythonic way to create your POSIX command line interface",
     keywords='option arguments parsing optparse argparse getopt',

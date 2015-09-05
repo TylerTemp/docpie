@@ -1,3 +1,7 @@
+## 0.0.8
+
+*   [fix] `Docpie.tokens.Argv.auto_expand` handles `--` in a wrong way
+
 ## 0.0.7
 
 *   [new] Now `Docpie` can guess your long options. e.g. when you write both
