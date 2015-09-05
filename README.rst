@@ -22,7 +22,7 @@ View on: `HomePage <http://docpie.comes.today>`__ /
    -  `Auto Handler <#auto-handler>`__
 
       -  `extra Argument <#extra>`__
-      -  `set-auto-handler Method <#set_auto_handler>`__
+      -  `set-auto-handler Method <#set-auto-handler>`__
 
    -  `Serialization <#serialization>`__
    -  `Preview <#preview>`__
@@ -750,8 +750,8 @@ now try the following command:
     example.py --help
     example.py --moo
 
-set\_auto\_handler
-^^^^^^^^^^^^^^^^^^
+set-auto-handler
+^^^^^^^^^^^^^^^^
 
 .. code:: python
 
@@ -940,9 +940,8 @@ Difference
 
 4. Subparsers are not supported currently.
 
-5. When you announce ``--verbose``, ``docpie`` will not try to guess if
-   ``--verb`` means ``--verbose``. Use **MUST** input the same name as
-   you announcement.
+5. [del]User **MUST** input the same name as you announcement.[/del]
+   This is a new feature in 0.0.7. See ``CHANGELOG.md`` for details
 
 Known Issues
 ------------
@@ -957,19 +956,20 @@ this feature has a very strict limit.
 1. the repeated argument should be and only be one ``ARGUMENT``, which
    means:
 
--  YES: ``(<arg1>)... <arg2> <arg3>``
--  YES: ``[<arg1]... <arg2>``
--  NO: ``(<arg1> <arg2>)... <arg3>``
--  NO: ``-a... -a``
--  NO: ``cmd... cmd``
+   -  YES: ``(<arg1>)... <arg2> <arg3>``
+   -  YES: ``[<arg1]... <arg2>``
+   -  NO: ``(<arg1> <arg2>)... <arg3>``
+   -  NO: ``-a... -a``
+   -  NO: ``cmd... cmd``
 
 2. the elements that can "borrow" values from the repeatable argument
    can only be ``ARGUMENT`` (even can not be grouped by ``()`` or
    ``[]``)
 
--  ``<arg1>... <arg1> <arg2> command``: the ``command`` can't "borrow"
-   value from ``<arg1>``, it won't match ``val1 val2 val3 command``
--  ``<arg1>... (<arg2>)`` won't work,
+   -  ``<arg1>... <arg1> <arg2> command``: the ``command`` can't
+      "borrow" value from ``<arg1>``, it won't match
+      ``val1 val2 val3 command``
+   -  ``<arg1>... (<arg2>)`` won't work,
 
 Development
 -----------

@@ -11,7 +11,7 @@ class ParseFixTest(unittest.TestCase):
     def eq(self, usage_txt, options_txt, usage, options):
         usage_chain = UsageParser(usage_txt, None, True).get_chain()
         option_chain = OptionParser(options_txt, True).get_chain()
-        fixusage = Parser.fix(option_chain, usage_chain)
+        fixusage, _, _ = Parser.fix(option_chain, usage_chain)
         self.assertEqual(fixusage, usage)
         self.assertEqual(option_chain, options)
 

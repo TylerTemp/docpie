@@ -1,5 +1,5 @@
 import logging
-from docpie.error import DocpieError
+from docpie.error import DocpieError, DocpieExit
 
 logger = logging.getLogger('docpie.tokens')
 
@@ -48,6 +48,38 @@ class Argv(list):
         self.attachopt = attachopt
         self.attachvalue = attachvalue
 
+    def auto_expand(self, long_names):
+        result = []
+        for each in self:
+            if not each.startswith('--') or each in long_names:
+                result.append(each)
+            else:
+                option, equal, value = each.partition('=')
+                if option == '--' or option in long_names:
+                    result.append(each)
+                else:
+                    possible = list(
+                        filter(lambda x: x.startswith(option), long_names))
+                    if not possible:
+                        # Don't raise. It may be --help
+                        # and the developer didn't announce in
+                        # either Usage or Options
+                        logger.info('not found this argv %s', each)
+                        result.append(each)
+                    elif len(possible) == 1:
+                        replace = ''.join((possible[0], equal, value))
+                        logger.debug('expand %s -> %s', each, replace)
+                        result.append(replace)
+                    else:
+                        raise DocpieExit(
+                            '%s is not a unique prefix: %s?' %
+                            (option, ', '.join(possible))
+                        )
+
+        logger.debug('%s -> %s', self, result)
+        self[:] = result
+        return result
+
     def current(self, offset=0):
         return self[offset] if len(self) > offset else None
 
@@ -87,7 +119,6 @@ class Argv(list):
         return False, None, 0
 
     def next(self, offset=0):
-
         return self.pop(offset) if len(self) > offset else None
 
     def check_dash(self):

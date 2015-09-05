@@ -149,6 +149,8 @@ class Parser(object):
 
     @classmethod
     def fix(cls, opts, usages):
+        opt_names = []
+        long_opt_names = set()
         # check if same option announced twice in Options
         opt_2_ins = {}
         for each in opts:
@@ -160,6 +162,8 @@ class Parser(object):
                     raise DocpieError('%s announced more than once '
                                       'in Options' % name)
                 opt_2_ins[name] = opt
+            long_opt_names.update(filter(lambda x: x.startswith('--'), names))
+            opt_names.append(names)
         # set the option shortcut
         # OptionsShortcut.set_ref(opts)
 
@@ -176,9 +180,11 @@ class Parser(object):
                     for cut in shortcuts:
                         cut.set_hide(opts_in_usage)
                 usage.push_option_ahead()
+                long_opt_names.update(
+                    filter(lambda x: x.startswith('--'), opts_in_usage))
             usage_result.append(usage)
 
-        return usage_result
+        return usage_result, opt_names, long_opt_names
 
     @classmethod
     def find_option_names_no_shortcut_and_shortcut(cls, element):

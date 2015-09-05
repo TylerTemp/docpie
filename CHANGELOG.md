@@ -1,3 +1,9 @@
+## 0.0.7
+
+*   [new] Now `Docpie` can guess your long options. e.g. when you write both
+    `--verbose` & `--version`, then the `--verb` in argv will be interpreted
+    as `--verbose`, `--vers` as `--version`, the `--ver` will raise an error.
+
 ## 0.0.6
 
 ### 1441214390.257887

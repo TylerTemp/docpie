@@ -65,14 +65,12 @@ class DocpieBasicTest(unittest.TestCase):
         self.assertRaises(DocpieExit, docpie, doc,
                           'prog -v input.py output.py')
         self.assertRaises(DocpieExit, docpie, doc, 'prog --fake')
-        self.assertRaises(DocpieExit, docpie, doc, 'prog --hel')
+        # --hel -> --help
+        real_out, sys.stdout = sys.stdout, EmptyWriter()
+        self.assertRaises(SystemExit, docpie, doc, 'prog --hel')
+        sys.stdout = real_out
 
     def test_command_help(self):
-
-        # Temp disable output
-        class EmptyWriter(object):
-            def write(self, *a, **k):
-                pass
 
         real_stdout, sys.stdout = sys.stdout, EmptyWriter()
 
@@ -283,14 +281,21 @@ Options: --all  All.
     def test_one_option_alias(self):
         doc = '''Usage: prog [options]
 
-Options: -v, --verbose  Verbose.
-'''
+        Options: -v, --verbose  Verbose.
+        '''
         sys.argv = ['prog', '--verbose']
         self.eq(doc, {'-v': True, '--verbose': True, '--': False})
 
-        # Note: different from docopt, docpie doesn't support this so far
+        # Support since 0.0.7
         sys.argv = ['prog', '--ver']
-        self.fail(doc)
+        self.eq(doc, {'-v': True, '--verbose': True, '--': False})
+
+        doc = '''Usage: prog [options]
+
+        Options: --verbose  Verbose.
+        '''
+        sys.argv = ['prog', '--ver']  # --version? --verbose?
+        self.assertRaises(DocpieExit, docpie, doc, version='sth')
 
         # But you can do this:
         doc = '''Usage: prog [options]
@@ -328,13 +333,13 @@ Options: --path <path>
         sys.argv = ['prog', '--path=home/']
         self.eq(doc, {'--path': 'home/', '--': False})
 
-        # Note: different from docopt
+        # Note: same from docopt since 0.0.7
         sys.argv = ['prog', '--pa=home/']
-        self.fail(doc)
+        self.eq(doc, {'--path': 'home/', '--': False})
 
-        # Note: different from docopt
+        # Note: same from docopt since 0.0.7
         sys.argv = ['prog', '--pa', 'home/']
-        self.fail(doc)
+        self.eq(doc, {'--path': 'home/', '--': False})
 
         sys.argv = ['prog', '--path']
         self.fail(doc)
@@ -424,9 +429,10 @@ Options: --version
         sys.argv = ['prog', '--ver']
         self.fail(doc)
 
-        # Not support so far
+        # support since 0.0.7
         sys.argv = ['prog', '--verb']
-        self.fail(doc)
+        self.eq(doc, {'--version': False, '--verbose': True,
+                      '--': False})
 
     def test_opt_format(self):
         doc = '''usage: prog [-a -r -m <msg>]
@@ -1544,13 +1550,42 @@ Options: -a, --all=<here>
         doc = '''Usage: pie.py [command] [--option] [<argument>]'''
 
         sys.argv = 'prog --option command arg'.split()
-        self.eq(doc, {'--option': True, 'command': True, '<argument>': 'arg', '--': False})
+        self.eq(doc, {'--option': True, 'command': True, '<argument>': 'arg',
+                      '--': False})
 
         sys.argv = 'prog --option command -- arg'.split()
-        self.eq(doc, {'--option': True, 'command': True, '<argument>': 'arg', '--': True})
+        self.eq(doc, {'--option': True, 'command': True, '<argument>': 'arg',
+                      '--': True})
 
         sys.argv = 'prog --option -- command arg'.split()
-        self.eq(doc, {'--option': True, 'command': True, '<argument>': 'arg', '--': True})
+        self.eq(doc, {'--option': True, 'command': True, '<argument>': 'arg',
+                      '--': True})
+
+    def test_long_option_short(self):
+        doc = '''Usage: prog [options]
+
+        Options:
+            --prefix
+            --prefer
+            --prepare
+        '''
+
+        sys.argv = 'prog --prefi'.split()
+        self.eq(doc, {'--prefix': True, '--prefer': False, '--prepare': False,
+                      '--': False})
+
+        sys.argv = 'prog --prefe'.split()
+        self.eq(doc, {'--prefix': False, '--prefer': True, '--prepare': False,
+                      '--': False})
+
+        sys.argv = 'prog --prep'.split()
+        self.eq(doc, {'--prefix': False, '--prefer': False, '--prepare': True,
+                      '--': False})
+
+
+class EmptyWriter(object):
+    def write(self, *a, **k):
+        pass
 
 
 def case():

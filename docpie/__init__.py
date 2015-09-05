@@ -19,9 +19,9 @@ from docpie.saver import Saver
 
 __all__ = ('docpie', 'Docpie', 'DocpieException', 'DocpieExit', 'DocpieError')
 
-__version__ = '0.0.6'
+__version__ = '0.0.7'
 
-__timestamp__ = 1441240382.379768  # last sumbit
+__timestamp__ = 1441437156.867239  # last sumbit
 
 try:
     StrType = basestring
@@ -45,6 +45,7 @@ class Docpie(dict):
     attachvalue = True
     extra = {}
     opt_names = []
+    long_opt_names = set()
 
     def __init__(self, doc=None, help=True, version=None,
                  stdopt=True, attachopt=True, attachvalue=True,
@@ -72,12 +73,10 @@ class Docpie(dict):
             self.options = OptionParser(opt_str, self.stdopt).get_chain()
             usages = UsageParser(
                 usage_str, self.name, self.stdopt).get_chain()
-            self.usages = Parser.fix(self.options, usages)
 
-            # don't operate on the class level list
-            self.opt_names = opt_names = []
-            for each in self.options:
-                opt_names.append(each.get_option_name())
+            self.usages, self.opt_names, self.long_opt_names = \
+                Parser.fix(self.options, usages)
+
             logger.debug(self.opt_names)
 
             self.set_config(help=help, version=version)
@@ -95,6 +94,8 @@ class Docpie(dict):
         warnings.warn('This function is deprecated, '
                       'use pickle.load() directly',
                       DeprecationWarning)
+        if not isinstance(value, Docpie):
+            raise ValueError('Not support old docpie pickle data')
         return value
 
     def docpie(self, argv=None):
@@ -112,6 +113,12 @@ class Docpie(dict):
 
         token = Argv(argv[1:], self.auto2dashes,
                      self.stdopt, self.attachopt, self.attachvalue)
+
+        # the things in extra may not be announced
+        long_names = set(self.long_opt_names)
+        long_names.update(
+            filter(lambda x: x.startswith('--'), self.extra.keys()))
+        token.auto_expand(long_names)
 
         self.check_flag_and_handler(token)
         options = self.options
@@ -318,12 +325,14 @@ class Docpie(dict):
         usage = [convert_2_dict(x) for x in self.usages]
 
         return {
+            '__version__': __version__,
             '__class__': 'Docpie',
             '__config__': config,
             '__text__': text,
             'option': option,
             'usage': usage,
             'option_names': [list(x) for x in self.opt_names],
+            'long_opt_names': list(self.long_opt_names)
         }
 
     @classmethod
@@ -339,6 +348,8 @@ class Docpie(dict):
         Note if you changed `extra`, it will be lost.
         You can use `set_config(extra={...})` to set it back.
         '''
+        if dic.get('__version__', None) != __version__:
+            raise ValueError('Not support old docpie data')
         assert dic['__class__'] == 'Docpie'
         config = dic['__config__']
         help = config.pop('help')
@@ -351,6 +362,7 @@ class Docpie(dict):
         self.option_text = text['option_text']
 
         self.opt_names = [set(x) for x in dic['option_names']]
+        self.long_opt_names = set(dic['long_opt_names'])
         self.set_config(help=help, version=version)
 
         self.options = [convert_2_object(x) for x in dic['option']]
