@@ -1,3 +1,7 @@
+## 0.0.9
+
+*   [new] better error information notification.
+
 ## 0.0.8
 
 *   [fix] `Docpie.tokens.Argv.auto_expand` handles `--` in a wrong way

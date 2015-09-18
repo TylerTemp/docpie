@@ -64,24 +64,25 @@ class Argv(list):
                     possible = list(
                         filter(lambda x: x.startswith(option), long_names))
                     if not possible:
+                        return 'Unknown option: ' + each
                         # Don't raise. It may be --help
                         # and the developer didn't announce in
                         # either Usage or Options
-                        logger.info('not found this argv %s', each)
-                        result.append(each)
+                        # logger.info('not found this argv %s', each)
+                        # result.append(each)
                     elif len(possible) == 1:
                         replace = ''.join((possible[0], equal, value))
                         logger.debug('expand %s -> %s', each, replace)
                         result.append(replace)
                     else:
-                        raise DocpieExit(
+                        return (
                             '%s is not a unique prefix: %s?' %
                             (option, ', '.join(possible))
                         )
 
         logger.debug('%s -> %s', self, result)
         self[:] = result
-        return result
+        return None
 
     def current(self, offset=0):
         return self[offset] if len(self) > offset else None

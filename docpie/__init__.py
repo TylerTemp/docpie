@@ -19,9 +19,9 @@ from docpie.saver import Saver
 
 __all__ = ('docpie', 'Docpie', 'DocpieException', 'DocpieExit', 'DocpieError')
 
-__version__ = '0.0.8'
+__version__ = '0.0.9'
 
-__timestamp__ = 1441439767.635588  # last sumbit
+__timestamp__ = 1442542306.379641  # last sumbit
 
 try:
     StrType = basestring
@@ -118,9 +118,18 @@ class Docpie(dict):
         long_names = set(self.long_opt_names)
         long_names.update(
             filter(lambda x: x.startswith('--'), self.extra.keys()))
-        token.auto_expand(long_names)
-
+        error_msg = token.auto_expand(long_names)
+        # check first, raise after
+        # so `-hwhatever` can trigger `-h` first
         self.check_flag_and_handler(token)
+
+        if self.option_text:
+            help_msg = '%s\n%s' % (self.usage_text, self.option_text)
+        else:
+            help_msg = self.usage_text
+
+        if error_msg is not None:
+            raise DocpieExit('%s\n\n%s' % (error_msg, help_msg))
         options = self.options
 
         for each in self.usages:

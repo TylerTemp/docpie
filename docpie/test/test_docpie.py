@@ -1596,6 +1596,19 @@ Options: -a, --all=<here>
         self.eq(doc, {'--prefix': True, '--prefer': True, '--prepare': True,
                       '--': True, '<args>': ['--prefi', '--prefe', '--prep']})
 
+    def test_auto_expand_raise(self):
+        doc = 'Usage: prog [--prefix --prefer --prepare] [<args>...]'
+
+        sys.argv = 'prog --pre'.split()
+        with self.assertRaisesRegexp(
+                DocpieExit, "^--pre is not a unique prefix:"):
+            docpie(doc)
+
+        sys.argv = 'prog --not-here'.split()
+        with self.assertRaisesRegexp(
+                DocpieExit, "^Unknown option: --not-here"):
+            docpie(doc)
+
 class EmptyWriter(object):
     def write(self, *a, **k):
         pass
