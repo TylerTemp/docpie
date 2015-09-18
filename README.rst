@@ -160,17 +160,19 @@ Then try ``$ python example.py ship Titanic move 1 2`` or
 Installation
 ------------
 
+Install release version:
+
 .. code:: python
 
     pip install docpie
 
-or
+Install nightly/dev version:
 
 .. code:: bash
 
     pip install git+git://github.com/TylerTemp/docpie.git
 
-``docopt`` has been tested with Python:
+``docpie`` has been tested with Python:
 
 2.6.6, 2.6.9, 2.7, 2.7.10,
 
@@ -227,13 +229,14 @@ instead of positional arguments.
    ``--help`` automatically. When it's set to ``True``, ``-h`` will
    print "Usage" and "Option" section, then exit; ``--help`` will print
    the whole ``doc``'s value and exit. set ``help=False`` if you want to
-   handle it by yourself. Use ``extra`` (see below) or see ``Docpie`` if
-   you only want to change ``-h``/``--help`` behavior.
+   handle it by yourself. See "`Advanced Usage <#advanced-usage>`__\ " -
+   "`Auto Handler <#auto-handler>`__\ " if you want to customize the
+   behavior.
 -  ``version`` (any type, default ``None``) specifies the version of
    your program. When it's not ``None``, ``docpie`` will handle
    ``-v``/``--version``, print this value, and exit. See "`Advanced
    Usage <#advanced-usage>`__\ " - "`Auto Handler <#auto-handler>`__\ "
-   if you want to customize it.
+   if you want to customize the behavior.
 -  ``stdopt`` (bool, default ``True``) when set ``True``\ (default),
    long flag should only starts with ``--``, e.g. ``--help``, and short
    flag should be ``-`` followed by a letter. This is suggested to make
@@ -351,9 +354,9 @@ Each pattern can consist of the following elements:
    surrounded by angular brackets: ``my_program.py <content-path>``.
 -  **--options**. Short option starts with a dash(\ ``-``), followed by
    a character(\ ``a-z``, ``A-Z`` and ``0-9``), e.g. ``-f``. Long
-   options starts with two dashes (``--``), followed by seveval
+   options starts with two dashes (``--``), followed by several
    characters(\ ``a-z``, ``A-Z``, ``0-9`` and ``-``), e.g. ``--flag``.
-   When ``stdopt`` and ``attachopt`` are on, you can "stack" seveval of
+   When ``stdopt`` and ``attachopt`` are on, you can "stack" several of
    short option, e.g. ``-oiv`` can mean ``-o -i -v``.
 
    The option can have value. e.g. ``--input=FILE``, ``-i FILE``,
@@ -723,10 +726,8 @@ You can costomize this by passing ``extra`` argument, e.g.
     def moo_handler(pie, flag):
         print("Alright you got me. I'm an Easter Egg.\n"
               "You may use this program like this:\n")
-        print("Usage:")
         print(pie.usage_text)
-        print("")
-        print("Options:")
+        print("")    # compatible python2 & python3
         print("".join(pie.option_text.splitlines(True)[:-1]))
         sys.exit()    # Don't forget to exit
 
@@ -787,7 +788,7 @@ help:
 
 -  ``Docpie.version`` is the version you set. (default ``None``)
 -  ``Docpie.usage_text`` is the usage section.
--  ``Docpie.option_text`` is the options section.
+-  ``Docpie.option_text`` is the options section. (``None`` if it's not defined)
 
 Serialization
 ~~~~~~~~~~~~~
@@ -796,10 +797,10 @@ Serialization
 dict so you can JSONlizing it. Use ``Docpie.convert_2_docpie(cls, dic)``
 to convert back to ``Docpie`` instance.
 
-**Note:** if you change ``extra`` directly or by passing ``extra``
-argument, the infomation will be lost because JSON can not save function
-object. You need to call ``set_config(extra={...})`` after
-``convert_2_docpie``.
+**Note:** if you change ``extra`` by passing ``extra`` argument or calling
+``set_auto_handler``, the infomation will be lost because JSON can not save
+function object. You need to call ``set_config(extra={...})`` or
+``set_auto_handler`` after ``convert_2_docpie``.
 
 Here is a full example of serialization and unserialization together
 with ``pickle``
