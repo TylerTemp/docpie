@@ -145,6 +145,7 @@ class Docpie(dict):
                     logger.info('matched usage %s / %s', each, argv_clone)
                     matched = each
                     break
+                each.reset()
                 logger.info('matching %s left %s, checking failed',
                             each, argv_clone)
                 continue
@@ -156,6 +157,7 @@ class Docpie(dict):
                         each.error,
                         ' Use `--help` to see more' if self.help else '',
                         self.usage_text))
+                each.reset()
                 logger.info('failed matching usage %s / %s', each, argv_clone)
         else:
             logger.info('none matched')
@@ -174,8 +176,11 @@ class Docpie(dict):
             for key in common_keys:
                 default = default_values[key]
                 valued = value[key]
+                logger.debug('%s: default(%s), matched(%s)',
+                             key, default, valued)
 
-                if default not in (True, False) and isinstance(default, int):
+                if ((default is not True and default is not False) and
+                        isinstance(default, int)):
                     valued = int(valued)
                 elif isinstance(default, list):
                     if valued is None:
@@ -185,6 +190,7 @@ class Docpie(dict):
                     else:
                         valued = [valued]
 
+                logger.debug('set %s as %s', key, valued)
                 default_values[key] = valued
 
             value.update(default_values)

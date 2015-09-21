@@ -121,6 +121,9 @@ class Atom(object):
 
     load_value = load_save_point
 
+    def expand_either(self):
+        return [self]
+
     @classmethod
     def convert_2_dict(cls, obj):
         return {
@@ -422,7 +425,12 @@ class Command(Atom):
         self.value = False
 
     def reset(self):
-        self.value = False
+        value = self.value
+        if isinstance(value, bool):
+            self.value = False
+        else:
+            self.value = 0
+        # self.value = False
 
     def match(self, argv, saver, options, repeat_match):
         if self.error is not None:
@@ -506,7 +514,7 @@ class Argument(Atom):
 
     def reset(self):
         if isinstance(self.value, list):
-            self.value = []
+            del self.value[:]
         else:
             self.value = None
 
@@ -1047,6 +1055,19 @@ class Unit(list):
             result.update(this_result)
         return result
 
+    def expand_either(self):
+        cls = Required if isinstance(self, Required) else Optional
+        repeat = self.repeat
+        if len(self) == 1 and isinstance(self[0], Either):
+            return [cls(each, repeat=repeat).fix() for each in self[0]]
+
+        result = []
+        for expanded in product(*(x.expand_either() for x in self)):
+            new = cls(*expanded, repeat=repeat).fix()
+            result.append(new)
+
+        return result
+
     @classmethod
     def convert_2_dict(cls, obj):
         return {
@@ -1255,7 +1276,7 @@ class OptionsShortcut(object):
 
     @classmethod
     def reset(klass):
-        assert False
+        pass
 
     @property
     def repeat(self):
@@ -1285,6 +1306,9 @@ class OptionsShortcut(object):
             result.append(ins.merge_value(value))
 
         return result
+
+    def expand_either(self):
+        return [self]
 
     @classmethod
     def convert_2_dict(cls, obj):

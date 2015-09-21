@@ -4,7 +4,7 @@ docpie
 View on: `HomePage <http://docpie.comes.today>`__ /
 `GitHub <https://github.com/TylerTemp/docpie/>`__ /
 `PyPi <https://pypi.python.org/pypi/docpie>`__
-
+-  `ChangeLog <#ChangeLog>`__
 -  `Introduction <#introduction>`__
 -  `Installation <#installation>`__
 -  `Basic Usage <#basic-usage>`__
@@ -30,6 +30,18 @@ View on: `HomePage <http://docpie.comes.today>`__ /
 -  `Difference to docopt <#difference>`__
 -  `Known Issues <#known-issues>`__
 -  `Development <#development>`__
+
+ChangeLog
+---------
+
+version 0.0.9:
+
+-   Give a more friendly error information if user give a long option which
+    is not defined. (Only long option support this so far)
+-   Now format `Usage: prog [-v | -vv | -vvv]` can work as expected
+
+`Full ChangeLog <https://github.com/TylerTemp/docpie/blob/master/CHANGELOG.md>`__
+
 
 Introduction
 ------------
@@ -176,7 +188,7 @@ Install nightly/dev version:
 
 2.6.6, 2.6.9, 2.7, 2.7.10,
 
-3.2, 3.3.0, 3.3.6, 3.4.0, 3.4.3,
+3.2, 3.3.0, 3.3.6, 3.4.0, 3.4.3, 3.5.0
 
 pypy-2.0, pypy-2.6.0, pypy3-2.4.0
 
@@ -409,7 +421,7 @@ times:
 
 ::
 
-    Usage: my_program.py [-vvv | -vv | -v]
+    Usage: my_program.py [-v | -vv | -vvv]
 
 `try it now
 >> <http://docpie.comes.today/try/?example=exclusive_good>`__
@@ -417,13 +429,6 @@ times:
 then number of occurrences of the option will be counted. I.e.
 ``args['-v']`` will be ``2`` if program was invoked as
 ``my_program -vv``. Same works for commands.
-
-Note that the ``|`` acts like ``or`` in python, which means if one
-elements group matched, the following groups will be skipped. usage like
-``program.py [-v | -vv | -vvv]`` will not match ``program.py -vv``,
-because the first ``-v`` matches first part of ``-vv``, and then nothing
-left to match the rest argv, so it fails. `try it now
->> <http://docpie.comes.today/try/?example=exclusive_bad>`__
 
 If your usage patterns allows to match same-named option with argument
 or positional argument several times, the matched arguments will be
@@ -907,14 +912,12 @@ Difference
 
 ``docpie`` is not ``docopt``.
 
-1. In ``docpie`` if one mutually exclusive elements group matches, the
-   rest groups will be skipped
+1. (Fixed in 0.0.9, see `ChangeLog <https://github.com/TylerTemp/docpie/blob/master/CHANGELOG.md>`__)
 
    .. code:: python
 
        print(docpie('Usage: prog [-vvv | -vv | -v]', 'prog -vvv'))  # {'-v': 3}
-       print(docpie('Usage: prog [-v | -vv | -vvv]', 'prog -vvv'))  # Fail
-       print(docopt('Usage: prog [-v | -vv | -vvv]', 'prog -vvv'))  # {'-v': 3}
+       print(docpie('Usage: prog [-v | -vv | -vvv]', 'prog -vvv'))  # {'-v': 3}
 
 2. In ``docpie`` you can not "stack" option and value in this way even
    you specify it in "Options":
@@ -941,8 +944,12 @@ Difference
 
 4. Subparsers are not supported currently.
 
-5. [del]User **MUST** input the same name as you announcement.[/del]
-   This is a new feature in 0.0.7. See ``CHANGELOG.md`` for details
+5. (New in 0.0.7, see `ChangeLog <https://github.com/TylerTemp/docpie/blob/master/CHANGELOG.md>`__)
+   User do not need to write the full long option in 0.0.7. e.g. ``--long`` can
+   be ``--l``, ``--lo`` if it's obvious, and raise error when it's ambiguous.
+
+6. ``docpie`` will add ``--`` to result when ``auto2dashes=True``.
+  ``docpie`` will add all synonymous to result.
 
 Known Issues
 ------------

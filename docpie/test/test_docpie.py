@@ -79,6 +79,7 @@ class DocpieBasicTest(unittest.TestCase):
 
         sys.stdout = real_stdout
 
+    # this syntax won't work on python 3.2
     # def test_unicode(self):
     #     try:
     #         doc = u'usage: prog [-o <呵呵>]'
@@ -99,9 +100,9 @@ class DocpieBasicTest(unittest.TestCase):
         eq(docpie('usage: prog [-vv]', 'prog -v'), {'-v': 1, '--': False})
         eq(docpie('usage: prog [-vv]', 'prog -vv'),
            {'-v': 2, '--': False})
-        # Note it's different from docpie
-        self.assertRaises(
-            DocpieExit, docpie, 'usage: prog [-v | -vv | -vvv]', 'prog -vvv')
+        # New in 0.0.9
+        eq(docpie('usage: prog [-v | -vv | -vvv]', 'prog -vvv'),
+           {'-v': 3, '--': False})
         eq(docpie('usage: prog [-vvv | -vv | -v]', 'prog -vvv'),
            {'-v': 3, '--': False})
         eq(docpie('usage: prog -v...', 'prog -vvvvvv'),
@@ -670,11 +671,10 @@ options: -a
         sys.argv = ['prog', '10', '20', '40']
         self.fail(doc)
 
-        # Note: different from docopt
-        # that once `<kind>` is perfectly matched, docpie will not try the
-        # branch `<name> <type>`
+        # fixed in 0.0.9
         sys.argv = ['prog', '10', '20']
-        self.fail(doc)
+        self.eq(doc, {'<kind>': None, '<name>': '10', '<type>': '20',
+                      '--': False})
 
         sys.argv = ['prog', '10']
         self.eq(doc, {'<kind>': '10', '<name>': None, '<type>': None,
@@ -1068,14 +1068,26 @@ Options: -a, --address <host:port>  TCP address[default: localhost:6283]
         self.eq(doc, {'--address': 'localhost:6283', '-a': 'localhost:6283',
                       '--': False})
 
-    # This is not supported so far
-    # r"""usage: prog --long=<arg> ..."""
-    #
-    # $ prog --long one
-    # {"--long": ["one"]}
-    #
-    # $ prog --long one --long two
-    # {"--long": ["one", "two"]}
+    def test_usage_without_option_section_matching_options(self):
+        # This now support even without "Option" section
+        doc = '''usage: prog --long=<arg> ...'''
+        # but it is euqal to:
+        doc2 = '''usage: prog --long=(<arg> ...)'''
+
+        sys.argv = ['prog', '--long', 'one']
+        self.eq(doc, {'--long': ['one'], '--': False})
+        self.eq(doc2, {'--long': ['one'], '--': False})
+
+        sys.argv = ['prog', '--long', 'one', 'two', 'three']
+        self.eq(doc, {'--long': ['one', 'two', 'three'], '--': False})
+        self.eq(doc2, {'--long': ['one', 'two', 'three'], '--': False})
+
+        doc = '''usage: prog (--long=<arg>) ...'''
+        sys.argv = ['prog', '--long', 'one']
+        self.eq(doc, {'--long': ['one'], '--': False})
+
+        sys.argv = ['prog', '--long', 'one', '--long=two', '--long=three']
+        self.eq(doc, {'--long': ['one', 'two', 'three'], '--': False})
 
     def test_multiple_ele_repeat(self):
         doc = '''usage: prog (go <direction> --speed=<km/h>)...
@@ -1597,17 +1609,55 @@ Options: -a, --all=<here>
                       '--': True, '<args>': ['--prefi', '--prefe', '--prep']})
 
     def test_auto_expand_raise(self):
-        doc = 'Usage: prog [--prefix --prefer --prepare] [<args>...]'
+        if hasattr(self, 'assertRaisesRegexp'):
+            doc = 'Usage: prog [--prefix --prefer --prepare] [<args>...]'
 
-        sys.argv = 'prog --pre'.split()
-        with self.assertRaisesRegexp(
-                DocpieExit, "^--pre is not a unique prefix:"):
-            docpie(doc)
+            sys.argv = 'prog --pre'.split()
+            with self.assertRaisesRegexp(
+                    DocpieExit, "^--pre is not a unique prefix:"):
+                docpie(doc)
 
-        sys.argv = 'prog --not-here'.split()
-        with self.assertRaisesRegexp(
-                DocpieExit, "^Unknown option: --not-here"):
-            docpie(doc)
+            sys.argv = 'prog --not-here'.split()
+            with self.assertRaisesRegexp(
+                    DocpieExit, "^Unknown option: --not-here"):
+                docpie(doc)
+
+    def test_new_either(self):
+        doc = '''Usage: prog [-v | -vv | -vvv] [<arg>]'''
+
+        sys.argv = ['prog']
+        self.eq(doc, {'-v': 0, '<arg>':None ,'--': False})
+
+        sys.argv = ['prog', '-v']
+        self.eq(doc, {'-v': 1, '<arg>':None ,'--': False})
+
+        sys.argv = ['prog', '-vv']
+        self.eq(doc, {'-v': 2, '<arg>':None ,'--': False})
+
+        sys.argv = ['prog', '-vvv']
+        self.eq(doc, {'-v': 3, '<arg>':None ,'--': False})
+
+        sys.argv = ['prog', '-vvvv']
+        self.fail(doc)
+
+        sys.argv = ['prog', '-vv', '--', '-v']
+        self.eq(doc, {'-v': 2, '<arg>':'-v' ,'--': True})
+
+        doc = '''Usage: prog (<a> | <b> <c>) <d>'''
+        doc2 = '''Usage: prog (<b> <c> | <a>) <d>'''
+
+        sys.argv = ['prog', 'a', 'd']
+        self.eq(doc, {'<a>': 'a', '<b>': None, '<c>': None, '<d>': 'd',
+                      '--': False})
+        self.eq(doc2, {'<a>': 'a', '<b>': None, '<c>': None, '<d>': 'd',
+                      '--': False})
+
+        sys.argv = ['prog', 'b', 'c', 'd']
+        self.eq(doc, {'<a>': None, '<b>': 'b', '<c>': 'c', '<d>': 'd',
+                      '--': False})
+        self.eq(doc2, {'<a>': None, '<b>': 'b', '<c>': 'c', '<d>': 'd',
+                      '--': False})
+
 
 class EmptyWriter(object):
     def write(self, *a, **k):

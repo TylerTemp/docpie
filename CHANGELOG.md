@@ -1,6 +1,22 @@
 ## 0.0.9
 
 *   [new] better error information notification.
+*   [fix] better `Either` handling. Now `Either` will be expanded and throwed
+    away. Which means now for
+
+    ```
+    Usage: prog [-v | -vv | -vvv] cmd
+    ```
+
+    can match `-v cmd`, `-vv cmd`, `-vvv cmd`. The old format also works
+
+    ```
+    Usage: prog [-vvv | -vv | -v] cmd
+    ```
+
+    but the new one is more readable.
+*   [TODO] remove some old api, remove `save.py`
+
 
 ## 0.0.8
 

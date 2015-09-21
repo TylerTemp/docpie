@@ -169,9 +169,10 @@ class Parser(object):
 
         usage_result = []
 
+        logger.debug('origial usage: %s', usages)
         for usage in usages:
             if usage is None:
-                usage = Optional()
+                usage_result.append(Optional())
             else:
                 usage.fix_optional(opt_2_ins)
                 opts_in_usage, shortcuts = \
@@ -182,7 +183,8 @@ class Parser(object):
                 usage.push_option_ahead()
                 long_opt_names.update(
                     filter(lambda x: x.startswith('--'), opts_in_usage))
-            usage_result.append(usage)
+                usage_result.extend(usage.expand_either())
+        logger.debug('fixed usage: %s', usage_result)
 
         return usage_result, opt_names, long_opt_names
 
