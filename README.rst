@@ -4,6 +4,7 @@ docpie
 View on: `HomePage <http://docpie.comes.today>`__ /
 `GitHub <https://github.com/TylerTemp/docpie/>`__ /
 `PyPi <https://pypi.python.org/pypi/docpie>`__
+
 -  `ChangeLog <#ChangeLog>`__
 -  `Introduction <#introduction>`__
 -  `Installation <#installation>`__
@@ -38,7 +39,7 @@ version 0.0.9:
 
 -   Give a more friendly error information if user give a long option which
     is not defined. (Only long option support this so far)
--   Now format `Usage: prog [-v | -vv | -vvv]` can work as expected
+-   Now format ``Usage: prog [-v | -vv | -vvv]`` can work as expected
 
 `Full ChangeLog <https://github.com/TylerTemp/docpie/blob/master/CHANGELOG.md>`__
 
