@@ -1,7 +1,7 @@
 from docpie.element import Atom, Option, Command, Argument
 from docpie.element import Optional, Required, OptionsShortcut
 from docpie.element import Either
-from docpie.tokens import Token
+from docpie.token import Token
 from docpie.error import DocpieError
 
 import logging
@@ -180,10 +180,13 @@ class Parser(object):
                 if opts_in_usage and shortcuts:
                     for cut in shortcuts:
                         cut.set_hide(opts_in_usage)
-                usage.push_option_ahead()
                 long_opt_names.update(
                     filter(lambda x: x.startswith('--'), opts_in_usage))
                 usage_result.extend(usage.expand_either())
+
+        for each in usage_result:
+            each.push_option_ahead()
+
         logger.debug('fixed usage: %s', usage_result)
 
         return usage_result, opt_names, long_opt_names
@@ -388,7 +391,7 @@ class OptionParser(Parser):
             raise DocpieError('option %s does not start with "-"' % first)
 
         # if Atom.stdopt:
-        # -sth -> name=-s, value=sth
+        # -sth -> name=-s, value=th
         # else:
         # -sth -> name=-sth, value=''
         name, value = self._split_short_by_cfg(first)

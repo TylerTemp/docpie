@@ -3,8 +3,7 @@ import logging
 
 from docpie import bashlog
 from docpie.element import Option, Command, Argument
-from docpie.tokens import Argv
-from docpie.saver import Saver
+from docpie.token import Argv
 
 logger = logging.getLogger('docpie.test.match')
 
@@ -22,9 +21,9 @@ class MatchTest(unittest.TestCase):
 
     def test_option(self):
         self.true(
-            Option('-a').match(self.argv(['-a']), Saver(), [], False))
+            Option('-a').match(self.argv(['-a']), [], False))
         self.false(
-            Option('-a').match(self.argv(['--alter']), Saver(), [], False))
+            Option('-a').match(self.argv(['--alter']), [], False))
 #         self.true(Option('-a', '--alter').match(Argv(['--alter'])))
 #         self.true(Option('-').match(Argv(['-'])))
 #         self.true(Option('--').match(Argv(['--'])))

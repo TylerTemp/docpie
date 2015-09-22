@@ -3,7 +3,7 @@ import logging
 
 from docpie import bashlog
 from docpie.element import Option, Argument, Command
-from docpie.tokens import Token
+from docpie.token import Token
 
 logger = logging.getLogger('docpie.test.element')
 

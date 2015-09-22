@@ -3,9 +3,9 @@ import unittest
 import logging
 import sys
 
-from docpie import bashlog
-from docpie import docpie
+from docpie import docpie, Docpie, bashlog
 from docpie.error import DocpieExit, DocpieError
+import json
 
 logger = logging.getLogger('docpie.test.docpie')
 
@@ -66,18 +66,14 @@ class DocpieBasicTest(unittest.TestCase):
                           'prog -v input.py output.py')
         self.assertRaises(DocpieExit, docpie, doc, 'prog --fake')
         # --hel -> --help
-        real_out, sys.stdout = sys.stdout, EmptyWriter()
-        self.assertRaises(SystemExit, docpie, doc, 'prog --hel')
-        sys.stdout = real_out
+        with EmptyWriter():
+            self.assertRaises(SystemExit, docpie, doc, 'prog --hel')
 
     def test_command_help(self):
 
-        real_stdout, sys.stdout = sys.stdout, EmptyWriter()
-
         doc = 'usage: prog --help-commands | --help'
-        self.assertRaises(SystemExit, docpie, doc, 'prog --help')
-
-        sys.stdout = real_stdout
+        with EmptyWriter():
+            self.assertRaises(SystemExit, docpie, doc, 'prog --help')
 
     # this syntax won't work on python 3.2
     # def test_unicode(self):
@@ -1658,11 +1654,58 @@ Options: -a, --all=<here>
         self.eq(doc2, {'<a>': None, '<b>': 'b', '<c>': 'c', '<d>': 'd',
                       '--': False})
 
+    def test_issue_1(self):
+        doc = '''Usage: prog [cmd1 cmd2]'''
+        sys.argv = ['prog', 'cmd2', 'cmd1']
+        self.fail(doc)
+
+        sys.argv = ['prog', 'cmd1', 'cmd2']
+        self.eq(doc, {'cmd1': True, 'cmd2': True, '--': False})
+
+        sys.argv = ['prog', 'cmd1', '--', 'cmd2']
+        self.eq(doc, {'cmd1': True, 'cmd2': True, '--': True})
+
+    def test_jsonlize(self):
+        doc = """
+        Usage:
+            serialization dump [options] [--path=<path>]
+            serialization load [options] [preview] [--path=<path>]
+            serialization clear
+            serialization preview
+
+        Options:
+            -p, --path=<path>           save or load path or filename[default: ./]
+            -f, --format=<format>...    save format, "json" or "pickle"
+                                        [default: json pickle]
+            -n, --name=<name>           save or dump filename without extension,
+                                        default is the same as this file
+            -h, -?                      print usage
+            --help                      print this message
+            -v, --version               print the version
+        """
+
+        pie = Docpie(doc, version="Alpha")
+        dic = pie.convert_2_dict()
+        s = json.dumps(dic)
+        d = json.loads(s)
+        new_pie = pie.convert_2_docpie(d)
+
+        self.assertEqual(pie.usages, new_pie.usages)
+        self.assertEqual(pie.options, new_pie.options)
+        self.assertEqual(pie.version, new_pie.version)
+
 
 class EmptyWriter(object):
+
     def write(self, *a, **k):
         pass
 
+    def __enter__(self):
+        self.real_out = sys.stdout
+        sys.stdout = self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        sys.stdout = self.real_out
 
 def case():
     return (unittest.TestLoader().loadTestsFromTestCase(DocpieBasicTest),

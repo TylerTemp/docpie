@@ -31,6 +31,7 @@ View on: `HomePage <http://docpie.comes.today>`__ /
 -  `Difference to docopt <#difference>`__
 -  `Known Issues <#known-issues>`__
 -  `Development <#development>`__
+-  `License <#license>`__
 
 ChangeLog
 ---------
@@ -913,7 +914,7 @@ Difference
 
 ``docpie`` is not ``docopt``.
 
-1. (Fixed in 0.0.9, see `ChangeLog <https://github.com/TylerTemp/docpie/blob/master/CHANGELOG.md>`__)
+1. (Fixed in 0.0.9, see `ChangeLog <https://github.com/TylerTemp/docpie/blob/master/CHANGELOG.md#009>`__)
 
    .. code:: python
 
@@ -945,7 +946,7 @@ Difference
 
 4. Subparsers are not supported currently.
 
-5. (New in 0.0.7, see `ChangeLog <https://github.com/TylerTemp/docpie/blob/master/CHANGELOG.md>`__)
+5. (New in 0.0.7, see `ChangeLog <https://github.com/TylerTemp/docpie/blob/master/CHANGELOG.md#007>`__)
    User do not need to write the full long option in 0.0.7. e.g. ``--long`` can
    be ``--l``, ``--lo`` if it's obvious, and raise error when it's ambiguous.
 
@@ -966,7 +967,7 @@ this feature has a very strict limit.
    means:
 
    -  YES: ``(<arg1>)... <arg2> <arg3>``
-   -  YES: ``[<arg1]... <arg2>``
+   -  YES: ``[<arg1>]... <arg2>``
    -  NO: ``(<arg1> <arg2>)... <arg3>``
    -  NO: ``-a... -a``
    -  NO: ``cmd... cmd``
@@ -1006,3 +1007,9 @@ the code in ``bashlog.py`` is taken from
 `tornado <https://github.com/tornadoweb/tornado>`__, and
 ``tracemore.py`` is from `python
 Cookbook <http://www.amazon.com/Python-Cookbook-Third-David-Beazley/dp/1449340377/ref=sr_1_1?ie=UTF8&qid=1440593849&sr=8-1&keywords=python+cookbook>`__
+
+License
+------------
+
+`docpie` is released under
+[MIT-License](https://github.com/TylerTemp/docpie/blob/master/LICENSE)

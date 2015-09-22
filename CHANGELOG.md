@@ -15,7 +15,7 @@
     ```
 
     but the new one is more readable.
-*   [TODO] remove some old api, remove `save.py`
+*   [fix] remove some old api, remove `save.py`
 
 
 ## 0.0.8

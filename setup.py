@@ -1,5 +1,3 @@
-# pip install -e .
-
 from distutils.core import setup
 import os
 

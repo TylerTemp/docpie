@@ -93,7 +93,8 @@ if result['load']:
 
     if result['preview']:
         for k, pie in pies.items():
-            print('\n[<<<%s>>>]\n' % ('<<< Docpie from %s >>>' % k).center(72, '='))
+            print('\n[<<<%s>>>]\n' %
+                  ('<<< Docpie from %s >>>' % k).center(72, '='))
             pie.preview()
 
     sys.exit()
