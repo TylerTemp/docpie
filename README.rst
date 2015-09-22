@@ -951,7 +951,7 @@ Difference
    be ``--l``, ``--lo`` if it's obvious, and raise error when it's ambiguous.
 
 6. ``docpie`` will add ``--`` to result when ``auto2dashes=True``.
-  ``docpie`` will add all synonymous to result.
+   ``docpie`` will add all synonymous to result.
 
 Known Issues
 ------------
