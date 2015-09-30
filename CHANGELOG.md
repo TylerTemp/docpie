@@ -1,3 +1,9 @@
+## 0.1.0
+
+*   [fix] merging value bug. `Usage: prog [--repeat=<sth> --repeat=<sth>]`
+    matching `prog` will now give `'--repeat=[]'` instead of the old
+    wrong value `'--repeat=0'`
+
 ## 0.0.9
 
 *   [new] better error information notification.

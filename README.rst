@@ -36,11 +36,9 @@ View on: `HomePage <http://docpie.comes.today>`__ /
 ChangeLog
 ---------
 
-version 0.0.9:
+version 0.1.0:
 
--   Give a more friendly error information if user give a long option which
-    is not defined. (Only long option support this so far)
--   Now format ``Usage: prog [-v | -vv | -vvv]`` can work as expected
+-   Fix repeatable options in usage giving number insteal of a list
 
 `Full ChangeLog <https://github.com/TylerTemp/docpie/blob/master/CHANGELOG.md>`__
 
@@ -1012,4 +1010,4 @@ License
 ------------
 
 `docpie` is released under
-[MIT-License](https://github.com/TylerTemp/docpie/blob/master/LICENSE)
+`MIT-License <https://github.com/TylerTemp/docpie/blob/master/LICENSE>`__
