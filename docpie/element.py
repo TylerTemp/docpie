@@ -661,13 +661,18 @@ class Unit(list):
             for key in repeated_keys:
                 old_value = result[key]
                 new_value = this_result[key]
+                logger.debug('%s - old: %s, new: %s',
+                             key, old_value, new_value)
                 if (key.startswith('-') and
                         any(
                             isinstance(
                                 x,
                                 (int, NoneType))
                             for x in (old_value, new_value))):
-                    final_value = (old_value or 0) + (new_value or 0)
+                    if old_value is new_value is None:
+                        final_value = []
+                    else:
+                        final_value = (old_value or 0) + (new_value or 0)
                 elif all(isinstance(x, int) for x in (old_value, new_value)):
                     final_value = old_value + new_value
                 else:

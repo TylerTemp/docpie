@@ -19,6 +19,10 @@ logger = logging.getLogger('docpie')
 
 class Docpie(dict):
 
+    # Docpie verison
+    # it's not a good idea but it can avoid loop importing
+    _version = '0.1.0'
+
     option_name = 'Options:'
     usage_name = 'Usage:'
     case_sensitive = False
@@ -32,9 +36,6 @@ class Docpie(dict):
     extra = {}
     opt_names = []
     long_opt_names = set()
-    # Docpie verison
-    # it's not a good idea but it can avoid loop importing
-    _version = '0.0.9'
 
     def __init__(self, doc=None, help=True, version=None,
                  stdopt=True, attachopt=True, attachvalue=True,
@@ -203,7 +204,8 @@ class Docpie(dict):
                     if default is None:  # no default, use old matched one
                         final_value = value_in_usage
                     elif (each.repeat or
-                            (value_in_usage not in (True, False) and
+                            (value_in_usage is not True and
+                             value_in_usage is not False and
                              isinstance(value_in_usage, (int, list)))):
                         final_value = default.split()
                     else:

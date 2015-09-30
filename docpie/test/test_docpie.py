@@ -1694,6 +1694,38 @@ Options: -a, --all=<here>
         self.assertEqual(pie.options, new_pie.options)
         self.assertEqual(pie.version, new_pie.version)
 
+    def test_repeat_in_usage(self):
+        doc = '''
+        Usage: prog [options]
+                    [--repeat=<sth> --repeat=<sth>]
+                    [--another-repeat=<sth> --another-repeat=<sth>]
+                    [cmd cmd]
+                    [<arg> <arg>]
+
+        Options:
+            --repeat=<arg>          the repeatable flag [default: here there]
+            --another-repeat=<sth>  the repeatable flag
+        '''
+
+        sys.argv = ['prog']
+        self.eq(doc, {'--repeat': ['here', 'there'], '--another-repeat': [],
+                      'cmd': 0, '<arg>': [],
+                      '--': False})
+
+        sys.argv = ['prog', '--repeat=1', '--repeat=2',
+                    '--another-repeat=1', '--another-repeat=2']
+        self.eq(doc, {'--repeat': ['1', '2'], '--another-repeat': ['1', '2'],
+                      'cmd': 0, '<arg>': [],
+                      '--': False})
+
+        sys.argv = ['prog', '--repeat=1', '--repeat=2', '--repeat=3'
+                    '--another-repeat=1', '--another-repeat=2']
+        self.fail(doc)
+
+        sys.argv = ['prog', '--repeat=1', '--repeat=2',
+                    '--another-repeat=1', '--another-repeat=2',
+                    '--another-repeat=3']
+        self.fail(doc)
 
 class EmptyWriter(object):
 
