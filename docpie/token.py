@@ -46,12 +46,23 @@ class Argv(list):
         self.attachopt = attachopt
         self.attachvalue = attachvalue
 
-    def check_and_auto_expand(self, names):
+    def formal(self, names, options_first):
         result = []
         for index, each in enumerate(self):
+            # first command/argument
+            if (options_first and
+                    (each in ('-', '--') or not each.startswith('--'))):
+                result.extend((each, '--'))  # add '--' after it
+                result.extend(self[index + 1:])
+                break
+
             if each == '--' and self.auto_dashes:
                 result.extend(self[index:])
                 break
+
+            if each == '-':
+                result.append(each)
+                continue
 
             # this won't work when -abc, and it actually means -a -b -c,
             # but -b, -c is not defined

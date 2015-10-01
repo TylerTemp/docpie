@@ -16,12 +16,13 @@ __all__ = ('docpie', 'Docpie',
 # it's not a good idea but it can avoid loop importing
 __version__ = Docpie._version
 
-__timestamp__ = 1443707403.94446  # last sumbit
+__timestamp__ = 1443719034.709704  # last sumbit
 
 
 def docpie(doc, argv=None, help=True, version=None,
            stdopt=True, attachopt=True, attachvalue=True,
-           auto2dashes=True, name=None, case_sensitive=False, extra={}):
+           auto2dashes=True, name=None, case_sensitive=False,
+           optionsfirst=False, extra={}):
     """
     Parse `argv` based on command-line interface described in `doc`.
 

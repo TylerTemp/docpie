@@ -24,6 +24,8 @@
 
     when user give `-a -d`, docpie will info that `-d` is not defined,
     but when given `-ad`, docpie will not give this kind of info.
+*   [TODO] multi options section support
+*   [new] `optionsfirst` argument / [TODO] update document
 
 ## 0.1.0
 

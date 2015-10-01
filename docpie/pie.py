@@ -33,19 +33,21 @@ class Docpie(dict):
     stdopt = True
     attachopt = True
     attachvalue = True
+    options_first = False
     extra = {}
     opt_names = []
     all_opt_names = set()
 
     def __init__(self, doc=None, help=True, version=None,
                  stdopt=True, attachopt=True, attachvalue=True,
-                 auto2dashes=True, name=None, case_sensitive=False, extra={}):
+                 auto2dashes=True, name=None, case_sensitive=False,
+                 optionsfirst=False, extra={}):
 
         # set config first
         self.set_config(
             stdopt=stdopt, attachopt=attachopt, attachvalue=attachvalue,
             auto2dashes=auto2dashes, name=name, case_sensitive=case_sensitive,
-            extra={})
+            optionsfirst=optionsfirst, extra={})
 
         if doc is not None:
             self.doc = doc
@@ -104,13 +106,13 @@ class Docpie(dict):
         elif isinstance(argv, StrType):
             argv = argv.split()
 
-        token = Argv(argv[1:], self.auto2dashes,
+        token = Argv(argv[1:], self.auto2dashes or self.options_first,
                      self.stdopt, self.attachopt, self.attachvalue)
 
         # the things in extra may not be announced
         all_opt_names = set(self.all_opt_names)
         all_opt_names.update(self.extra.keys())
-        error_msg = token.check_and_auto_expand(all_opt_names)
+        error_msg = token.formal(all_opt_names, self.options_first)
         # check first, raise after
         # so `-hwhatever` can trigger `-h` first
         self.check_flag_and_handler(token)
@@ -162,7 +164,7 @@ class Docpie(dict):
 
         for each in rest:  # add left command/argv
             default_values = each.get_sys_default_value(False)
-            logger.debug('get rest values %s', default_values)
+            logger.debug('get rest values %s -> %s', each, default_values)
             common_keys = set(value).intersection(default_values)
 
             for key in common_keys:
@@ -257,8 +259,19 @@ class Docpie(dict):
                 final[name] = final_value
             value.update(final)
 
+        dashes = value.get('--', argv_clone.dashes)
+        if self.options_first:
+            if dashes is True:
+                dashes = False
+            elif dashes is False:
+                pass
+            elif isinstance(dashes, int):
+                dashes = max(0, dashes - 1)
+
         if self.auto2dashes:
-            value['--'] = bool(argv_clone.dashes)
+            dashes = bool(dashes)
+
+        value['--'] = dashes
 
         self.clear()
         self.update(value)
@@ -409,6 +422,8 @@ class Docpie(dict):
                 self.version_handler)
         if 'case_sensitive' in config:
             self.case_sensitive = config.pop('case_sensitive')
+        if 'optionsfirst' in config:
+            self.options_first = config.pop('optionsfirst')
         if 'extra' in config:
             self.extra.update(config.pop('extra'))
 

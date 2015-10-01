@@ -204,7 +204,10 @@ class Option(Atom):
 
     def get_sys_default_value(self, in_repeat):
         if in_repeat:
-            value = []
+            if self.ref is not None:
+                value = []
+            else:
+                value = 0
         elif self.ref is not None:
             arg_range = self.ref.arg_range()
             max_arg_num = max(arg_range)
@@ -693,14 +696,13 @@ class Unit(list):
 
     def _fix_single_element(self):
         this_element = self[0].fix()
-        # None, Atom, Unit
+        # None, Atom, Unit, Either
 
         # None
-        # TODO: check if it's ok to return None
         if this_element is None:
             return None
 
-        # Atom, Unit
+        # Atom, Unit, Either
         self[0] = this_element
 
         # Unit

@@ -65,6 +65,5 @@ EXAMPLES
 
 from docpie import docpie, bashlog
 
-bashlog.stdoutlogger(None, bashlog.DEBUG)
-
-print(docpie(__doc__, stdopt=False))
+if __name__ == '__main__':
+    print(docpie(__doc__))

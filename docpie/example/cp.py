@@ -21,4 +21,5 @@ OPTIONS:
 
 from docpie import docpie
 
-print(docpie(__doc__))
+if __name__ == '__main__':
+    print(docpie(__doc__))
