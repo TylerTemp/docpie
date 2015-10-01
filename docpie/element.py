@@ -42,24 +42,16 @@ class Atom(object):
     error = None
 
     def __init__(self, *names, **kwargs):
-        self._names = set(names)
-        self._default = kwargs.get('default', None)
+        self.names = set(names)
+        self.default = kwargs.get('default', None)
         self.value = None
-
-    def set_alias(self, *names):
-        logger.debug('set alias %s for %s' % (';'.join(names),
-                                              ';'.join(self._names)))
-        self._names.update(names)
-
-    def set_default(self, value):
-        self._default = value
 
     def _cache(get_class):
         cache_dic = {}
 
-        def wrapped(klass, atom):
+        def wrapped(cls, atom):
             if atom not in cache_dic:
-                result = get_class(klass, atom)
+                result = get_class(cls, atom)
                 cache_dic[atom] = result
             return cache_dic[atom]
 
@@ -67,13 +59,13 @@ class Atom(object):
 
     @classmethod
     @_cache
-    def get_class(klass, atom):
+    def get_class(cls, atom):
         if atom in ('-', '--'):
             return Command
         elif atom == '-?':
             return Option
 
-        m = klass.flag_or_upper_re.match(atom)
+        m = cls.flag_or_upper_re.match(atom)
         if m:
             match = m.groupdict()
             if match['hyphen']:
@@ -82,7 +74,7 @@ class Atom(object):
                 return Argument
             else:
                 return Command
-        elif klass.angular_bracket_re.match(atom):
+        elif cls.angular_bracket_re.match(atom):
             return Argument
         else:
             logger.debug('I guess %s is a Command' % atom)
@@ -90,15 +82,6 @@ class Atom(object):
 
     def arg_range(self):
         return [1]
-
-    def has_name(self, *name):
-        return self._names.intersection(name)
-
-    def get_names(self):
-        return self._names
-
-    def get_option_name(self):
-        return set()
 
     def fix(self):
         return self
@@ -122,8 +105,8 @@ class Atom(object):
     def convert_2_dict(cls, obj):
         return {
             '__class__': obj.__class__.__name__,
-            'names': tuple(obj._names),
-            'default': obj._default,
+            'names': tuple(obj.names),
+            'default': obj.default,
         }
 
     @classmethod
@@ -144,15 +127,15 @@ class Atom(object):
         return cls(*names, **{'default': default})
 
     def __str__(self):
-        return '/'.join(self._names)
+        return '/'.join(self.names)
 
     def __repr__(self):
-        return '%s(%s)' % (self.__class__.__name__, ', '.join(self._names))
+        return '%s(%s)' % (self.__class__.__name__, ', '.join(self.names))
 
     def __eq__(self, other):
         if type(self) is not type(other):
             return False
-        if not self.has_name(*other.get_names()):
+        if not self.names.intersection(other.names):
             return False
         return True
 
@@ -166,9 +149,9 @@ class Option(Atom):
         self.ref = kwargs.get('ref', None)    # a instance, not a list
         # self.countable = False
 
-    def get_value(self, options, in_repeat):
-        # default = self._default
-        names = self._names
+    def get_value(self, in_repeat):
+        # default = self.default
+        names = self.names
         value = self.value
         ref = self.ref
 
@@ -219,7 +202,7 @@ class Option(Atom):
             result[name] = value
         return result
 
-    def get_sys_default_value(self, options, in_repeat):
+    def get_sys_default_value(self, in_repeat):
         if in_repeat:
             value = []
         elif self.ref is not None:
@@ -234,13 +217,13 @@ class Option(Atom):
         else:
             value = False
         # Not work on py2.6
-        # return {name: value for name in self._names}
+        # return {name: value for name in self.names}
         result = {}
-        for name in self._names:
+        for name in self.names:
             result[name] = value
         return result
 
-    def match(self, argv, options, repeat_match):
+    def match(self, argv, repeat_match):
         if self.error is not None:
             logger.info('error in %s - %s', self, self.error)
             return False
@@ -259,7 +242,7 @@ class Option(Atom):
         # saver.save(self, argv)
 
         find_it, attached_value, index = \
-            argv.break_for_option(self._names)
+            argv.break_for_option(self.names)
 
         if not find_it:
             logger.debug('not found matching %s in %s', self, argv)
@@ -301,7 +284,7 @@ class Option(Atom):
                 min(self.ref.arg_range()) > 0):
             logger.info(
                 '%s ref must fully match but failed because `--`', self)
-            self.error = ('/'.join(self._names) +
+            self.error = ('/'.join(self.names) +
                           ' requires argument(s) but hits "--".')
 
             return False
@@ -314,13 +297,12 @@ class Option(Atom):
             to_match_ref_argv = argv.clone()
             to_match_ref_argv[:] = [attached_value]
 
-        result = self.ref.match(to_match_ref_argv,
-                                options, repeat_match)
+        result = self.ref.match(to_match_ref_argv, repeat_match)
 
         if attached_value is not None and to_match_ref_argv:
             logger.info('%s ref must fully match but failed for %s',
                         self, to_match_ref_argv)
-            self.error = ('%s requires argument(s).' % ('/'.join(self._names)))
+            self.error = ('%s requires argument(s).' % ('/'.join(self.names)))
             return False
 
         if not result:
@@ -334,9 +316,6 @@ class Option(Atom):
             argv.extend(to_match_ref_argv)
         logger.debug('%s matched %s / %s', self, self.value, argv)
         return True
-
-    def get_option_name(self):
-        return self.get_names()
 
     def reset(self):
         value = self.value
@@ -403,14 +382,13 @@ class Option(Atom):
         return '`%s`' % result
 
     def __repr__(self):
-        return 'Option(%s, ref=%r)' % (', '.join(self._names), self.ref)
+        return 'Option(%s, ref=%r)' % (', '.join(self.names), self.ref)
 
     def __eq__(self, other):
-        if type(self) is not type(other):
+        if not isinstance(other, Option):
             return False
 
-        equal = self.get_option_name().intersection(
-                    other.get_option_name())
+        equal = self.names.intersection(other.names)
 
         if equal:
             equal = (self.ref == other.ref)
@@ -433,7 +411,7 @@ class Command(Atom):
             self.value = 0
         # self.value = False
 
-    def match(self, argv, options, repeat_match):
+    def match(self, argv, repeat_match):
         if self.error is not None:
             logger.info('error in %s - %s', self, self.error)
             return False
@@ -461,7 +439,7 @@ class Command(Atom):
                 logger.debug('%s matching %s failed', self, current)
                 return False
 
-        if current not in self._names or Atom.get_class(current) is Option:
+        if current not in self.names or Atom.get_class(current) is Option:
             logger.debug('%s matching %s failed', self, current)
             return False
 
@@ -481,28 +459,28 @@ class Command(Atom):
         else:
             return sum(filter(None, values))
 
-    def get_value(self, options, in_repeat):
+    def get_value(self, in_repeat):
         if in_repeat:
             value = int(self.value)
         else:
             value = self.value
 
         # Not work on py2.6
-        # return {name: value for name in self._names}
+        # return {name: value for name in self.names}
         result = {}
-        for name in self._names:
+        for name in self.names:
             result[name] = value
         return result
 
-    def get_sys_default_value(self, options, in_repeat=False):
+    def get_sys_default_value(self, in_repeat):
         if in_repeat:
             value = 0
         else:
             value = False
         # Not work on py2.6
-        # return {name: value for name in self._names}
+        # return {name: value for name in self.names}
         result = {}
-        for name in self._names:
+        for name in self.names:
             result[name] = value
         return result
 
@@ -525,7 +503,7 @@ class Argument(Atom):
             return list(value)
         return value
 
-    def match(self, argv, options, repeat_match):
+    def match(self, argv, repeat_match):
         if self.error is not None:
             logger.info('error in %s - %s', self, self.error)
             return False
@@ -596,7 +574,7 @@ class Argument(Atom):
         logger.debug('%s matched %s/%s', self, self.value, argv)
         return True
 
-    def get_value(self, options, in_repeat):
+    def get_value(self, in_repeat):
         value = self.value
         if in_repeat:
             if value is None:
@@ -604,21 +582,21 @@ class Argument(Atom):
             elif not isinstance(value, list):
                 value = [value]
         # Not work on py2.6
-        # return {name: value for name in self._names}
+        # return {name: value for name in self.names}
         result = {}
-        for name in self._names:
+        for name in self.names:
             result[name] = value
         return result
 
-    def get_sys_default_value(self, options, in_repeat):
+    def get_sys_default_value(self, in_repeat):
         if in_repeat:
             value = []
         else:
             value = None
         # Not work on py2.6
-        # return {name: value for name in self._names}
+        # return {name: value for name in self.names}
         result = {}
-        for name in self._names:
+        for name in self.names:
             result[name] = value
         return result
 
@@ -653,10 +631,10 @@ class Unit(list):
         for each in self:
             each.reset()
 
-    def get_value(self, options, in_repeat):
+    def get_value(self, in_repeat):
         result = {}
         for each in self:
-            this_result = each.get_value(options, in_repeat or self.repeat)
+            this_result = each.get_value(in_repeat or self.repeat)
             repeated_keys = set(result).intersection(this_result)
             for key in repeated_keys:
                 old_value = result[key]
@@ -690,12 +668,6 @@ class Unit(list):
         logger.debug('%s return value %s', self, result)
         return result
 
-    def get_option_name(self):
-        result = set()
-        for each in self:
-            result.update(each.get_option_name())
-        return result
-
     def arg_range(self):
         if not self:
             return [0]
@@ -718,55 +690,6 @@ class Unit(list):
             return self._fix_single_element()
         else:
             return self._fix_multi_element()
-
-    def fix_optional(self, opt_2_ins):
-        result = []
-
-        skip = 0
-        for idx, element in enumerate(self):
-            if skip > 0:
-                skip -= 1
-                continue
-            if isinstance(element, OptionsShortcut):
-                pass
-            elif isinstance(element, (Unit, Either)):
-                element.fix_optional(opt_2_ins)
-            elif isinstance(element, Option):
-                names = element.get_names()
-                common_names = names.intersection(opt_2_ins)
-                assert len(common_names) <= 1, "fixme: %s" % common_names
-                if common_names:
-                    ins_in_opt = opt_2_ins[common_names.pop()]
-                    ref_in_opt = ins_in_opt.ref
-                    if ref_in_opt is not None:
-                        if element.ref is not None:
-                            if element.ref != ref_in_opt:
-                                raise DocpieError(
-                                    "%s announced differently "
-                                    "in usage(%s) and option(%s)" % (
-                                        element, self, ins_in_opt))
-                        elif self[idx + 1] == ref_in_opt:
-                            element.ref = self[idx + 1]
-                            logger.debug('%s set ref %s', element, element.ref)
-                            skip = 1
-                        else:
-                            expect_num = len(ref_in_opt)
-                            tried = Required(
-                                *self[idx+1:idx+1+expect_num]).fix()
-                            logger.debug('try %s == %s', ref_in_opt, tried)
-                            if ref_in_opt == tried:
-                                element.ref = tried
-                                logger.debug('%s set ref %s',
-                                             element, element.ref)
-                                skip = expect_num
-                            else:
-                                raise DocpieError(
-                                    "%s announced differently "
-                                    "in usage(%s) and option(%s)" % (
-                                        element, self, ins_in_opt))
-            result.append(element)
-        self[:] = result
-        return self
 
     def _fix_single_element(self):
         this_element = self[0].fix()
@@ -854,7 +777,7 @@ class Unit(list):
         self[:] = options + others
         return not others
 
-    def _match_oneline(self, argv, options):
+    def _match_oneline(self, argv):
         # Though it's one line matching
         # It still need to deal with situation like:
         # `-b cmd1 -a cmd2 -b`
@@ -878,7 +801,7 @@ class Unit(list):
 
                 # saver.save(each, argv)
                 argv.option_only = (index <= last_opt_or_arg)
-                result = each.match(argv, options, False)
+                result = each.match(argv, False)
                 if result:
                     old_matching_status = matched_status[index]
                     matched_status[index] = True
@@ -901,7 +824,7 @@ class Unit(list):
         return matched_status
 
     # TODO: balance the value for `<a>... <b>`
-    def match_repeat(self, argv, options):
+    def match_repeat(self, argv):
         # saver.save(self, argv)
         old_status = None
         new_status = argv.status()
@@ -912,7 +835,7 @@ class Unit(list):
             self.reset()
             # saver.save(self, argv)
             old_status = new_status
-            result = self.match_oneline(argv, options)
+            result = self.match_oneline(argv)
             if result:
                 full_match_count += 1
             else:
@@ -968,7 +891,7 @@ class Unit(list):
                                 continue
                             elif each.match(Argv([], True, True,
                                                  True, True),
-                                            [], False):
+                                            False):
                                 # use an empty token to test
                                 continue
                             return False
@@ -992,8 +915,8 @@ class Unit(list):
                 return True
 
             elif (not isinstance(element, (Optional, OptionsShortcut)) and
-                        not element.match(Argv([], True, True, True, True),
-                                          [], False)):
+                    not element.match(Argv([], True, True, True, True),
+                                      False)):
                 return False
 
     # TODO: check if this is buggy
@@ -1020,7 +943,7 @@ class Unit(list):
                 assert isinstance(each, Argument)
                 value = each.value
                 # acturally argument has no default so far
-                # default = each._default
+                # default = each.default
                 if value is None:
                     pass
                 elif isinstance(value, list):
@@ -1029,15 +952,15 @@ class Unit(list):
                     result.append(value)
         return result
 
-    def get_sys_default_value(self, options, in_repeat):
+    def get_sys_default_value(self, in_repeat):
         result = {}
         if in_repeat or self.repeat:
             for each in self:
-                result.update(each.get_sys_default_value(options, True))
+                result.update(each.get_sys_default_value(True))
             return result
 
         for each in self:
-            this_result = each.get_sys_default_value(options, False)
+            this_result = each.get_sys_default_value(False)
             common_keys = set(result).intersection(this_result)
             for key in common_keys:
                 old_value = result[key]
@@ -1086,14 +1009,12 @@ class Unit(list):
         return cls(*atoms, **{'repeat': repeat})
 
     def __eq__(self, other):
-        if not isinstance(other, Unit):
+        if self.repeat != other.repeat:
             return False
 
-        # when one is None, this will work too
-        if type(self) is not type(other):
-            return False
         if len(self) != len(other):
             return False
+
         return all(ts == tt for ts, tt in zip(self, other))
 
     def __repr__(self):
@@ -1104,26 +1025,26 @@ class Unit(list):
 
 class Required(Unit):
 
-    def match(self, argv, options, repeat_match):
+    def match(self, argv, repeat_match):
         if self.error is not None:
             logger.info('error in %s - %s', self, self.error)
             return False
 
         if not (repeat_match or self.repeat):
             logger.debug('try to match %s once, %s', self, argv)
-            result = self.match_oneline(argv, options)
+            result = self.match_oneline(argv)
             logger.debug('%s matching status: %s', self, result)
             return (self.error is None) and result
 
         logger.debug('try to match %s repeatedly', self)
-        return self.match_repeat(argv, options) and self.error is None
+        return self.match_repeat(argv) and self.error is None
 
-    def match_oneline(self, argv, options):
+    def match_oneline(self, argv):
         # saver.save(self, argv)
         self_value = self.dump_value()
         argv_value = argv.dump_value()
 
-        matched_status = self._match_oneline(argv, options)
+        matched_status = self._match_oneline(argv)
 
         if self.error is not None:
             logger.info('error in %s - %s', self, self.error)
@@ -1142,6 +1063,12 @@ class Required(Unit):
         # saver.rollback(self, argv)
         return False
 
+    def __eq__(self, other):
+        if not isinstance(other, Required):
+            return False
+
+        return super(Required, self).__eq__(other)
+
     def __str__(self):
         return '(%s)%s' % (' '.join(map(str, self)),
                            '...' if self.repeat else '')
@@ -1155,15 +1082,15 @@ class Optional(Unit):
             this_range.append(0)
         return this_range
 
-    def match_oneline(self, argv, options):
+    def match_oneline(self, argv):
         # saver.save(self, argv)
-        self._match_oneline(argv, options)
+        self._match_oneline(argv)
         if self.error is not None:
             logger.info('error in %s - %s', self, self.error)
             return False
         return True
 
-    def match(self, argv, options, repeat_match):
+    def match(self, argv, repeat_match):
         if self.error is not None:
             logger.info('error in %s - %s', self, self.error)
             return False
@@ -1172,33 +1099,32 @@ class Optional(Unit):
                       self, argv, ', repeatedly' if repeat else '')
         func = (self.match_repeat if repeat else self.match_oneline)
 
-        func(argv, options)
+        func(argv)
         return self.error is None
+
+    def __eq__(self, other):
+        if not isinstance(other, Optional):
+            return False
+
+        return super(Optional, self).__eq__(other)
 
     def __str__(self):
         if len(self) == 1:
             if isinstance(self[0], OptionsShortcut):
                 if self.repeat:
-                    return '[options]...'
-                return '[options]'
+                    return '%s...' % self[0]
+                return str(self[0])
 
-            if isinstance(self[0], Atom) and self[0].has_name('options'):
-                fmt = '[ %s ]%s'
-            else:
-                fmt = '[%s]%s'
-        else:
-            fmt = '[%s]%s'
-        return fmt % (' '.join(map(str, self)), '...' if self.repeat else '')
+        return '[%s]%s' % \
+               (' '.join(map(str, self)), '...' if self.repeat else '')
 
 
 class OptionsShortcut(object):
     error = None
 
-    def __init__(self):
+    def __init__(self, options):
         self._hide = set()
-
-    def get_option_name(self):
-        raise AssertionError("fixme: Unexpected call")
+        self.options = options
 
     def set_hide(self, names):
         self._hide.update(names)
@@ -1213,7 +1139,8 @@ class OptionsShortcut(object):
         logger.info('fixme: Unexpected call')
         return [0]
 
-    def match(self, argv, options, repeat_match):
+    def match(self, argv, repeat_match):
+        options = self.options
         if self.error is not None:
             logger.info('error in %s - %s', self, self.error)
             return False
@@ -1221,7 +1148,7 @@ class OptionsShortcut(object):
         hide = self._hide
         logger.debug('[options]/%s/%s try matching %s', options, hide, argv)
         for each in filter(
-                lambda x: not hide.intersection(x[0]._names), options):
+                lambda x: not hide.intersection(x[0].names), options):
 
             if not argv:
                 logger.info('argv run out before matching [options] %s(-%s)',
@@ -1229,40 +1156,33 @@ class OptionsShortcut(object):
                 self.error = each.error
                 return self.error is None
             logger.debug('[options] try %s matching %s', each, argv)
-            each.match(argv, options, repeat_match)
+            each.match(argv, repeat_match)
             if each.error is not None:
                 self.error = each.error
                 return False
         return self.error is None
 
-    def get_value(self, options, in_repeat):
+    def get_value(self, in_repeat):
+        options = self.options
         hide = self._hide
         result = {}  # developer should ensure no same options in [options]
         for each in filter(
-                lambda x: not hide.intersection(x[0]._names), options):
-            result.update(each.get_value(options, in_repeat))
+                lambda x: not hide.intersection(x[0].names), options):
+            result.update(each.get_value(in_repeat))
         return result
 
-    def get_sys_default_value(self, options, in_repeat):
+    def get_sys_default_value(self, in_repeat):
+        options = self.options
         hide = self._hide
         result = {}
         for each in filter(
-                lambda x: not hide.intersection(x[0]._names), options):
-            result.update(each.get_sys_default_value(options, in_repeat))
+                lambda x: not hide.intersection(x[0].names), options):
+            result.update(each.get_sys_default_value(in_repeat))
         return result
 
-    def set_need_match(self):
-        if self.ref is None:
-            self._matchref = ()
-        if self._matchref is None:
-            self._matchref = tuple(
-                filter(lambda x: not self.need_hide(*x[0].get_names()),
-                       self.ref)
-            )
-
-    @classmethod
-    def reset(klass):
-        pass
+    def reset(self):
+        for each in self.options:
+            each.reset()
 
     @property
     def repeat(self):
@@ -1272,16 +1192,17 @@ class OptionsShortcut(object):
         return self
 
     def dump_value(self):
-        pass
+        return [x.dump_value() for x in self.options]
 
     def load_value(self, value):
-        pass
+        for ins, val in zip(self.options, value):
+            ins.load_value(val)
 
     def merge_value(self, values):
-        ref = self.ref
+        options = self.options
         result = []
         for index, value in enumerate(zip(values)):
-            ins = ref[index]
+            ins = options[index]
             result.append(ins.merge_value(value))
 
         return result
@@ -1298,20 +1219,20 @@ class OptionsShortcut(object):
         }
 
     @classmethod
-    def convert_2_object(cls, dic):
+    def convert_2_object(cls, dic, options):
         assert dic['__class__'] == 'OptionsShortcut'
-        ins = OptionsShortcut()
+        ins = OptionsShortcut(options)
         ins.set_hide(dic['hide'])
         return ins
 
     # TODO: better behavior
     def __eq__(self, other):
-        if type(other) is OptionsShortcut:
+        if isinstance(other, OptionsShortcut):
             return True
         return False
 
     def __str__(self):
-        return '[options]'
+        return '`[options]`'
 
     def __repr__(self):
         return 'OptionsShortcut()'
@@ -1325,12 +1246,6 @@ class Either(list):
         assert(all(isinstance(x, Unit) for x in branch))
         super(Either, self).__init__(branch)
         self.matched_branch = -1
-
-    def get_option_name(self):
-        result = set()
-        for each in self:
-            result.update(each.get_option_name())
-        return result
 
     def fix(self):
         if not self:
@@ -1370,7 +1285,7 @@ class Either(list):
         else:
             first = self[0][0]
             for each in self:
-                first.set_alias(*each[0].get_names())
+                first.names.update(each[0].names)
             result = first_type(first)
             logger.debug('fix %r -> %r', self, result)
             return result
@@ -1381,22 +1296,19 @@ class Either(list):
             result.update(each.arg_range())
         return list(result)
 
-    def fix_optional(self, opt_2_ins):
-        self[:] = (x.fix_optional(opt_2_ins) for x in self)
-        return self
-
 
 def convert_2_dict(obj):
     return obj.convert_2_dict(obj)
 
 
-def convert_2_object(dic):
+def convert_2_object(dic, options={}):
+    # never modify options
     cls_name = dic['__class__']
     if cls_name in ('Argument', 'Command', 'Option'):
         return Atom.convert_2_object(dic)
     elif cls_name in ('Optional', 'Required'):
         return Unit.convert_2_object(dic)
     elif cls_name == 'OptionsShortcut':
-        return OptionsShortcut.convert_2_object(dic)
+        return OptionsShortcut.convert_2_object(dic, options)
     else:
         raise ValueError('%s can not be converted to object', dic)

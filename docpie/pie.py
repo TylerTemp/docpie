@@ -21,7 +21,7 @@ class Docpie(dict):
 
     # Docpie verison
     # it's not a good idea but it can avoid loop importing
-    _version = '0.1.0'
+    _version = '0.1.1'
 
     option_name = 'Options:'
     usage_name = 'Usage:'
@@ -35,7 +35,7 @@ class Docpie(dict):
     attachvalue = True
     extra = {}
     opt_names = []
-    long_opt_names = set()
+    all_opt_names = set()
 
     def __init__(self, doc=None, help=True, version=None,
                  stdopt=True, attachopt=True, attachvalue=True,
@@ -56,12 +56,17 @@ class Docpie(dict):
             if self.usage_text is None:
                 raise DocpieError('"Usage:" not found')
 
-            self.options = OptionParser(opt_str, self.stdopt).get_chain()
-            usages = UsageParser(
-                usage_str, self.name, self.stdopt).get_chain()
+            opt_parser = OptionParser(
+                opt_str, self.stdopt, self.attachopt, self.attachvalue)
+            self.options = opt_parser.get_chain()
+            opt_2_ins = opt_parser.name_2_instance
 
-            self.usages, self.opt_names, self.long_opt_names = \
-                Parser.fix(self.options, usages)
+            self.usages, self.all_opt_names = UsageParser(
+                usage_str, self.name, self.options, opt_2_ins,
+                self.stdopt, self.attachopt, self.attachvalue
+            ).get_chain_and_option_names()
+
+            self.opt_names = [x[0].names for x in self.options]
 
             logger.debug(self.opt_names)
 
@@ -74,13 +79,15 @@ class Docpie(dict):
                       DeprecationWarning)
         return self
 
-    @staticmethod
-    def restore_pickle(value):
+    @classmethod
+    def restore_pickle(cls, value):
         '''This function is deprecated, use pickle.load() directly'''
         warnings.warn('This function is deprecated, '
                       'use pickle.load() directly',
                       DeprecationWarning)
-        if not isinstance(value, Docpie):
+        if (not isinstance(value, Docpie) or
+                (int(getattr(value, '_version', '0').replace('.', '')) <
+                 int(cls._version.replace('.', '')))):
             raise ValueError('Not support old docpie pickle data')
         return value
 
@@ -101,10 +108,9 @@ class Docpie(dict):
                      self.stdopt, self.attachopt, self.attachvalue)
 
         # the things in extra may not be announced
-        long_names = set(self.long_opt_names)
-        long_names.update(
-            filter(lambda x: x.startswith('--'), self.extra.keys()))
-        error_msg = token.auto_expand(long_names)
+        all_opt_names = set(self.all_opt_names)
+        all_opt_names.update(self.extra.keys())
+        error_msg = token.check_and_auto_expand(all_opt_names)
         # check first, raise after
         # so `-hwhatever` can trigger `-h` first
         self.check_flag_and_handler(token)
@@ -116,12 +122,11 @@ class Docpie(dict):
 
         if error_msg is not None:
             raise DocpieExit('%s\n\n%s' % (error_msg, help_msg))
-        options = self.options
 
         for each in self.usages:
             logger.debug('matching usage %s', each)
             argv_clone = token.clone()
-            if each.match(argv_clone, options, False):
+            if each.match(argv_clone, False):
                 logger.debug('matched usage %s, checking rest argv %s',
                              each, argv_clone)
                 if (not argv_clone or
@@ -132,8 +137,6 @@ class Docpie(dict):
                     matched = each
                     break
                 each.reset()
-                for opt in options:
-                    opt.reset()
                 logger.info('matching %s left %s, checking failed',
                             each, argv_clone)
                 continue
@@ -141,25 +144,24 @@ class Docpie(dict):
                 if each.error is not None:
                     logger.info('error in %s - %s', each, each.error)
                     raise DocpieExit(
-                        '%s%s\n\n%s' % (
-                        each.error,
-                        ' Use `--help` to see more' if self.help else '',
-                        self.usage_text))
+                        '%s%s\n\n%s' %
+                        (
+                         each.error,
+                         ' Use `--help` to see more' if self.help else '',
+                         self.usage_text))
                 each.reset()
-                for opt in options:
-                    opt.reset()
                 logger.info('failed matching usage %s / %s', each, argv_clone)
         else:
             logger.info('none matched')
             raise DocpieExit(self.usage_text)
 
-        value = matched.get_value(options, False)
+        value = matched.get_value(False)
         logger.debug('get all matched value %s', value)
         rest = self.usages
         rest.remove(matched)
 
         for each in rest:  # add left command/argv
-            default_values = each.get_sys_default_value(options, False)
+            default_values = each.get_sys_default_value(False)
             logger.debug('get rest values %s', default_values)
             common_keys = set(value).intersection(default_values)
 
@@ -188,10 +190,10 @@ class Docpie(dict):
         logger.debug('merged rest values, now %s', value)
 
         # add left option, add default value
-        for each in options:
+        for each in self.options:
             option = each[0]
-            names = option._names
-            default = option._default
+            names = option.names
+            default = option.default
             this_value = option.value
 
             logger.debug('%s/%s/%s', option, default, this_value)
@@ -338,7 +340,7 @@ class Docpie(dict):
             'option': option,
             'usage': usage,
             'option_names': [list(x) for x in self.opt_names],
-            'long_opt_names': list(self.long_opt_names)
+            'all_option_names': list(self.all_opt_names)
         }
 
     @classmethod
@@ -374,12 +376,12 @@ class Docpie(dict):
         self.option_text = text['option_text']
 
         self.opt_names = [set(x) for x in dic['option_names']]
-        self.long_opt_names = set(dic['long_opt_names'])
+        self.all_opt_names = set(dic['all_option_names'])
         self.set_config(help=help, version=version)
 
         self.options = [convert_2_object(x) for x in dic['option']]
 
-        self.usages = [convert_2_object(x) for x in dic['usage']]
+        self.usages = [convert_2_object(x, self.options) for x in dic['usage']]
 
         return self
 
@@ -464,28 +466,34 @@ class Docpie(dict):
         for each in alias:
             self.extra[each] = handler
 
-    def preview(self):
+    def preview(self, stream=sys.stdout):
         '''A quick preview of docpie. Print all the parsed object'''
-        print(('[Quick preview of Docpie %s]' % self._version).center(80, '='))
-        print('')
-        print(' str '.center(80, '-'))
-        print('Usage:')
-        for each in self.usages:
-            print(each)
-        print('\nOptions:')
-        for each in self.options:
-            print(each)
 
-        print(' repr '.center(80, '-'))
-        print('Usage:')
+        write = stream.write
+
+        write(('[Quick preview of Docpie %s]' % self._version).center(80, '='))
+        write('\n')
+
+        write(' str '.center(80, '-'))
+        write('\nUsage:\n')
         for each in self.usages:
-            print(repr(each))
-        print('\nOptions:')
+            write('%s\n' % each)
+        write('\nOptions:\n')
         for each in self.options:
-            print(repr(each))
-        print(' default handler '.center(80, '-'))
+            write('%s\n' % each)
+
+        write(' repr '.center(80, '-'))
+        write('\nUsage:\n')
+        for each in self.usages:
+            write('%r\n' % each)
+        write('\n\nOptions:\n')
+        for each in self.options:
+            write('%r\n' % each)
+
+        write(' auto handlers '.center(80, '-'))
+        write('\n')
         for key, value in self.extra.items():
-            print(key, value)
+            write('%s %s\n' % (key, value))
 
     def __str__(self):
         return '{%s}' % ',\n '.join('%r: %r' % i for i in sorted(self.items()))

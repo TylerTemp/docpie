@@ -36,9 +36,11 @@ View on: `HomePage <http://docpie.comes.today>`__ /
 ChangeLog
 ---------
 
-version 0.1.0:
+version 0.1.1:
 
--   Fix repeatable options in usage giving number insteal of a list
+-   Now you can stack short option with argument in both
+    ``-iFILE`` (Not recommended) and ``-i<file>``.
+-   Better notification for non-exists options
 
 `Full ChangeLog <https://github.com/TylerTemp/docpie/blob/master/CHANGELOG.md>`__
 
@@ -51,7 +53,7 @@ Isn't it brilliant how
 ``__doc__`` and converts command line into a python dict? ``docpie``
 does the similar work, but...
 
-**``docpie`` can do more!**
+**docpie can do more!**
 
 If you have never used ``docpie`` or ``docopt``, try this. It can parse
 your command line according to the ``__doc__`` string:
@@ -87,7 +89,7 @@ your command line according to the ``__doc__`` string:
 Then try ``$ python example.py ship Titanic move 1 2`` or
 ``$ python example.py --help``, see what you get.
 
-**``docpie`` can do...**
+**docpie can do...**
 
 ``docpie`` has some useful and handy features, e.g.
 
@@ -249,14 +251,15 @@ instead of positional arguments.
    ``-v``/``--version``, print this value, and exit. See "`Advanced
    Usage <#advanced-usage>`__\ " - "`Auto Handler <#auto-handler>`__\ "
    if you want to customize the behavior.
--  ``stdopt`` (bool, default ``True``) when set ``True``\ (default),
-   long flag should only starts with ``--``, e.g. ``--help``, and short
-   flag should be ``-`` followed by a letter. This is suggested to make
-   it ``True``. When set to ``False``, ``-flag`` is also a long flag. Be
-   careful if you need to turn it off.
--  ``attachopt`` (bool, default ``True``) allow you to write/pass
-   several short flag into one, e.g. ``-abc`` can mean ``-a -b -c``.
-   This only works when ``stdopt=True``
+-  ``stdopt`` (bool, default ``True``) when set ``True``
+   (default), long flag should only starts with ``--``, e.g. ``--help``, and
+   short flag should be ``-`` followed by a letter. This is suggested to make
+   it ``True``. When set to ``False``, ``-flag`` is also a long flag.
+   (**experimental**, you may not turn it off)
+-  ``attachopt`` (bool, default ``True``) allow you to
+   write/pass several short flag into one, e.g. ``-abc`` can mean ``-a -b -c``.
+   This only works when ``stdopt=True``.(**experimental**, you may not
+   turn it off)
 
    .. code:: python
 
@@ -266,9 +269,10 @@ instead of positional arguments.
 
    `try it now >> <http://docpie.comes.today/try/?example=attachopt>`__
 
--  ``attachvalue`` (bool, default ``True``) allow you to write short
-   flag and its value together, e.g. ``-abc`` can mean ``-a bc``. This
-   only works when ``stdopt=True``
+-  ``attachvalue`` (bool, default ``True``) allow you to
+   write short flag and its value together, e.g. ``-abc`` can mean ``-a bc``.
+   This only works when ``stdopt=True``.(**experimental**, you may not turn it
+   off)
 
    .. code:: python
 
@@ -589,7 +593,7 @@ accepted in ``docpie``, which is not allowed in ``docopt``:
 
     Options:
     -a..., --all ...               -a is countable
-    -b<sth>..., --boring=<sth>...  inf argument
+    -b<sth>..., --both=<sth>...  inf argument
     -c <a> [<b>]                   optional & required args
     -d [<arg>]                     optional arg
     """
@@ -597,7 +601,7 @@ accepted in ``docpie``, which is not allowed in ``docopt``:
     from docpie import docpie
     print(docpie(__doc__, 'prog -aa -a -b go go go -c sth else'.split()))
     # {'-a': 3, '--all': 3, '-b': ['go', 'go', 'go'], '--': False,
-    #  '--boring': ['go', 'go', 'go'], '-c': ['sth', 'else'], '-d': None}
+    #  '--both': ['go', 'go', 'go'], '-c': ['sth', 'else'], '-d': None}
 
 `try it now
 >> <http://docpie.comes.today/try/?example=non_posix_option>`__
@@ -703,6 +707,8 @@ When ``version`` is not ``None``, Docpie will do the following things:
 
 for ``help=True``, ``Docpie`` will check "--help" and "-h", then set
 value as ``Docpie.help_handler``.
+
+There are two way to customize it:
 
 extra
 ^^^^^
@@ -912,31 +918,30 @@ Difference
 
 ``docpie`` is not ``docopt``.
 
-1. (Fixed in 0.0.9, see `ChangeLog <https://github.com/TylerTemp/docpie/blob/master/CHANGELOG.md#009>`__)
+1. (New in 0.0.9, see `ChangeLog <https://github.com/TylerTemp/docpie/blob/master/CHANGELOG.md#009>`__)
 
    .. code:: python
 
        print(docpie('Usage: prog [-vvv | -vv | -v]', 'prog -vvv'))  # {'-v': 3}
        print(docpie('Usage: prog [-v | -vv | -vvv]', 'prog -vvv'))  # {'-v': 3}
 
-2. In ``docpie`` you can not "stack" option and value in this way even
-   you specify it in "Options":
+2. (New in version 0.1.1, see `ChangeLog <https://github.com/TylerTemp/docpie/blob/master/CHANGELOG.md#011>`__):
 
-   .. code:: python
+   Both works in ``docpie`` now. But the first one is **not** recommended.
 
-       """Usage: prog -iFILE   # Not work in docpie
+   .. code::
+
+       Usage: prog -iFILE
 
        Options: -i FILE
-       """
 
-   But you can do it in this way:
+   is similar to this
 
-   .. code:: python
+   .. code::
 
-       """Usage: prog -i<FILE>
+       Usage: prog -i<file>
 
-       Options: -i <FILE>
-       """
+       Options: -i <file>
 
 3. ``docpie`` uses ``Options:`` to find the current "Option" section,
    however ``docopt`` treats any line in ``doc`` that starts with ``-``
@@ -1009,5 +1014,5 @@ Cookbook <http://www.amazon.com/Python-Cookbook-Third-David-Beazley/dp/144934037
 License
 ------------
 
-`docpie` is released under
+``docpie`` is released under
 `MIT-License <https://github.com/TylerTemp/docpie/blob/master/LICENSE>`__

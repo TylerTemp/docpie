@@ -1,3 +1,30 @@
+## 0.1.1
+
+*   [change] use "Options" when parsing "Usage" and remove some `fix` method
+
+    Though it's not recommended, you can now write:
+
+    ```
+    Usage: prog -iFILE
+
+    Options: -i FILE    input file
+    ```
+
+    It's not clear. You'd better write `-i<file>` instead.
+
+*   [TODO] allow only show use inputted command
+*   [TODO/Partly Finished] notice user when a short flag is not defined
+
+    Now for the "stacked" situation, docpie can only check the first option,
+    which means
+
+    ```
+    Usage: prog -abc
+    ```
+
+    when user give `-a -d`, docpie will info that `-d` is not defined,
+    but when given `-ad`, docpie will not give this kind of info.
+
 ## 0.1.0
 
 *   [fix] merging value bug. `Usage: prog [--repeat=<sth> --repeat=<sth>]`

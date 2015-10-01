@@ -21,12 +21,14 @@ class Parser(object):
                       r'\s*'
                       r'(?:\n\s*\n|\n\s*$|$)')
 
+    option_name_2_instance = {}
+
     def _parse_pattern(self, token):
         logger.debug('get token %s', token)
         elements = []
         while token:
             atom = token.current()
-            if atom in ('(', '['):
+            if atom in '([':
                 elements.append(self._parse_bracket(token))
             elif atom == '|':
                 elements.append(token.next())
@@ -41,7 +43,6 @@ class Parser(object):
         return elements
 
     def _parse_bracket(self, token):
-        elements = []
         start = token.next()
         instance_type = Required if start == '(' else Optional
 
@@ -56,8 +57,6 @@ class Parser(object):
 
         instances = self._parse_pattern(bracket_token)
 
-        # Not support on py2.5
-        # return instance_type(*instances, repeat=repeat)
         return instance_type(*instances, **{'repeat': repeat})
 
     def _parse_element(self, token):
@@ -70,67 +69,163 @@ class Parser(object):
                 repeat = True
                 token.next()
             if repeat:
-                ins = Optional(OptionsShortcut(), repeat=True)
+                ins = Optional(OptionsShortcut(self.options), repeat=True)
             else:
-                ins = OptionsShortcut()
+                ins = OptionsShortcut(self.options)
             return (ins,)
+
+        if atom in ('-', '--'):
+            if token.current() == '...':
+                repeat = True
+                token.next()
+            else:
+                repeat = False
+            return (Command(atom, repeat=repeat),)
+
+        flag = None
+        arg_token = None
+        prepended = False
+        opt_2_ins = self.option_name_2_instance
+
         # --all=<sth>... -> --all=<sth> ...
         # --all=(<sth> <else>)... -> --all= ( <sth> <else> ) ...
         if atom.startswith('--') and '=' in atom:
-            flag, arg = atom.split('=', 1)
-            if Atom.get_class(flag) is Option:
-                # --all=<sth>
-                if arg and Atom.get_class(arg) is Argument:
-                    if token and token.current() == '...':
-                        repeat = True
-                        token.next()
-                    else:
-                        repeat = False
-                    return (Option(flag,
-                                   ref=Required(Argument(arg),
-                                                repeat=repeat)),)
-                # --all= ( <sth> <else> ) ...
+            flag_, arg_ = atom.split('=', 1)
+            if Atom.get_class(flag_) is Option:
+                flag = flag_
+                if arg_:
+                    arg_token = Token([arg_])
                 else:
-                    if token and token.current() in '([':
-                        bracket = token.next()
-                        flag_args = token.till_end_bracket(bracket)
-                        flag_args.insert(0, bracket)
-                        flag_args.append(')' if bracket == '(' else ']')
-                        if token.current() == '...':
-                            flag_args.append(token.next())
-                        flag_arg_ins = self._parse_bracket(Token(flag_args))
-                        return (Option(flag, ref=flag_arg_ins),)
-        # -a<sth>
-        elif atom.startswith('-') and '<' in atom:
-            flag, partly_arg = atom.split('<', 1)
-            flag_class = Atom.get_class(flag)
-            arg_class = Atom.get_class('<' + partly_arg)
-            if flag_class is Option and arg_class is Argument:
-                repeat = False
+                    next_arg = token.next()
+                    if next_arg not in ('(', '['):
+                        raise DocpieError('format error: %s' % atom)
+                    tk = [next_arg]
+                    tk.extend(token.till_end_bracket(next_arg))
+                    tk.append(')' if next_arg == '(' else ']')
+                    arg_token = Token(tk)
+
                 if token.current() == '...':
-                    token.next()
-                    repeat = True
-                return (Option(flag,
-                               ref=Required(Argument('<' + partly_arg),
-                                            repeat=repeat)),)
+                    arg_token.append(token.next())
+
+            # if '<' in atom and atom.endswith('>'):
+            #  and not self.stdopt:
+            #     index = atom.index('<')
+            #     flag_, arg_ = atom[:index], atom[index:]
+            #     if Atom.get_class(flag_) is Option:
+            # and Atom.get_class(arg_) is Argument:
+            #         flag = flag_
+            #         arg_token = Token([arg_])
+
+        # -a<sth> -aSTH -asth, -a, -abc<sth>
+        elif atom.startswith('-') and not atom.startswith('--'):
+            rest = None
+            # -a<sth> -abc<sth>
+            if '<' in atom and atom.endswith('>'):
+                # -a<sth> -> -a <sth>; -abc<sth> -> -a -bc<sth>
+                if self.stdopt and self.attachopt:
+                    if not self.attachvalue:
+                        raise DocpieError(
+                            "You can't write %s while attachvalue=False" %
+                            atom)
+                    flag_ = atom[:2]
+                    token.insert(0, '-' + atom[2:])
+                    prepended = True
+                # -a<sth> -> -a <sth>; -abc<sth> -> -abc <sth>
+                else:
+                    index = atom.find('<')
+                    flag_ = atom[:index]
+                    arg_token = Token([atom[index:]])
+            else:
+                flag_, rest = atom[:2], atom[2:]
+
+            if Atom.get_class(flag_) is Option:
+                flag = flag_
+                # announced in Options
+                if flag in opt_2_ins:
+                    ins = opt_2_ins[flag_][0]
+                    # In Options it requires no argument
+                    if ins.ref is None:
+                        # sth stacked with it
+                        if rest:
+                            if Atom.get_class(rest) is Argument:
+                                raise DocpieError(
+                                    ('%s announced difference in '
+                                     'Options(%s) and Usage(%s)') %
+                                    (flag_, ins, atom))
+                            if not (self.stdopt and self.attachopt):
+                                raise DocpieError(
+                                    ("You can't write %s while it requires "
+                                     "argument and attachopt=False") % atom)
+
+                            token.insert(0, '-' + rest)
+                            prepended = True
+                    # In Options it requires argument
+                    else:
+                        if rest:
+                            arg_token = Token([rest])
+                        else:
+                            _current = token.current()
+                            if _current in '([':
+                                tk = [token.next()]
+                                tk.extend(token.till_end_bracket(tk[0]))
+                                tk.append(')' if tk[0] == '(' else ']')
+                                arg_token = Token(tk)
+                            elif _current in ('...', '|'):
+                                raise DocpieError(
+                                    ('%s requires argument in Options(%s) '
+                                     'but hit "%s" in Usage') %
+                                    atom, ins, _current)
+                            else:
+                                arg_token = Token([token.next()])
+
+                        if token.current() == '...':
+                            arg_token.append(token.next())
+                elif rest:
+                    if not (self.stdopt and self.attachopt):
+                        raise DocpieError(
+                            "You can't write %s while it requires argument "
+                            "and attachopt=False" % atom)
+                    # -asth -> -a -sth
+                    token.insert(0, '-' + rest)
+                    prepended = True
+
+        if flag is not None:
+            logger.debug('parsing flag %s, %s, %s', flag, arg_token, token)
+            if arg_token is not None:
+                ref_lis = self._parse_pattern(Token(arg_token))
+                ref = Required(*ref_lis).fix()
+            else:
+                ref = None
+            ins = Option(flag, ref=ref)
+
+            if flag in opt_2_ins:
+                opt_ins = opt_2_ins[flag][0]
+                ins.names.update(opt_ins.names)
+                # != won't work on pypy
+                if not (ins == opt_ins):
+                    raise DocpieError(
+                        '%s announces differently in '
+                        'Options(%r) and Usage(%r)' %
+                        (atom, opt_ins, ins))
+            if token.current() == '...':
+                ins = Required(ins, **{'repeat': True})
+                token.next()
+
+            return (ins,)
+
+        if prepended:
+            token.pop(0)
 
         atom_class = Atom.get_class(atom)
-        if (atom_class is Option and
-                not atom.startswith('--') and
-                len(atom) > 2 and
-                self.stdopt):
-            ins_lis = [Option('-' + short) for short in atom[1:]]
-        else:
-            ins_lis = [atom_class(atom)]
+        ins = atom_class(atom)
+
         if token.current() == '...':
             token.next()
             # Not work on py2.6
             # ins = Required(*ins_lis, repeat=True)
-            ins = Required(*ins_lis, **{'repeat': True})
-            while token.current() == '...':
-                token.next()
-            return (ins,)
-        return ins_lis
+            ins = Required(ins, **{'repeat': True})
+
+        return (ins,)
 
     def _parse_pipe(self, lis):
         assert '...' not in lis
@@ -146,69 +241,6 @@ class Parser(object):
                 groups[-1].append(each)
 
         return Either(*groups)
-
-    @classmethod
-    def fix(cls, opts, usages):
-        opt_names = []
-        long_opt_names = set()
-        # check if same option announced twice in Options
-        opt_2_ins = {}
-        for each in opts:
-            opt = each[0]
-            names = opt.get_option_name()
-            for name in names:
-                if name in opt_2_ins:
-                    logger.critical('name: %s, opt_2_ins: %s', name, opt_2_ins)
-                    raise DocpieError('%s announced more than once '
-                                      'in Options' % name)
-                opt_2_ins[name] = opt
-            long_opt_names.update(filter(lambda x: x.startswith('--'), names))
-            opt_names.append(names)
-        # set the option shortcut
-        # OptionsShortcut.set_ref(opts)
-
-        usage_result = []
-
-        logger.debug('origial usage: %s', usages)
-        for usage in usages:
-            if usage is None:
-                usage_result.append(Optional())
-            else:
-                usage.fix_optional(opt_2_ins)
-                opts_in_usage, shortcuts = \
-                    cls.find_option_names_no_shortcut_and_shortcut(usage)
-                if opts_in_usage and shortcuts:
-                    for cut in shortcuts:
-                        cut.set_hide(opts_in_usage)
-                long_opt_names.update(
-                    filter(lambda x: x.startswith('--'), opts_in_usage))
-                usage_result.extend(usage.expand_either())
-
-        for each in usage_result:
-            each.push_option_ahead()
-
-        logger.debug('fixed usage: %s', usage_result)
-
-        return usage_result, opt_names, long_opt_names
-
-    @classmethod
-    def find_option_names_no_shortcut_and_shortcut(cls, element):
-        shortcuts = []
-        result = set()
-        if isinstance(element, OptionsShortcut):
-            shortcuts.append(element)
-        elif isinstance(element, list):
-            for each in element:
-                names, srtcuts = \
-                    cls.find_option_names_no_shortcut_and_shortcut(each)
-                result.update(names)
-                shortcuts.extend(srtcuts)
-        elif isinstance(element, Option):
-            result.update(element._names)
-        else:
-            pass
-
-        return result, shortcuts
 
     @classmethod
     def parse_section(cls, text, name, case_sensitive=False):
@@ -257,7 +289,6 @@ class OptionParser(Parser):
     # support xxxxxx.[default: yes]
     # not support xxxxx[default: no].
     # not support xxxxx[default: no]!
-    # not support xxxxxx.[default: no ]
     # If you want to match a not so strict format, this may help:
     # default_re = re.compile(r'\[default: *(?P<default>.*?) *\]'
     #                         r' *'
@@ -266,8 +297,13 @@ class OptionParser(Parser):
     default_re = re.compile(r'\[default: (?P<default>.*?)\] *$',
                             flags=re.IGNORECASE)
 
-    def __init__(self, text, stdopt):
+    def __init__(self, text, stdopt, attachopt, attachvalue):
+
         self.stdopt = stdopt
+        self.attachopt = attachopt
+        self.attachvalue = attachvalue
+
+        self.name_2_instance = {}
         if text is None or not text.strip():    # empty
             self._opt_and_default_str = []
         else:
@@ -367,8 +403,11 @@ class OptionParser(Parser):
         for opt_str, default in lis:
             logger.debug('%s:%r' % (opt_str, default))
             opt, repeat = self._parse_opt_str(opt_str)
-            opt.set_default(default)
-            opts.append(Optional(opt, repeat=repeat))
+            opt.default = default
+            result = Optional(opt, repeat=repeat)
+            for name in opt.names:
+                self.name_2_instance[name] = result
+            opts.append(result)
         return opts
 
     def _split_short_by_cfg(self, s):
@@ -390,7 +429,7 @@ class OptionParser(Parser):
         if not first.startswith('-'):
             raise DocpieError('option %s does not start with "-"' % first)
 
-        # if Atom.stdopt:
+        # if self.stdopt:
         # -sth -> name=-s, value=th
         # else:
         # -sth -> name=-sth, value=''
@@ -418,7 +457,7 @@ class OptionParser(Parser):
         for each in opt_lis:
             if each.startswith('-'):    # alias
                 name, value = self._split_short_by_cfg(each)
-                opt_ins.set_alias(name)
+                opt_ins.names.add(name)
                 if value:
                     args_ins.append(Required(Argument(value)))
                 if args:    # trun it into instance
@@ -471,8 +510,8 @@ class OptionParser(Parser):
 
         if len(current_range) > 1:
             logger.info('too many possibilities: '
-                           'option %s expect %s arguments',
-                           name, '/'.join(map(str, current_range)))
+                        'option %s expect %s arguments',
+                        name, '/'.join(map(str, current_range)))
 
         # TODO: check if current_ins contain Command(not allowed in fact)
         opt_ins.ref = current_ins
@@ -498,8 +537,15 @@ class UsageParser(Parser):
                                     r'(?P<arg><.*?>)'
                                     r'$')
 
-    def __init__(self, text, name, stdopt):
+    def __init__(self, text, name, options, option_name_2_instance,
+                 stdopt, attachopt, attachvalue):
+
+        self.option_name_2_instance = option_name_2_instance
+        self.options = options
+
         self.stdopt = stdopt
+        self.attachopt = attachopt
+        self.attachvalue = attachvalue
         self._chain = self._parse_text(text, name)
 
     def _parse_text(self, text, name):
@@ -555,106 +601,39 @@ class UsageParser(Parser):
 
         return result
 
-    def get_chain(self):
-        # if not self._chain:
-        #     return [None]
+    @classmethod
+    def _find_optionshortcut_and_outside_option_names(cls, lis):
+        opt_names = set()
+        opt_cuts = []
+        for element in lis:
+            if isinstance(element, OptionsShortcut):
+                opt_cuts.append(element)
+            elif isinstance(element, list):
+                names, srtcuts = \
+                    cls._find_optionshortcut_and_outside_option_names(element)
+                opt_names.update(names)
+                opt_cuts.extend(srtcuts)
+            elif isinstance(element, Option):
+                opt_names.update(element.names)
 
-        return [Required(*x).fix() for x in self._chain]
+        return opt_names, opt_cuts
 
+    def get_chain_and_option_names(self):
+        result = []
+        opt_names = set(self.option_name_2_instance)
+        for each_usage in self._chain:
+            ins = Required(*each_usage).fix()
+            if ins is None:
+                result.append(Optional())
+                continue
 
-if __name__ == '__main__':
-    from bashlog import getlogger
-    from pprint import pprint
-    getlogger('docpie', logging.DEBUG)
+            outside_opt_names, opt_shortcuts = \
+                self._find_optionshortcut_and_outside_option_names(ins)
+            for opt_cut in opt_shortcuts:
+                opt_cut.set_hide(outside_opt_names)
+            opt_names.update(outside_opt_names)
+            for usage in ins.expand_either():
+                usage.push_option_ahead()
+                result.append(usage)
 
-    doc = '''\
-    --test [<a>|<b>|<c> <d>]
-    --first  [default: \t]
-    -f --file  nothing
-    -v,--verbose\tstill nothing
-    --multi=<test>
-       Yes, default goes
-       here. [default:  ]
-    -pmsg, --print <msg>     -pmsg will not separated to -p <msg>[default: yes]
-    -A --all=<list>  here
-                     we are
-                     [default: ,]
-    -w<work> --work<work>
-    --more=[<more1>, <more2>]...
-    -T, --tab=<\t>, <    >  [default: \t]
-    --test1 (<test>, [<test>], [<test>, <test>])...
-    --test2 -t [<test> <test>...]
-    -s
-    --single'''
-
-    # doc = '''\
-    # --test2 -t [<test> <test>]...'''
-    # doc = '''\
-    # -test -t <arg>  sth'''
-    parsed = OptionParser(doc)
-    option_list = parsed.get_chain()
-    # pprint(option_list)
-    pprint([str(x) for x in option_list])
-
-    doc = '''\
-    app
-    app ---what
-    app - --
-    app --more [<first> <second>]
-    app cmd...
-    app bad-flag --no-brancket=sth
-    app bad-flag --2-eq==<sth>
-    app strange-args --has-space=<    >
-    app bad-flag --not-in-format=< >here
-    app equal = <test>
-    app -a <here>... <there>
-    app [options] [ options ] [ options] [options ]
-    app [options]... (options) [options...]
-    app [options] install <,>
-    app [-v | -vv | -vvv]
-    app [go go]
-    app [go go]...
-    app [--hello=<world>]
-    app [-v -v]
-    app -v ...
-    app [(-a -b)]
-    app (<sth> --all|<else>)
-    app [<n>|--fl <n>]
-    app [<n> [<n>...]]
-    app [-a <host:port>]
-    app go <d> --sp=<km/h>
-    app (--xx=<x>|--yy=<y>)
-    app [--input=<file name>]
-    app [(-v | -vv) | -vvv]
-    app -msg...
-    app ARG... ARG'''
-    # Atom.stdopt = False
-    x = UsageParser(doc, name='app')
-    usage_list = x.get_chain()
-
-    usage, option = Parser.fix(option_list, usage_list)
-
-    print('Usage:')
-    pprint([str(x) for x in option])
-    print('\nOptions:')
-    pprint([str(x) for x in usage])
-
-    print('\n\n-------------------')
-    print('Usage:')
-    pprint([repr(x) for x in option])
-    print('\nOptions:')
-    pprint([repr(x) for x in usage])
-
-    doc = '''\
-    app [-a | (-a) -a | -aaa (-a) -a]'''
-
-    parsed = UsageParser(doc)
-    chain = parsed.get_chain()
-    print(chain)
-
-    # print()
-    # for each_line in x._chain:
-    #     if(each_line):
-    #         pprint([str(x.fix()) for x in each_line])
-    #     else:
-    #         print([])
+        return result, opt_names

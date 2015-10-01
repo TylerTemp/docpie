@@ -3,8 +3,6 @@ from docpie.error import DocpieError, DocpieExit
 
 logger = logging.getLogger('docpie.tokens')
 
-# it's named "tokens" because there is already "token" in python std lib
-
 
 class Token(list):
     _brackets = {'(': ')', '[': ']'}  # , '{': '}', '<': '>'}
@@ -48,21 +46,35 @@ class Argv(list):
         self.attachopt = attachopt
         self.attachvalue = attachvalue
 
-    def auto_expand(self, long_names):
+    def check_and_auto_expand(self, names):
         result = []
         for index, each in enumerate(self):
             if each == '--' and self.auto_dashes:
                 result.extend(self[index:])
                 break
-            if not each.startswith('--') or each in long_names:
+
+            # this won't work when -abc, and it actually means -a -b -c,
+            # but -b, -c is not defined
+            if each.startswith('-') and not each.startswith('--'):
+                if self.stdopt:
+                    this_opt = each[:2]
+                else:
+                    this_opt = each
+
+                if this_opt not in names:
+                    return 'Unknown option: ' + each
+
+                result.append(each)
+
+            elif not each.startswith('--') or each in names:
                 result.append(each)
             else:
                 option, equal, value = each.partition('=')
-                if option == '--' or option in long_names:
+                if option == '--' or option in names:
                     result.append(each)
                 else:
                     possible = list(
-                        filter(lambda x: x.startswith(option), long_names))
+                        filter(lambda x: x.startswith(option), names))
                     if not possible:
                         return 'Unknown option: ' + each
                         # Don't raise. It may be --help
