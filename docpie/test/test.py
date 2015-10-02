@@ -7,6 +7,14 @@ from docpie import docpie, Docpie, bashlog
 from docpie.error import DocpieExit, DocpieError
 import json
 
+try:
+    from io import StringIO
+except ImportError:
+    try:
+        from cStringIO import StringIO
+    except ImportError:
+        from StringIO import StringIO
+
 logger = logging.getLogger('docpie.test.docpie')
 
 
@@ -66,13 +74,13 @@ class DocpieBasicTest(unittest.TestCase):
                           'prog -v input.py output.py')
         self.assertRaises(DocpieExit, docpie, doc, 'prog --fake')
         # --hel -> --help
-        with EmptyWriter():
+        with StdoutRedirect():
             self.assertRaises(SystemExit, docpie, doc, 'prog --hel')
 
     def test_command_help(self):
 
         doc = 'usage: prog --help-commands | --help'
-        with EmptyWriter():
+        with StdoutRedirect():
             self.assertRaises(SystemExit, docpie, doc, 'prog --help')
 
     # this syntax won't work on python 3.2
@@ -1743,18 +1751,76 @@ Options: -a, --all=<here>
             with self.assertRaisesRegexp(DocpieExit, "^Unknown option: "):
                 docpie(doc)
 
+            with StdoutRedirect():
+                doc = 'Usage: prog -abc'
 
-class EmptyWriter(object):
+                sys.argv = 'prog -ha'.split()
+                # help
+                with self.assertRaisesRegexp(SystemExit, "^$"):
+                    docpie(doc)
 
-    def write(self, *a, **k):
-        pass
+    def test_auto_expand_raise_short_option_stack(self):
+        if hasattr(self, 'assertRaisesRegexp'):
+            doc = 'Usage: prog -abc'
+
+            sys.argv = 'prog -ad'.split()
+            with self.assertRaisesRegexp(DocpieExit, "^Unknown option: "):
+                docpie(doc)
+
+            with StdoutRedirect() as f:
+                doc = 'Usage: prog [-abc]'
+
+                sys.argv = 'prog -ah'.split()
+                # help
+                with self.assertRaisesRegexp(SystemExit, "^$"):
+                    docpie(doc)
+                    self.assertTrue(f.read().startswith('Usage: prog [-abc]'))
+
+    def test_option_disorder_match(self):
+        doc = 'Usage: prog -b -a'
+        sys.argv = 'prog -ab'.split()
+        self.eq(doc, {'-a': True, '-b': True, '--': False})
+
+    def test_option_stack_in_usage(self):
+        doc = 'Usage: prog -b<sth> -a'
+        sys.argv = 'prog -abb'.split()
+        self.eq(doc, {'-a': True, '-b': 'b', '--': False})
+
+    def test_auto_handler(self):
+        doc = 'Usage: prog -a<sth>'
+
+        sys.argv = 'prog -ah'.split()
+        self.eq(doc, {'-a': 'h', '--': False})
+
+        if hasattr(self, 'assertRaisesRegexp'):
+            with StdoutRedirect() as f:
+                sys.argv = ['prog', '-ha']
+                with self.assertRaisesRegexp(SystemExit, '^$'):
+                    docpie(doc)
+                    self.assertEqual(f.read(), 'Usage: prog -a<sth>')
+
+                sys.argv = ['prog', '-xxxh']
+                with self.assertRaisesRegexp(SystemExit, '^$'):
+                    docpie(doc)
+                    self.assertEqual(f.read(), 'Usage: prog -a<sth>')
+
+                sys.argv = ['prog', '-xvx']
+                with self.assertRaisesRegexp(SystemExit, '^$'):
+                    docpie(doc, version='0.0.0')
+                    self.assertEqual(f.read(), '0.0.0')
+
+
+class StdoutRedirect(StringIO):
 
     def __enter__(self):
         self.real_out = sys.stdout
         sys.stdout = self
+        return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         sys.stdout = self.real_out
+        self.close()
+
 
 def case():
     return (unittest.TestLoader().loadTestsFromTestCase(DocpieBasicTest),

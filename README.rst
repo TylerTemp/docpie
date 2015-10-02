@@ -708,7 +708,7 @@ When ``version`` is not ``None``, Docpie will do the following things:
 for ``help=True``, ``Docpie`` will check "--help" and "-h", then set
 value as ``Docpie.help_handler``.
 
-There are two way to customize it:
+There are two ways to customize it:
 
 extra
 ^^^^^

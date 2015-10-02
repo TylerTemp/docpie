@@ -35,7 +35,8 @@ class Token(list):
 
 class Argv(list):
 
-    def __init__(self, argv, auto2dashes, stdopt, attachopt, attachvalue):
+    def __init__(self, argv, auto2dashes,
+                 stdopt, attachopt, attachvalue, known=[]):
         # self._full = argv
         self[:] = argv
         self.auto_dashes = auto2dashes
@@ -45,8 +46,11 @@ class Argv(list):
         self.stdopt = stdopt
         self.attachopt = attachopt
         self.attachvalue = attachvalue
+        self.error = None
+        self.known = known
 
-    def formal(self, names, options_first):
+    def formal(self, options_first):
+        names = self.known
         result = []
         for index, each in enumerate(self):
             # first command/argument
@@ -73,7 +77,8 @@ class Argv(list):
                     this_opt = each
 
                 if this_opt not in names:
-                    return 'Unknown option: ' + each
+                    self.error = 'Unknown option: %s.' % this_opt
+                    return
 
                 result.append(each)
 
@@ -87,7 +92,9 @@ class Argv(list):
                     possible = list(
                         filter(lambda x: x.startswith(option), names))
                     if not possible:
-                        return 'Unknown option: ' + each
+                        self.error = 'Unknown option: %s.' % option
+                        result.append(each)
+                        break
                         # Don't raise. It may be --help
                         # and the developer didn't announce in
                         # either Usage or Options
@@ -98,10 +105,12 @@ class Argv(list):
                         logger.debug('expand %s -> %s', each, replace)
                         result.append(replace)
                     else:
-                        return (
+                        self.error = (
                             '%s is not a unique prefix: %s?' %
                             (option, ', '.join(possible))
                         )
+                        result.append(each)
+                        break
 
         logger.debug('%s -> %s', self, result)
         self[:] = result
@@ -109,6 +118,29 @@ class Argv(list):
 
     def current(self, offset=0):
         return self[offset] if len(self) > offset else None
+
+    def insert(self, index, object):
+        dashes_index = self.index('--') if '--' in self else float('inf')
+        fine = True
+        flag = None
+        if (object != '-' and
+                object.startswith('-') and
+                not object.startswith('--')):
+            if self.stdopt:
+                flag = object[:2]
+            else:
+                flag = object
+            fine = (flag in self.known)
+
+        if (self.auto_dashes and
+                (index <= dashes_index and fine or
+                 index > dashes_index) or
+                fine):
+            logger.debug('insert %s into %s at %s', object, self, index)
+            return super(Argv, self).insert(index, object)
+
+        logger.info('%s not in %s', flag, self.known)
+        self.error = 'Unknown option: %s.' % flag
 
     def break_for_option(self, names):
         sub_argv = None
@@ -159,12 +191,15 @@ class Argv(list):
                       self.stdopt, self.attachopt, self.attachvalue)
         result.dashes = self.dashes
         result.option_only = self.option_only
+        result.error = self.error
+        result.known = self.known
         return result
 
     def restore(self, ins):
         self[:] = ins
         self.dashes = ins.dashes
         self.option_only = ins.option_only
+        self.error = ins.error
 
     def status(self):
         # return len(self)

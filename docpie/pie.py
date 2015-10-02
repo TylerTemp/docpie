@@ -1,9 +1,8 @@
 import sys
-import re
 import logging
 import warnings
 
-from docpie.error import DocpieException, DocpieExit, DocpieError
+from docpie.error import DocpieExit, DocpieError
 from docpie.parser import UsageParser, OptionParser, Parser
 from docpie.element import convert_2_object, convert_2_dict
 from docpie.token import Argv
@@ -35,8 +34,10 @@ class Docpie(dict):
     attachvalue = True
     options_first = False
     extra = {}
+
     opt_names = []
     all_opt_names = set()
+    require_arg_opt_names = set()
 
     def __init__(self, doc=None, help=True, version=None,
                  stdopt=True, attachopt=True, attachvalue=True,
@@ -63,10 +64,19 @@ class Docpie(dict):
             self.options = opt_parser.get_chain()
             opt_2_ins = opt_parser.name_2_instance
 
-            self.usages, self.all_opt_names = UsageParser(
+            self.usages, all_opts = UsageParser(
                 usage_str, self.name, self.options, opt_2_ins,
                 self.stdopt, self.attachopt, self.attachvalue
-            ).get_chain_and_option_names()
+            ).get_chain_and_all_options()
+
+            self.all_opt_names = set()
+            self.require_arg_opt_names = set()
+
+            for opt_ins in all_opts:
+                self.all_opt_names.update(opt_ins.names)
+                if opt_ins.ref:
+                    self.require_arg_opt_names.update(opt_ins.names)
+
 
             self.opt_names = [x[0].names for x in self.options]
 
@@ -106,13 +116,14 @@ class Docpie(dict):
         elif isinstance(argv, StrType):
             argv = argv.split()
 
-        token = Argv(argv[1:], self.auto2dashes or self.options_first,
-                     self.stdopt, self.attachopt, self.attachvalue)
 
         # the things in extra may not be announced
         all_opt_names = set(self.all_opt_names)
         all_opt_names.update(self.extra.keys())
-        error_msg = token.formal(all_opt_names, self.options_first)
+        token = Argv(argv[1:], self.auto2dashes or self.options_first,
+                     self.stdopt, self.attachopt, self.attachvalue,
+                     all_opt_names)
+        token.formal(self.options_first)
         # check first, raise after
         # so `-hwhatever` can trigger `-h` first
         self.check_flag_and_handler(token)
@@ -122,8 +133,8 @@ class Docpie(dict):
         else:
             help_msg = self.usage_text
 
-        if error_msg is not None:
-            raise DocpieExit('%s\n\n%s' % (error_msg, help_msg))
+        if token.error is not None:
+            raise DocpieExit('%s\n\n%s' % (token.error, help_msg))
 
         for each in self.usages:
             logger.debug('matching usage %s', each)
@@ -142,20 +153,21 @@ class Docpie(dict):
                 logger.info('matching %s left %s, checking failed',
                             each, argv_clone)
                 continue
-            else:
-                if each.error is not None:
-                    logger.info('error in %s - %s', each, each.error)
-                    raise DocpieExit(
-                        '%s%s\n\n%s' %
-                        (
-                         each.error,
-                         ' Use `--help` to see more' if self.help else '',
-                         self.usage_text))
+            elif argv_clone.error is None:
                 each.reset()
                 logger.info('failed matching usage %s / %s', each, argv_clone)
+
+            else:
+                logger.info('error in %s - %s', each, argv_clone.error)
+                raise DocpieExit(
+                    '%s%s\n\n%s' %
+                    (
+                     argv_clone.error,
+                     ' Use `--help` to see more' if self.help else '',
+                     self.usage_text))
         else:
             logger.info('none matched')
-            raise DocpieExit(self.usage_text)
+            raise DocpieExit(help_msg)
 
         value = matched.get_value(False)
         logger.debug('get all matched value %s', value)
@@ -278,13 +290,56 @@ class Docpie(dict):
         return value
 
     def check_flag_and_handler(self, token):
-        for flag, handler in self.extra.items():
-            if not callable(handler):
-                continue
-            find_it, _, _ = token.clone().break_for_option((flag,))
-            if find_it:
-                logger.info('find %s, auto handle it', flag)
-                handler(self, flag)
+        need_arg = self.require_arg_opt_names
+        options = set()
+
+        for ele in token:
+            if self.auto2dashes and ele == '--':
+                break
+            if ele.startswith('-') and ele != '-':
+                options.add(ele)
+
+        for inputted in options:
+
+            found = False
+            for auto, handler in self.extra.items():
+
+                if auto.startswith('--') and inputted.startswith('--'):
+                    logger.debug('%s <~ %s', inputted, auto)
+                    if '=' in inputted:
+                        inputted = inputted.split('=', 1)[0]
+                    if inputted == auto:
+                        found = True
+                        break
+
+                elif auto[1] != '-' and inputted[1] != '-':
+                    logger.debug('%s <~ %s', inputted, auto)
+                    if self.stdopt:
+                        attachopt = self.attachopt
+                        break_upper = False
+                        for index, attached_name in enumerate(inputted[1:]):
+                            if not attachopt and index > 0:
+                                break
+
+                            logger.debug('check %s <~ %s', attached_name, auto)
+
+                            stacked_name = '-' + attached_name
+                            if stacked_name == auto:
+                                found = True
+                                logger.debug('find %s in %s', auto, inputted)
+
+                            if (stacked_name in need_arg):
+                                break_upper = True
+                                break
+
+                        if found or break_upper:  # break upper loop
+                            break
+                    else:
+                        found = (inputted == auto)
+
+            if found:
+                logger.info('find %s, auto handle it', auto)
+                handler(self, auto)
 
     @staticmethod
     def help_handler(docpie, flag):
@@ -353,7 +408,8 @@ class Docpie(dict):
             'option': option,
             'usage': usage,
             'option_names': [list(x) for x in self.opt_names],
-            'all_option_names': list(self.all_opt_names)
+            'all_option_names': list(self.all_opt_names),
+            'requiring_argument_options': list(self.require_arg_opt_names)
         }
 
     @classmethod
@@ -391,6 +447,7 @@ class Docpie(dict):
         self.opt_names = [set(x) for x in dic['option_names']]
         self.all_opt_names = set(dic['all_option_names'])
         self.set_config(help=help, version=version)
+        self.require_arg_opt_names = set(dic['requiring_argument_options'])
 
         self.options = [convert_2_object(x) for x in dic['option']]
 

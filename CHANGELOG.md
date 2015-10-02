@@ -13,18 +13,9 @@
     It's not clear. You'd better write `-i<file>` instead.
 
 *   [TODO] allow only show use inputted command
-*   [TODO/Partly Finished] notice user when a short flag is not defined
-
-    Now for the "stacked" situation, docpie can only check the first option,
-    which means
-
-    ```
-    Usage: prog -abc
-    ```
-
-    when user give `-a -d`, docpie will info that `-d` is not defined,
-    but when given `-ad`, docpie will not give this kind of info.
+*   [new] notice user when a flag is not defined.('Unknown option: <option>')
 *   [TODO] multi options section support
+*   [fix] handle auto_handler before matching
 *   [new] `optionsfirst` argument / [TODO] update document
 
 ## 0.1.0

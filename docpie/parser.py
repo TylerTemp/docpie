@@ -119,8 +119,10 @@ class Parser(object):
         # -a<sth> -aSTH -asth, -a, -abc<sth>
         elif atom.startswith('-') and not atom.startswith('--'):
             rest = None
+
+            lt_index = atom.find('<')
             # -a<sth> -abc<sth>
-            if '<' in atom and atom.endswith('>'):
+            if lt_index >= 0 and atom.endswith('>'):
                 # -a<sth> -> -a <sth>; -abc<sth> -> -a -bc<sth>
                 if self.stdopt and self.attachopt:
                     if not self.attachvalue:
@@ -128,13 +130,16 @@ class Parser(object):
                             "You can't write %s while attachvalue=False" %
                             atom)
                     flag_ = atom[:2]
-                    token.insert(0, '-' + atom[2:])
-                    prepended = True
+                    # -abc<sth>
+                    if lt_index > 2:
+                        token.insert(0, '-' + atom[2:])
+                        prepended = True
+                    else:
+                        arg_token = Token([atom[lt_index:]])
                 # -a<sth> -> -a <sth>; -abc<sth> -> -abc <sth>
                 else:
-                    index = atom.find('<')
-                    flag_ = atom[:index]
-                    arg_token = Token([atom[index:]])
+                    flag_ = atom[:lt_index]
+                    arg_token = Token([atom[lt_index:]])
             else:
                 flag_, rest = atom[:2], atom[2:]
 
@@ -603,37 +608,41 @@ class UsageParser(Parser):
 
     @classmethod
     def _find_optionshortcut_and_outside_option_names(cls, lis):
-        opt_names = set()
+        opt_ouside = []
         opt_cuts = []
         for element in lis:
             if isinstance(element, OptionsShortcut):
                 opt_cuts.append(element)
             elif isinstance(element, list):
-                names, srtcuts = \
+                outside, srtcuts = \
                     cls._find_optionshortcut_and_outside_option_names(element)
-                opt_names.update(names)
+                opt_ouside.extend(outside)
                 opt_cuts.extend(srtcuts)
             elif isinstance(element, Option):
-                opt_names.update(element.names)
+                opt_ouside.append(element)
 
-        return opt_names, opt_cuts
+        return opt_ouside, opt_cuts
 
-    def get_chain_and_option_names(self):
+    def get_chain_and_all_options(self):
         result = []
-        opt_names = set(self.option_name_2_instance)
+        all_options = [x[0] for x in self.option_name_2_instance.values()]
         for each_usage in self._chain:
             ins = Required(*each_usage).fix()
             if ins is None:
                 result.append(Optional())
                 continue
 
-            outside_opt_names, opt_shortcuts = \
+            outside_opts, opt_shortcuts = \
                 self._find_optionshortcut_and_outside_option_names(ins)
+
             for opt_cut in opt_shortcuts:
-                opt_cut.set_hide(outside_opt_names)
-            opt_names.update(outside_opt_names)
+                for opt_ins in outside_opts:
+                    opt_cut.set_hide(opt_ins.names)
+
+            all_options.extend(outside_opts)
+
             for usage in ins.expand_either():
                 usage.push_option_ahead()
                 result.append(usage)
 
-        return result, opt_names
+        return result, all_options
