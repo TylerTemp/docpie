@@ -1,3 +1,8 @@
+## 0.1.2
+
+*   [TODO] allow only show use inputted command
+*   [TODO] multi options section support
+
 ## 0.1.1
 
 *   [change] use "Options" when parsing "Usage" and remove some `fix` method
@@ -12,9 +17,7 @@
 
     It's not clear. You'd better write `-i<file>` instead.
 
-*   [TODO] allow only show use inputted command
 *   [new] notice user when a flag is not defined.('Unknown option: <option>')
-*   [TODO] multi options section support
 *   [fix] handle auto_handler before matching
 *   [new] `optionsfirst` argument / [TODO] update document
 

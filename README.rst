@@ -41,6 +41,7 @@ version 0.1.1:
 -   Now you can stack short option with argument in both
     ``-iFILE`` (Not recommended) and ``-i<file>``.
 -   Better notification for non-exists options
+-   Fix handling short auto_handler before matching bug
 
 `Full ChangeLog <https://github.com/TylerTemp/docpie/blob/master/CHANGELOG.md>`__
 
