@@ -16,13 +16,13 @@ __all__ = ('docpie', 'Docpie',
 # it's not a good idea but it can avoid loop importing
 __version__ = Docpie._version
 
-__timestamp__ = 1443719034.709704  # last sumbit
+__timestamp__ = 1443779222.833524  # last sumbit
 
 
 def docpie(doc, argv=None, help=True, version=None,
            stdopt=True, attachopt=True, attachvalue=True,
            auto2dashes=True, name=None, case_sensitive=False,
-           optionsfirst=False, extra={}):
+           optionsfirst=False, appearedonly=False, extra={}):
     """
     Parse `argv` based on command-line interface described in `doc`.
 
@@ -108,9 +108,8 @@ def docpie(doc, argv=None, help=True, version=None,
     pie.docpie(argv)
     return pie
 
+
 if __name__ == '__main__':
-    from docpie import bashlog
-    bashlog.stdoutlogger(logger, logging.CRITICAL)
     doc = """Naval Fate.
 
 Usage:

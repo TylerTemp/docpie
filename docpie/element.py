@@ -14,8 +14,11 @@ except ImportError:
         for prod in result:
             yield tuple(prod)
 
-from docpie.error import DocpieError, DocpieExit, DocpieException
-from docpie.token import Argv
+__all__ = ('Atom', 'Command', 'Argument', 'Option',
+           'Unit', 'Required', 'Optional', 'OptionsShortcut', 'Either',
+           'convert_2_dict', 'convert_2_object')
+
+from docpie.tokens import Argv
 
 logger = logging.getLogger('docpie.element')
 
@@ -146,6 +149,7 @@ class Option(Atom):
         # assert all(x.startswith('-') for x in names)
         super(Option, self).__init__(*names, **kwargs)
         self.ref = kwargs.get('ref', None)    # a instance, not a list
+        # self.value = -1  # -1 means never appeared
         # self.countable = False
 
     def get_value(self, in_repeat):

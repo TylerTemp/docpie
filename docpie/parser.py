@@ -1,25 +1,17 @@
 from docpie.element import Atom, Option, Command, Argument
 from docpie.element import Optional, Required, OptionsShortcut
 from docpie.element import Either
-from docpie.token import Token
+from docpie.tokens import Token
 from docpie.error import DocpieError
 
 import logging
 import re
+import textwrap
 
 logger = logging.getLogger('docpie.parser')
 
 
 class Parser(object):
-
-    section_re_str = (r'(?:^|\n)'
-                      r'(?P<raw>'
-                      r'(?P<name>[\ \t]*{0}[\ \t]*)'
-                      r'(?P<sep>\n?)'
-                      r'(?P<section>.*?)'
-                      r')'
-                      r'\s*'
-                      r'(?:\n\s*\n|\n\s*$|$)')
 
     option_name_2_instance = {}
 
@@ -247,28 +239,11 @@ class Parser(object):
 
         return Either(*groups)
 
-    @classmethod
-    def parse_section(cls, text, name, case_sensitive=False):
-        section_re = re.compile(
-            cls.section_re_str.format(name),
-            flags=re.DOTALL | (0 if case_sensitive else re.IGNORECASE))
-        match = section_re.search(text)
-        if match is None:
-            return None, None
-        dic = match.groupdict()
-        logger.debug(dic)
-        if dic['sep'] == '\n':
-            return dic['section'], dic['raw']
-        reallen = len(dic['name'])
-        replace = ''.ljust(reallen)
-        drop_name = match.expand('%s\g<sep>\g<section>' % replace)
-        return cls.drop_started_empty_lines(drop_name).rstrip(), dic['raw']
-
     @staticmethod
     def drop_started_empty_lines(text):
         # drop the empty lines at start
         # different from lstrip
-        logger.debug(text)
+        logger.debug(repr(text))
         lis = text.splitlines()
         while lis and not lis[0].strip():
             lis.pop(0)
@@ -285,8 +260,19 @@ class OptionParser(Parser):
                          r'(?P<description>.*?)'
                          r' *$',
                          flags=re.IGNORECASE)
+
     indent_re = re.compile(r'^(?P<indent> *)')
     to_space_re = re.compile(r',\s?|=')
+
+    options_re_str = (r'(?P<raw>'
+                       r'(?P<title>[\ \t]*'
+                        r'(?P<prefix>[^\n]*?)'
+                        r'[\ \t]*{0}[\ \t]*'
+                       r')'
+                       r'(?P<sep>\n?)'
+                       r'(?P<section>.*?)'
+                      r')'
+                      r'([\ \t]*$|[\ \t]*\n$|[\ \t]*\n[\ \t]*\n)')
 
     # split_re = re.compile(r'(<.*?>)|\s?')
     # default ::= chars "[default: " chars "]"
@@ -319,6 +305,51 @@ class OptionParser(Parser):
     def get_chain(self):
         return self._chain
         # return [Optional(x) for x in self._chain]
+
+    @classmethod
+    def parse(cls, text, name, case_sensitive=False):
+        # TODO: allow options separate with single break line
+        # currently:
+        # different option section must be separated with at
+        # least one visible empty line
+        #
+        # Options:
+        #   -f, --flag     a flag
+        #
+        # Help Options:
+        #   -o, --output   output stream
+
+        match_iter = re.finditer(
+            cls.options_re_str.format(name),
+            text,
+            flags=re.DOTALL | (0 if case_sensitive else re.IGNORECASE))
+
+        raw_content = {}
+        formal_collect = []
+
+        for match in match_iter:
+            dic = match.groupdict()
+            logger.debug(dic)
+            prefix = dic['prefix']
+            if prefix in raw_content:
+                raise DocpieError('duplicated options section %s' % prefix)
+            raw_content[prefix] = dic['raw']
+
+            if dic['sep'] == '\n':
+                formal_collect.append(dic['section'])
+            else:
+                logger.info('%r', dic['title'])
+                replace = ' ' * len(dic['title'])
+                drop_name = match.expand('%s\g<sep>\g<section>' % replace)
+                formal_collect.append(drop_name)
+
+        formal_result = None
+        if formal_collect:
+            formal_collect[-1] = formal_collect[-1].rstrip()
+            formal_result = \
+                '\n'.join(textwrap.dedent(x) for x in formal_collect)
+
+        return formal_result, raw_content
 
     def _parse_text(self, text):
         collect = []
@@ -420,7 +451,7 @@ class OptionParser(Parser):
             if (not s.startswith('--') and
                     len(s) > 1):
                 return s[:2], s[2:]
-        return (s, '')
+        return s, ''
 
     def _parse_opt_str(self, opt):
 
@@ -542,6 +573,15 @@ class UsageParser(Parser):
                                     r'(?P<arg><.*?>)'
                                     r'$')
 
+    usage_re_str = (r'(?:^|\n)'
+                    r'(?P<raw>'
+                     r'(?P<name>[\ \t]*{0}[\ \t]*)'
+                     r'(?P<sep>\n?)'
+                     r'(?P<section>.*?)'
+                    r')'
+                    r'\s*'
+                    r'(?:\n\s*\n|\n\s*$|$)')
+
     def __init__(self, text, name, options, option_name_2_instance,
                  stdopt, attachopt, attachvalue):
 
@@ -552,6 +592,24 @@ class UsageParser(Parser):
         self.attachopt = attachopt
         self.attachvalue = attachvalue
         self._chain = self._parse_text(text, name)
+
+    @classmethod
+    def parse(cls, text, name, case_sensitive=False):
+        match = re.search(
+            cls.usage_re_str.format(name),
+            text,
+            flags=re.DOTALL | (0 if case_sensitive else re.IGNORECASE))
+
+        if match is None:
+            return None, None
+        dic = match.groupdict()
+        logger.debug(dic)
+        if dic['sep'] == '\n':
+            return dic['section'], dic['raw']
+        reallen = len(dic['name'])
+        replace = ''.ljust(reallen)
+        drop_name = match.expand('%s\g<sep>\g<section>' % replace)
+        return cls.drop_started_empty_lines(drop_name).rstrip(), dic['raw']
 
     def _parse_text(self, text, name):
         result = []

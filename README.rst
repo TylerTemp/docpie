@@ -1,37 +1,16 @@
+.. docpie
+.. README.rst
+
 docpie
 ======
+
+`An easy and Pythonic way to create your POSIX command line`
 
 View on: `HomePage <http://docpie.comes.today>`__ /
 `GitHub <https://github.com/TylerTemp/docpie/>`__ /
 `PyPi <https://pypi.python.org/pypi/docpie>`__
 
--  `ChangeLog <#ChangeLog>`__
--  `Introduction <#introduction>`__
--  `Installation <#installation>`__
--  `Basic Usage <#basic-usage>`__
-
-   -  `API <#api>`__
-   -  `Format <#format>`__
-
-      -  `Usage Format <#usage-format>`__
-      -  `Options Format <#options-format>`__
-
--  `Advanced Usage <#advanced-usage>`__
-
-   -  `Basic <#basic>`__
-   -  `Change Configuration <#change-configuration>`__
-   -  `Auto Handler <#auto-handler>`__
-
-      -  `extra Argument <#extra>`__
-      -  `set-auto-handler Method <#set-auto-handler>`__
-
-   -  `Serialization <#serialization>`__
-   -  `Preview <#preview>`__
-
--  `Difference to docopt <#difference>`__
--  `Known Issues <#known-issues>`__
--  `Development <#development>`__
--  `License <#license>`__
+.. contents::
 
 ChangeLog
 ---------
@@ -110,7 +89,7 @@ Then try ``$ python example.py ship Titanic move 1 2`` or
 
 2. Different from ``docopt``, ``docpie`` will handle ``--``
    automatically by default, you do not need to write it in your
-   "Usage:" anymore. (You can also trun off this feature)
+   "Usage:" anymore. (You can also turn off this feature)
 
    .. code:: python
 
@@ -711,8 +690,8 @@ value as ``Docpie.help_handler``.
 
 There are two ways to customize it:
 
-extra
-^^^^^
+extra argument
+^^^^^^^^^^^^^^
 
 You can costomize this by passing ``extra`` argument, e.g.
 
@@ -763,7 +742,7 @@ now try the following command:
     example.py --help
     example.py --moo
 
-set-auto-handler
+set_auto_handler
 ^^^^^^^^^^^^^^^^
 
 .. code:: python
@@ -919,42 +898,11 @@ Difference
 
 ``docpie`` is not ``docopt``.
 
-1. (New in 0.0.9, see `ChangeLog <https://github.com/TylerTemp/docpie/blob/master/CHANGELOG.md#009>`__)
-
-   .. code:: python
-
-       print(docpie('Usage: prog [-vvv | -vv | -v]', 'prog -vvv'))  # {'-v': 3}
-       print(docpie('Usage: prog [-v | -vv | -vvv]', 'prog -vvv'))  # {'-v': 3}
-
-2. (New in version 0.1.1, see `ChangeLog <https://github.com/TylerTemp/docpie/blob/master/CHANGELOG.md#011>`__):
-
-   Both works in ``docpie`` now. But the first one is **not** recommended.
-
-   .. code::
-
-       Usage: prog -iFILE
-
-       Options: -i FILE
-
-   is similar to this
-
-   .. code::
-
-       Usage: prog -i<file>
-
-       Options: -i <file>
-
-3. ``docpie`` uses ``Options:`` to find the current "Option" section,
+1. ``docpie`` uses ``Options:`` to find the current "Option" section,
    however ``docopt`` treats any line in ``doc`` that starts with ``-``
    (not counting spaces) as "Options"
 
-4. Subparsers are not supported currently.
-
-5. (New in 0.0.7, see `ChangeLog <https://github.com/TylerTemp/docpie/blob/master/CHANGELOG.md#007>`__)
-   User do not need to write the full long option in 0.0.7. e.g. ``--long`` can
-   be ``--l``, ``--lo`` if it's obvious, and raise error when it's ambiguous.
-
-6. ``docpie`` will add ``--`` to result when ``auto2dashes=True``.
+2. ``docpie`` will add ``--`` to result when ``auto2dashes=True``.
    ``docpie`` will add all synonymous to result.
 
 Known Issues
@@ -988,16 +936,16 @@ this feature has a very strict limit.
 Development
 -----------
 
-execute ``/test/test.py`` to run the test
+execute ``/test.py`` to run the test
 
 the logger name of ``docpie`` is ``"docpie"``
 
 ``docpie`` contains two developing tools: ``bashlog`` and ``tracemore``.
-You can do like:
+You can use them in this way:
 
 .. code:: python
 
-    from docpie import docpie, Docpie, bashlog
+    from docpie import docpie, bashlog
     from docpie.tracemore import get_exc_plus
 
     logger = bashlog.stdoutlogger('docpie')  # You may init your logger in your way

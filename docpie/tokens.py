@@ -1,5 +1,5 @@
 import logging
-from docpie.error import DocpieError, DocpieExit
+from docpie.error import DocpieError
 
 logger = logging.getLogger('docpie.tokens')
 
@@ -37,8 +37,8 @@ class Argv(list):
 
     def __init__(self, argv, auto2dashes,
                  stdopt, attachopt, attachvalue, known=[]):
-        # self._full = argv
-        self[:] = argv
+
+        super(Argv, self).__init__(argv)
         self.auto_dashes = auto2dashes
         self.dashes = False
         # when this is on, only --option can try to match.
@@ -78,7 +78,8 @@ class Argv(list):
 
                 if this_opt not in names:
                     self.error = 'Unknown option: %s.' % this_opt
-                    return
+                    result.extend(self[index:])
+                    break
 
                 result.append(each)
 
@@ -93,7 +94,7 @@ class Argv(list):
                         filter(lambda x: x.startswith(option), names))
                     if not possible:
                         self.error = 'Unknown option: %s.' % option
-                        result.append(each)
+                        result.extend(self[index:])
                         break
                         # Don't raise. It may be --help
                         # and the developer didn't announce in
@@ -109,7 +110,7 @@ class Argv(list):
                             '%s is not a unique prefix: %s?' %
                             (option, ', '.join(possible))
                         )
-                        result.append(each)
+                        result.extend(self[index:])
                         break
 
         logger.debug('%s -> %s', self, result)
@@ -120,9 +121,12 @@ class Argv(list):
         return self[offset] if len(self) > offset else None
 
     def insert(self, index, object):
-        dashes_index = self.index('--') if '--' in self else float('inf')
+        if self.auto_dashes and '--' in self:
+            dashes_index = self.index('--')
+        else:
+            dashes_index = float('inf')
+
         fine = True
-        flag = None
         if (object != '-' and
                 object.startswith('-') and
                 not object.startswith('--')):
@@ -131,10 +135,10 @@ class Argv(list):
             else:
                 flag = object
             fine = (flag in self.known)
+            logger.debug('%s has flag %s, is known: %s', object, flag, fine)
 
-        if (self.auto_dashes and
-                (index <= dashes_index and fine or
-                 index > dashes_index) or
+        if (index <= dashes_index and fine or
+                index > dashes_index or
                 fine):
             logger.debug('insert %s into %s at %s', object, self, index)
             return super(Argv, self).insert(index, object)
@@ -143,7 +147,6 @@ class Argv(list):
         self.error = 'Unknown option: %s.' % flag
 
     def break_for_option(self, names):
-        sub_argv = None
         auto_dashes = self.auto_dashes
         stdopt = self.stdopt
         attachvalue = self.attachvalue
@@ -206,7 +209,7 @@ class Argv(list):
         return list(self)
 
     def dump_value(self):
-        return (list(self), self.dashes, self.option_only)
+        return list(self), self.dashes, self.option_only
 
     def load_value(self, value):
         self[:], self.dashes, self.option_only = value

@@ -18,7 +18,7 @@ except ImportError:
 logger = logging.getLogger('docpie.test.docpie')
 
 
-class DocpieBasicTest(unittest.TestCase):
+class BasicTest(unittest.TestCase):
 
     def test_commands(self):
         eq = self.assertEqual
@@ -235,7 +235,7 @@ class DocpieBasicTest(unittest.TestCase):
         true(args['-b'])
 
 
-class DocpieRunDefaultTest(unittest.TestCase):
+class RunDefaultTest(unittest.TestCase):
 
     def eq(self, doc, result, argv=None):
         self.assertEqual(docpie(doc, argv), result)
@@ -1611,16 +1611,16 @@ Options: -a, --all=<here>
                       '--': True, '<args>': ['--prefi', '--prefe', '--prep']})
 
     def test_auto_expand_raise(self):
-        if hasattr(self, 'assertRaisesRegexp'):
+        if hasattr(self, 'assertRaises'):
             doc = 'Usage: prog [--prefix --prefer --prepare] [<args>...]'
 
             sys.argv = 'prog --pre'.split()
-            with self.assertRaisesRegexp(
+            with self.assertRaisesRegex(
                     DocpieExit, "^--pre is not a unique prefix:"):
                 docpie(doc)
 
             sys.argv = 'prog --not-here'.split()
-            with self.assertRaisesRegexp(
+            with self.assertRaisesRegex(
                     DocpieExit, "^Unknown option: --not-here"):
                 docpie(doc)
 
@@ -1744,11 +1744,11 @@ Options: -a, --all=<here>
         self.eq(doc, {'-o': '/dev/null', '--': False})
 
     def test_auto_expand_raise_short_option(self):
-        if hasattr(self, 'assertRaisesRegexp'):
+        if hasattr(self, 'assertRaisesRegex'):
             doc = 'Usage: prog -abc'
 
             sys.argv = 'prog -d'.split()
-            with self.assertRaisesRegexp(DocpieExit, "^Unknown option: "):
+            with self.assertRaisesRegex(DocpieExit, "^Unknown option: "):
                 docpie(doc)
 
             with StdoutRedirect():
@@ -1756,15 +1756,17 @@ Options: -a, --all=<here>
 
                 sys.argv = 'prog -ha'.split()
                 # help
-                with self.assertRaisesRegexp(SystemExit, "^$"):
+                with self.assertRaises(SystemExit) as e:
                     docpie(doc)
+                    if e is not None:
+                        self.assertEqual(str(e), '')
 
     def test_auto_expand_raise_short_option_stack(self):
-        if hasattr(self, 'assertRaisesRegexp'):
+        if hasattr(self, 'assertRaisesRegex'):
             doc = 'Usage: prog -abc'
 
             sys.argv = 'prog -ad'.split()
-            with self.assertRaisesRegexp(DocpieExit, "^Unknown option: "):
+            with self.assertRaisesRegex(DocpieExit, "^Unknown option: "):
                 docpie(doc)
 
             with StdoutRedirect() as f:
@@ -1772,8 +1774,10 @@ Options: -a, --all=<here>
 
                 sys.argv = 'prog -ah'.split()
                 # help
-                with self.assertRaisesRegexp(SystemExit, "^$"):
+                with self.assertRaises(SystemExit) as e:
                     docpie(doc)
+                    if e is not None:
+                        self.assertEqual(str(e), '')
                     self.assertTrue(f.read().startswith('Usage: prog [-abc]'))
 
     def test_option_disorder_match(self):
@@ -1792,34 +1796,98 @@ Options: -a, --all=<here>
         sys.argv = 'prog -ah'.split()
         self.eq(doc, {'-a': 'h', '--': False})
 
-        if hasattr(self, 'assertRaisesRegexp'):
+        if hasattr(self, 'assertRaises'):
             with StdoutRedirect() as f:
                 sys.argv = ['prog', '-ha']
-                with self.assertRaisesRegexp(SystemExit, '^$'):
+                with self.assertRaises(SystemExit) as e:
                     docpie(doc)
+                    if e is not None:
+                        self.assertEqual(str(e), '')
                     self.assertEqual(f.read(), 'Usage: prog -a<sth>')
 
                 sys.argv = ['prog', '-xxxh']
-                with self.assertRaisesRegexp(SystemExit, '^$'):
+                with self.assertRaises(SystemExit) as e:
                     docpie(doc)
+                    if e is not None:
+                        self.assertEqual(str(e), '')
                     self.assertEqual(f.read(), 'Usage: prog -a<sth>')
 
                 sys.argv = ['prog', '-xvx']
-                with self.assertRaisesRegexp(SystemExit, '^$'):
+                with self.assertRaises(SystemExit) as e:
                     docpie(doc, version='0.0.0')
+                    if e is not None:
+                        self.assertEqual(str(e), '')
                     self.assertEqual(f.read(), '0.0.0')
+
+    def test_multi_options_section(self):
+        doc = '''
+        Usage: prog [options]
+
+        Options:
+            -a
+            -b
+
+        Advanced Options: -c
+                          -d'''
+
+        sys.argv = 'prog -a -c'.split()
+        self.eq(doc, {'-a': True, '-b': False, '-c': True, '-d': False,
+                      '--': False})
+
+
+class APITest(unittest.TestCase):
+
+    def eq(self, result, doc, argv=None, help=True, version=None,
+           stdopt=True, attachopt=True, attachvalue=True,
+           auto2dashes=True, name=None, case_sensitive=False,
+           optionsfirst=False, appearedonly=False, extra={}):
+
+        pieargs = locals()
+        pieargs.pop('self')
+        pieargs.pop('result')
+
+        self.assertEqual(docpie(**pieargs), result)
+
+    def test_options_first(self):
+        doc = 'Usage: prog [-a] cmd [<args>...]'
+
+        self.eq(
+            {'-a': True, '<args>': ['-a', '-aa', '--'], 'cmd': True,
+             '--': False},
+            doc, 'prog -a cmd -a -aa --', optionsfirst=True)
+
+    def test_appeared_only(self):
+        doc = '''
+        Usage: [options] [-i] [-n]
+
+        Options:
+            -i, --in-option
+        '''
+
+        self.eq({'-n': True, '--': False},
+                doc, 'prog -n', appearedonly=True)
 
 
 class StdoutRedirect(StringIO):
 
+    if sys.hexversion >= 0x03000000:
+        def u(self, string):
+            return string
+    else:
+        def u(self, string):
+            return unicode(string)
+
+    def write(self, s):
+        super(StdoutRedirect, self).write(self.u(s))
+
     def __enter__(self):
         self.real_out = sys.stdout
         sys.stdout = self
-        return self
+        return super(StdoutRedirect, self).__enter__()
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         sys.stdout = self.real_out
-        self.close()
+        return super(StdoutRedirect, self).__exit__(exc_type, exc_val, exc_tb)
 
 
 def case():
@@ -1837,5 +1905,4 @@ def main():
 
 if __name__ == '__main__':
     # bashlog.stdoutlogger(None, bashlog.DEBUG, True)
-    logging.getLogger().setLevel(bashlog.ERROR)
-    main()
+    unittest.main()

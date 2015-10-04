@@ -3,9 +3,9 @@ import logging
 import warnings
 
 from docpie.error import DocpieExit, DocpieError
-from docpie.parser import UsageParser, OptionParser, Parser
+from docpie.parser import UsageParser, OptionParser
 from docpie.element import convert_2_object, convert_2_dict
-from docpie.token import Argv
+from docpie.tokens import Argv
 
 
 try:
@@ -20,10 +20,12 @@ class Docpie(dict):
 
     # Docpie verison
     # it's not a good idea but it can avoid loop importing
-    _version = '0.1.1'
+    _version = '0.1.2'
 
     option_name = 'Options:'
     usage_name = 'Usage:'
+    doc = None
+
     case_sensitive = False
     auto2dashes = True
     name = None
@@ -33,6 +35,7 @@ class Docpie(dict):
     attachopt = True
     attachvalue = True
     options_first = False
+    appeared_only = False
     extra = {}
 
     opt_names = []
@@ -42,19 +45,21 @@ class Docpie(dict):
     def __init__(self, doc=None, help=True, version=None,
                  stdopt=True, attachopt=True, attachvalue=True,
                  auto2dashes=True, name=None, case_sensitive=False,
-                 optionsfirst=False, extra={}):
+                 optionsfirst=False, appearedonly=False, extra={}):
+
+        super(Docpie, self).__init__()
 
         # set config first
         self.set_config(
             stdopt=stdopt, attachopt=attachopt, attachvalue=attachvalue,
             auto2dashes=auto2dashes, name=name, case_sensitive=case_sensitive,
-            optionsfirst=optionsfirst, extra={})
+            optionsfirst=optionsfirst, appearedonly=appearedonly, extra={})
 
         if doc is not None:
             self.doc = doc
-            usage_str, self.usage_text = Parser.parse_section(
+            usage_str, self.usage_text = UsageParser.parse(
                 doc, self.usage_name, self.case_sensitive)
-            opt_str, self.option_text = Parser.parse_section(
+            opt_str, self.option_sections = OptionParser.parse(
                 doc, self.option_name, self.case_sensitive)
             if self.usage_text is None:
                 raise DocpieError('"Usage:" not found')
@@ -77,7 +82,6 @@ class Docpie(dict):
                 if opt_ins.ref:
                     self.require_arg_opt_names.update(opt_ins.names)
 
-
             self.opt_names = [x[0].names for x in self.options]
 
             logger.debug(self.opt_names)
@@ -85,7 +89,7 @@ class Docpie(dict):
             self.set_config(help=help, version=version)
 
     def need_pickle(self):
-        '''This function is deprecated, use pickle.dump() directly'''
+        """This function is deprecated, use pickle.dump() directly"""
         warnings.warn('This function is deprecated, '
                       'use pickle.dump(docpie_instance) directly',
                       DeprecationWarning)
@@ -93,7 +97,7 @@ class Docpie(dict):
 
     @classmethod
     def restore_pickle(cls, value):
-        '''This function is deprecated, use pickle.load() directly'''
+        """This function is deprecated, use pickle.load() directly"""
         warnings.warn('This function is deprecated, '
                       'use pickle.load() directly',
                       DeprecationWarning)
@@ -104,84 +108,63 @@ class Docpie(dict):
         return value
 
     def docpie(self, argv=None):
-        '''match the argv for each usages, return dict.
+        """match the argv for each usages, return dict.
 
         if argv is None, it will use sys.argv instead.
         if argv is str, it will call argv.split() first.
         this function will check the options in self.extra and handle it first.
         Which means it may not try to match any usages because of the checking.
-        '''
-        if argv is None:
-            argv = sys.argv
-        elif isinstance(argv, StrType):
-            argv = argv.split()
+        """
 
-
-        # the things in extra may not be announced
-        all_opt_names = set(self.all_opt_names)
-        all_opt_names.update(self.extra.keys())
-        token = Argv(argv[1:], self.auto2dashes or self.options_first,
-                     self.stdopt, self.attachopt, self.attachvalue,
-                     all_opt_names)
-        token.formal(self.options_first)
+        token = self._prepare_token(argv)
         # check first, raise after
         # so `-hwhatever` can trigger `-h` first
         self.check_flag_and_handler(token)
 
-        if self.option_text:
-            help_msg = '%s\n%s' % (self.usage_text, self.option_text)
+        if self.option_sections:
+            help_msg = ('%s\n%s' %
+                        (self.usage_text,
+                         '\n'.join(self.option_sections.values())))
         else:
             help_msg = self.usage_text
 
         if token.error is not None:
             raise DocpieExit('%s\n\n%s' % (token.error, help_msg))
 
-        for each in self.usages:
-            logger.debug('matching usage %s', each)
-            argv_clone = token.clone()
-            if each.match(argv_clone, False):
-                logger.debug('matched usage %s, checking rest argv %s',
-                             each, argv_clone)
-                if (not argv_clone or
-                        (argv_clone.auto_dashes and
-                         list(argv_clone) == ['--'])):
-                    argv_clone.check_dash()
-                    logger.info('matched usage %s / %s', each, argv_clone)
-                    matched = each
-                    break
-                each.reset()
-                logger.info('matching %s left %s, checking failed',
-                            each, argv_clone)
-                continue
-            elif argv_clone.error is None:
-                each.reset()
-                logger.info('failed matching usage %s / %s', each, argv_clone)
+        matched, result, dashed = self._match(token)
+        if not matched:
+            if result is None:  # not matched
+                msg = help_msg
+            else:  # hit an error
+                msg = '%s%s\n\n%s' % (
+                    result,
+                    ' Use "--help" to see more' if self.help else '',
+                    self.usage_text)
+            raise DocpieExit(msg)
 
-            else:
-                logger.info('error in %s - %s', each, argv_clone.error)
-                raise DocpieExit(
-                    '%s%s\n\n%s' %
-                    (
-                     argv_clone.error,
-                     ' Use `--help` to see more' if self.help else '',
-                     self.usage_text))
-        else:
-            logger.info('none matched')
-            raise DocpieExit(help_msg)
+        value = result.get_value(False)
+        self.clear()
+        self.update(value)
 
-        value = matched.get_value(False)
-        logger.debug('get all matched value %s', value)
-        rest = self.usages
-        rest.remove(matched)
+        logger.debug('get all matched value %s', self)
+        rest = list(self.usages)  # a copy
+        rest.remove(result)
+        self._add_rest_value(rest)
+        logger.debug('merged rest values, now %s', self)
+        self._add_option_value()
+        self._dashes_value(dashed)
 
-        for each in rest:  # add left command/argv
+        return dict(self)  # remove all other reference in this instance
+
+    def _add_rest_value(self, rest):
+        for each in rest:
             default_values = each.get_sys_default_value(False)
             logger.debug('get rest values %s -> %s', each, default_values)
-            common_keys = set(value).intersection(default_values)
+            common_keys = set(self).intersection(default_values)
 
             for key in common_keys:
                 default = default_values[key]
-                valued = value[key]
+                valued = self[key]
                 logger.debug('%s: default(%s), matched(%s)',
                              key, default, valued)
 
@@ -199,10 +182,9 @@ class Docpie(dict):
                 logger.debug('set %s as %s', key, valued)
                 default_values[key] = valued
 
-            value.update(default_values)
+            self.update(default_values)
 
-        logger.debug('merged rest values, now %s', value)
-
+    def _add_option_value(self):
         # add left option, add default value
         for each in self.options:
             option = each[0]
@@ -212,10 +194,10 @@ class Docpie(dict):
 
             logger.debug('%s/%s/%s', option, default, this_value)
 
-            name_in_value = names.intersection(value)
+            name_in_value = names.intersection(self)
             if name_in_value:  # add default if necessary
                 one_name = name_in_value.pop()
-                value_in_usage = value[one_name]
+                value_in_usage = self[one_name]
                 if not value_in_usage:  # need default
                     if default is None:  # no default, use old matched one
                         final_value = value_in_usage
@@ -269,25 +251,72 @@ class Docpie(dict):
             final = {}
             for name in names:
                 final[name] = final_value
-            value.update(final)
+            self.update(final)
 
-        dashes = value.get('--', argv_clone.dashes)
+    def _dashes_value(self, dashes):
+        result = self['--'] if '--' in self else dashes
         if self.options_first:
-            if dashes is True:
-                dashes = False
-            elif dashes is False:
+            if result is True:
+                result = False
+            elif result is False:
                 pass
-            elif isinstance(dashes, int):
-                dashes = max(0, dashes - 1)
+            elif isinstance(result, int):
+                result = max(0, result - 1)
 
         if self.auto2dashes:
-            dashes = bool(dashes)
+            result = bool(result)
 
-        value['--'] = dashes
+        if self.appeared_only:
+            if result:
+                target['--'] = result
+        else:
+            self['--'] = result
 
-        self.clear()
-        self.update(value)
-        return value
+    def _prepare_token(self, argv):
+        if argv is None:
+            argv = sys.argv
+        elif isinstance(argv, StrType):
+            argv = argv.split()
+
+        # the things in extra may not be announced
+        all_opt_names = set(self.all_opt_names)
+        all_opt_names.update(self.extra.keys())
+        token = Argv(argv[1:], self.auto2dashes or self.options_first,
+                     self.stdopt, self.attachopt, self.attachvalue,
+                     all_opt_names)
+        token.formal(self.options_first)
+        return token
+
+    def _match(self, token):
+        for each in self.usages:
+            logger.debug('matching usage %s', each)
+            argv_clone = token.clone()
+            if each.match(argv_clone, False):
+                logger.debug('matched usage %s, checking rest argv %s',
+                             each, argv_clone)
+                if (not argv_clone or
+                        (argv_clone.auto_dashes and
+                         list(argv_clone) == ['--'])):
+                    argv_clone.check_dash()
+                    logger.info('matched usage %s / %s', each, argv_clone)
+                    return True, each, argv_clone.dashes
+
+                each.reset()
+                logger.info('matching %s left %s, checking failed',
+                            each, argv_clone)
+                continue
+
+            elif argv_clone.error is None:
+                each.reset()
+                logger.info('failed matching usage %s / %s', each, argv_clone)
+
+            else:
+                logger.info('error in %s - %s', each, argv_clone.error)
+                return False, argv_clone.error, argv_clone.dashes
+
+        else:
+            logger.info('none matched')
+            return False, argv_clone.error, argv_clone.dashes
 
     def check_flag_and_handler(self, token):
         need_arg = self.require_arg_opt_names
@@ -328,7 +357,7 @@ class Docpie(dict):
                                 found = True
                                 logger.debug('find %s in %s', auto, inputted)
 
-                            if (stacked_name in need_arg):
+                            if stacked_name in need_arg:
                                 break_upper = True
                                 break
 
@@ -343,33 +372,32 @@ class Docpie(dict):
 
     @staticmethod
     def help_handler(docpie, flag):
-        '''Default help(`--help`, `-h`) handler. print help string and exit.
+        """Default help(`--help`, `-h`) handler. print help string and exit.
 
         By default, flag startswith `--` will print the full `doc`,
         otherwith, print "Usage" section and "Option" section.
-        '''
+        """
         if flag.startswith('--'):
             print(docpie.doc)
         else:
             print(docpie.usage_text)
-            option_text = docpie.option_text
-            if option_text:
+            option_sections = docpie.option_sections
+            if option_sections:
                 print('')
-                print(option_text)
+                print('\n'.join(option_sections.values()))
         sys.exit()
 
     @staticmethod
     def version_handler(docpie, flag):
-        '''Default `-v` and `--version` handler. print the verison and exit.'''
+        """Default `-v` and `--version` handler. print the verison and exit."""
         print(docpie.version)
         sys.exit()
 
-    # @classmethod
     # Because it's divided from dict
     # json.dump(docpie, default=docpie.convert_2_dict) won't work
     # so convert to dict before JSONlizing
     def convert_2_dict(self):  # cls, self):
-        '''Convert Docpie into a JSONlizable dict.
+        """Convert Docpie into a JSONlizable dict.
 
         Use it in this way:
         pie = Docpie(__doc__)
@@ -378,13 +406,17 @@ class Docpie(dict):
         Note the `extra` info will be lost if you costomize that,
         because a function is not JSONlizable.
         You can use `set_config(extra={...})` to set it back.
-        '''
+        """
         config = {
             'stdopt': self.stdopt,
             'attachopt': self.attachopt,
             'attachvalue': self.attachvalue,
             'auto2dashes': self.auto2dashes,
             'case_sensitive': self.case_sensitive,
+            'appearedonly': self.appeared_only,
+            'optionsfirst': self.options_first,
+            'option_name': self.option_name,
+            'usage_name': self.usage_name,
             'name': self.name,
             'help': self.help,
             'version': self.version
@@ -393,7 +425,7 @@ class Docpie(dict):
         text = {
             'doc': self.doc,
             'usage_text': self.usage_text,
-            'option_text': self.option_text,
+            'option_sections': self.option_sections,
         }
 
         option = [convert_2_dict(x) for x in self.options]
@@ -414,7 +446,7 @@ class Docpie(dict):
 
     @classmethod
     def convert_2_docpie(cls, dic):
-        '''Convert dict generated by `convert_2_dict` into Docpie instance
+        """Convert dict generated by `convert_2_dict` into Docpie instance
 
         You can do this:
         pie = Docpie(__doc__)
@@ -424,7 +456,7 @@ class Docpie(dict):
 
         Note if you changed `extra`, it will be lost.
         You can use `set_config(extra={...})` to set it back.
-        '''
+        """
         if '__version__' not in dic:
             raise ValueError('Not support old docpie data')
 
@@ -437,17 +469,21 @@ class Docpie(dict):
         config = dic['__config__']
         help = config.pop('help')
         version = config.pop('version')
+        option_name = config.pop('option_name')
+        usage_name = config.pop('usage_name')
         self = cls(None, **config)
+        self.option_name = option_name
+        self.usage_name = usage_name
 
         text = dic['__text__']
         self.doc = text['doc']
         self.usage_text = text['usage_text']
-        self.option_text = text['option_text']
+        self.option_sections = text['option_sections']
 
         self.opt_names = [set(x) for x in dic['option_names']]
         self.all_opt_names = set(dic['all_option_names'])
-        self.set_config(help=help, version=version)
         self.require_arg_opt_names = set(dic['requiring_argument_options'])
+        self.set_config(help=help, version=version)
 
         self.options = [convert_2_object(x) for x in dic['option']]
 
@@ -456,7 +492,7 @@ class Docpie(dict):
         return self
 
     def set_config(self, **config):
-        '''Shadow all the current config.'''
+        """Shadow all the current config."""
         if 'stdopt' in config:
             self.stdopt = config.pop('stdopt')
         if 'attachopt' in config:
@@ -481,6 +517,8 @@ class Docpie(dict):
             self.case_sensitive = config.pop('case_sensitive')
         if 'optionsfirst' in config:
             self.options_first = config.pop('optionsfirst')
+        if 'appearedonly' in config:
+            self.appeared_only = config.pop('appearedonly')
         if 'extra' in config:
             self.extra.update(config.pop('extra'))
 
@@ -511,9 +549,9 @@ class Docpie(dict):
                     self.extra.pop(flag, None)
 
     def find_flag_alias(self, flag):
-        '''Return alias set of a flag; return None if flag is not defined in
+        """Return alias set of a flag; return None if flag is not defined in
         "Options".
-        '''
+        """
         for each in self.opt_names:
             if flag in each:
                 result = set(each)  # a copy
@@ -522,7 +560,7 @@ class Docpie(dict):
         return None
 
     def set_auto_handler(self, flag, handler):
-        '''Set pre-auto-handler for a flag.
+        """Set pre-auto-handler for a flag.
 
         the handler must accept two argument: first the `pie` which
         referent to the current `Docpie` instance, second, the `flag`
@@ -531,7 +569,7 @@ class Docpie(dict):
         Different from `extra` argument, this will set the alias
         option you defined in `Option` section with the same
         behavior.
-        '''
+        """
         assert flag.startswith('-') and flag not in ('-', '--')
         alias = self.find_flag_alias(flag) or []
         self.extra[flag] = handler
@@ -539,7 +577,7 @@ class Docpie(dict):
             self.extra[each] = handler
 
     def preview(self, stream=sys.stdout):
-        '''A quick preview of docpie. Print all the parsed object'''
+        """A quick preview of docpie. Print all the parsed object"""
 
         write = stream.write
 
