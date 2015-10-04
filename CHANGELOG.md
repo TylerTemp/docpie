@@ -1,7 +1,8 @@
 ## 0.1.2
 
-*   [TODO] allow only show use inputted command
-*   [TODO] multi options section support
+*   [new] `appearedonly` argument to allow only show use inputted options
+    (only options, won't affect commands/arguments)
+*   [new] multi options section support(TODO: allow single '\n' to seperate)
 
 ## 0.1.1
 

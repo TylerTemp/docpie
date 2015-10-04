@@ -91,7 +91,7 @@ class BasicTest(unittest.TestCase):
                        eval("u'prog -o 嘿嘿'")),
                 {'-o': True, eval("u'<呵呵>'"): eval("u'嘿嘿'"), '--': False})
         except SyntaxError:
-            print('skip')
+            sys.stdout.write('skip test_unicode')
 
     def test_count_multiple_flags(self):
         eq = self.assertEqual
@@ -1611,7 +1611,7 @@ Options: -a, --all=<here>
                       '--': True, '<args>': ['--prefi', '--prefe', '--prep']})
 
     def test_auto_expand_raise(self):
-        if hasattr(self, 'assertRaises'):
+        if hasattr(self, 'assertRaisesRegex'):
             doc = 'Usage: prog [--prefix --prefer --prepare] [<args>...]'
 
             sys.argv = 'prog --pre'.split()
@@ -1797,6 +1797,9 @@ Options: -a, --all=<here>
         self.eq(doc, {'-a': 'h', '--': False})
 
         if hasattr(self, 'assertRaises'):
+            if sys.version_info[:2] == (2, 6):
+                sys.stdout.write('skip test_auto_handler')
+                return
             with StdoutRedirect() as f:
                 sys.argv = ['prog', '-ha']
                 with self.assertRaises(SystemExit) as e:
@@ -1866,6 +1869,16 @@ class APITest(unittest.TestCase):
 
         self.eq({'-n': True, '--': False},
                 doc, 'prog -n', appearedonly=True)
+        self.eq({'-i': True, '--in-option': True, '--': False},
+                doc, 'prog -i', appearedonly=True)
+
+        doc = '''
+        Usage: [options]
+
+        Options:
+            -i --inside=[<sth>]
+        '''
+        self.eq({'--': False}, doc, '', appearedonly=True)
 
 
 class StdoutRedirect(StringIO):

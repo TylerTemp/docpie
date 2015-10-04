@@ -88,25 +88,6 @@ class Docpie(dict):
 
             self.set_config(help=help, version=version)
 
-    def need_pickle(self):
-        """This function is deprecated, use pickle.dump() directly"""
-        warnings.warn('This function is deprecated, '
-                      'use pickle.dump(docpie_instance) directly',
-                      DeprecationWarning)
-        return self
-
-    @classmethod
-    def restore_pickle(cls, value):
-        """This function is deprecated, use pickle.load() directly"""
-        warnings.warn('This function is deprecated, '
-                      'use pickle.load() directly',
-                      DeprecationWarning)
-        if (not isinstance(value, Docpie) or
-                (int(getattr(value, '_version', '0').replace('.', '')) <
-                 int(cls._version.replace('.', '')))):
-            raise ValueError('Not support old docpie pickle data')
-        return value
-
     def docpie(self, argv=None):
         """match the argv for each usages, return dict.
 
@@ -142,9 +123,11 @@ class Docpie(dict):
                     self.usage_text)
             raise DocpieExit(msg)
 
-        value = result.get_value(False)
+        value = result.get_value(self.appeared_only, False)
         self.clear()
         self.update(value)
+        if self.appeared_only:
+            self._drop_non_appeared()
 
         logger.debug('get all matched value %s', self)
         rest = list(self.usages)  # a copy
@@ -156,9 +139,14 @@ class Docpie(dict):
 
         return dict(self)  # remove all other reference in this instance
 
+    def _drop_non_appeared(self):
+        for key, _ in filter(lambda k_v: k_v[1] == -1, dict(self).items()):
+            self.pop(key)
+
     def _add_rest_value(self, rest):
         for each in rest:
-            default_values = each.get_sys_default_value(False)
+            default_values = each.get_sys_default_value(
+                self.appeared_only, False)
             logger.debug('get rest values %s -> %s', each, default_values)
             common_keys = set(self).intersection(default_values)
 
@@ -213,6 +201,8 @@ class Docpie(dict):
                 if option.ref is None and each.repeat:
                     final_value = int(final_value or 0)
             # just add this key-value. Note all option here never been matched
+            elif self.appeared_only:
+                continue
             else:
                 ref = option.ref
 
@@ -266,11 +256,7 @@ class Docpie(dict):
         if self.auto2dashes:
             result = bool(result)
 
-        if self.appeared_only:
-            if result:
-                target['--'] = result
-        else:
-            self['--'] = result
+        self['--'] = result
 
     def _prepare_token(self, argv):
         if argv is None:

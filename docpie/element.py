@@ -149,16 +149,16 @@ class Option(Atom):
         # assert all(x.startswith('-') for x in names)
         super(Option, self).__init__(*names, **kwargs)
         self.ref = kwargs.get('ref', None)    # a instance, not a list
-        # self.value = -1  # -1 means never appeared
         # self.countable = False
 
-    def get_value(self, in_repeat):
+    def get_value(self, appeared_only, in_repeat):
         # default = self.default
         names = self.names
         value = self.value
         ref = self.ref
 
-        multi = (in_repeat or (value not in (True, False) and
+        multi = (in_repeat or (value is not True and
+                               value is not False and
                                not isinstance(value, StrType)))
 
         if ref is not None:
@@ -175,12 +175,14 @@ class Option(Atom):
                 value = None
             else:
                 value = []
-            logger.debug('%s returns its value %s', self, value)
-            # Not work on py2.6
-            # return {name: value for name in names}
+
             result = {}
+            if appeared_only:
+                value = -1  # means never appeared
+
             for name in names:
                 result[name] = value
+            logger.debug('%s returns its value %s', self, result)
             return result
 
         # has value, has ref
@@ -205,7 +207,10 @@ class Option(Atom):
             result[name] = value
         return result
 
-    def get_sys_default_value(self, in_repeat):
+    def get_sys_default_value(self, appeared_only, in_repeat):
+        if appeared_only and self.value is None:
+            return {}
+
         if in_repeat:
             if self.ref is not None:
                 value = []
@@ -326,10 +331,10 @@ class Option(Atom):
     def reset(self):
         value = self.value
         if value is not None:
-            if isinstance(value, int):
-                self.value = 0
-            else:
+            if value is True or value is False:
                 self.value = False
+            else:
+                self.value = 0
 
         if self.ref is not None:
             self.ref.reset()
@@ -465,7 +470,7 @@ class Command(Atom):
         else:
             return sum(filter(None, values))
 
-    def get_value(self, in_repeat):
+    def get_value(self, appeared_only, in_repeat):
         if in_repeat:
             value = int(self.value)
         else:
@@ -478,7 +483,7 @@ class Command(Atom):
             result[name] = value
         return result
 
-    def get_sys_default_value(self, in_repeat):
+    def get_sys_default_value(self, appeared_only, in_repeat):
         if in_repeat:
             value = 0
         else:
@@ -580,7 +585,7 @@ class Argument(Atom):
         logger.debug('%s matched %s/%s', self, self.value, argv)
         return True
 
-    def get_value(self, in_repeat):
+    def get_value(self, appeared_only, in_repeat):
         value = self.value
         if in_repeat:
             if value is None:
@@ -594,7 +599,7 @@ class Argument(Atom):
             result[name] = value
         return result
 
-    def get_sys_default_value(self, in_repeat):
+    def get_sys_default_value(self, appeared_only, in_repeat):
         if in_repeat:
             value = []
         else:
@@ -636,10 +641,11 @@ class Unit(list):
         for each in self:
             each.reset()
 
-    def get_value(self, in_repeat):
+    def get_value(self, appeared_only, in_repeat):
         result = {}
         for each in self:
-            this_result = each.get_value(in_repeat or self.repeat)
+            this_result = each.get_value(appeared_only,
+                                         in_repeat or self.repeat)
             repeated_keys = set(result).intersection(this_result)
             for key in repeated_keys:
                 old_value = result[key]
@@ -652,8 +658,12 @@ class Unit(list):
                                 x,
                                 (int, NoneType))
                             for x in (old_value, new_value))):
-                    if old_value is new_value is None:
+                    # -1 - -1
+                    if appeared_only and old_value == new_value == -1:
+                        final_value = -1
+                    elif set((old_value, new_value)).issubset((None, -1)):
                         final_value = []
+                    # countable
                     else:
                         final_value = (old_value or 0) + (new_value or 0)
                 elif all(isinstance(x, int) for x in (old_value, new_value)):
@@ -953,15 +963,15 @@ class Unit(list):
                     result.append(value)
         return result
 
-    def get_sys_default_value(self, in_repeat):
+    def get_sys_default_value(self, appeared_only, in_repeat):
         result = {}
         if in_repeat or self.repeat:
             for each in self:
-                result.update(each.get_sys_default_value(True))
+                result.update(each.get_sys_default_value(appeared_only, True))
             return result
 
         for each in self:
-            this_result = each.get_sys_default_value(False)
+            this_result = each.get_sys_default_value(appeared_only, False)
             common_keys = set(result).intersection(this_result)
             for key in common_keys:
                 old_value = result[key]
@@ -1161,22 +1171,22 @@ class OptionsShortcut(object):
                 return False
         return argv.error is None
 
-    def get_value(self, in_repeat):
+    def get_value(self, appeared_only, in_repeat):
         options = self.options
         hide = self._hide
         result = {}  # developer should ensure no same options in [options]
         for each in filter(
                 lambda x: not hide.intersection(x[0].names), options):
-            result.update(each.get_value(in_repeat))
+            result.update(each.get_value(appeared_only, in_repeat))
         return result
 
-    def get_sys_default_value(self, in_repeat):
+    def get_sys_default_value(self, appeared_only, in_repeat):
         options = self.options
         hide = self._hide
         result = {}
         for each in filter(
                 lambda x: not hide.intersection(x[0].names), options):
-            result.update(each.get_sys_default_value(in_repeat))
+            result.update(each.get_sys_default_value(appeared_only, in_repeat))
         return result
 
     def reset(self):
