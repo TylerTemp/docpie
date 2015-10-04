@@ -1,25 +1,30 @@
-from distutils.core import setup
+# from distutils.core import setup
+from setuptools import setup
 import os
 
 from docpie import __version__
 
 setup(
     name="docpie",
-    packages=["docpie", "docpie.test"],
+    packages=["docpie"],
+    package_data={
+        'docpie': [
+            'example/*.py',
+            'example/git/*.py',
+            'utest/*.py'
+      ],
+    },
     version=__version__,
     author="TylerTemp",
     author_email="tylertempdev@gmail.com",
     url="http://docpie.comes.today/",
-    download_url="https://github.com/TylerTemp/docpie/tarball/0.1.1/",
+    download_url="https://github.com/TylerTemp/docpie/tarball/0.1.2/",
     license='MIT',
     description=("An easy and Pythonic way to create "
                  "your POSIX command line interface"),
     keywords='option arguments parsing optparse argparse getopt',
     long_description=open(
         os.path.join(os.path.dirname(__file__), 'README.rst')).read(),
-    # package_data={'': ['../LICENSE', 'test/*']},
-    package_data={'': ['test/*', 'README.*', '*.md']},
-    # data_files=[('docpie', ['./LICENSE'])],
     platforms='any',
     classifiers=[
         'Development Status :: 2 - Pre-Alpha',

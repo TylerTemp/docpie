@@ -92,6 +92,7 @@ class BasicTest(unittest.TestCase):
                 {'-o': True, eval("u'<呵呵>'"): eval("u'嘿嘿'"), '--': False})
         except SyntaxError:
             sys.stdout.write('skip test_unicode')
+            sys.stdout.flush()
 
     def test_count_multiple_flags(self):
         eq = self.assertEqual
@@ -1799,6 +1800,7 @@ Options: -a, --all=<here>
         if hasattr(self, 'assertRaises'):
             if sys.version_info[:2] == (2, 6):
                 sys.stdout.write('skip test_auto_handler')
+                sys.stdout.flush()
                 return
             with StdoutRedirect() as f:
                 sys.argv = ['prog', '-ha']

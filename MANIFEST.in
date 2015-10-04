@@ -1,5 +1,7 @@
 include LICENSE
-include ./docpie/test
-include ./docpie/test/*
+include ./docpie/utest
+include ./docpie/utest/*
+include ./docpie/example
+include ./docpie/example/*
 include README.rst
 include CHANGELOG.md
