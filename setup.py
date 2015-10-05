@@ -8,6 +8,11 @@ setup(
     name="docpie",
     packages=["docpie"],
     package_data={
+        '': [
+            'README.rst',
+            'LICENSE',
+            'CHANGELOG.md'
+        ],
         'docpie': [
             'example/*.py',
             'example/git/*.py',
@@ -18,7 +23,7 @@ setup(
     author="TylerTemp",
     author_email="tylertempdev@gmail.com",
     url="http://docpie.comes.today/",
-    download_url="https://github.com/TylerTemp/docpie/tarball/0.1.2/",
+    download_url="https://github.com/TylerTemp/docpie/tarball/0.2.0/",
     license='MIT',
     description=("An easy and Pythonic way to create "
                  "your POSIX command line interface"),

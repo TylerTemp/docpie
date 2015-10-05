@@ -1,8 +1,22 @@
-## 0.1.2
+\[TODO: stdopt/attachopt/attachvalue needs to re-init the instance\]
+
+## 0.2.0
 
 *   [new] `appearedonly` argument to allow only show use inputted options
     (only options, won't affect commands/arguments)
-*   [new] multi options section support(TODO: allow single '\n' to seperate)
+*   [new] multi options section support. Now you can write several options like:
+
+    ```
+    Usage: git <cmd> [options] [<args>...]
+
+    Global Options:
+        -h, --help      print this message
+    rm Options:  # seperate with options by breaking the line
+        -f, --force     force remove a file
+
+    add Options:  # seperate with at least one visable line
+        -n, --dry-run  Don't actually add the file(s)
+    ```
 
 ## 0.1.1
 
@@ -20,7 +34,9 @@
 
 *   [new] notice user when a flag is not defined.('Unknown option: <option>')
 *   [fix] handle auto_handler before matching
-*   [new] `optionsfirst` argument / [TODO] update document
+*   [new] `optionsfirst` argument
+*   [change] **break-change** remove `Docpie.option_text` attribute,
+    add `Docpie.option_sections`
 
 ## 0.1.0
 

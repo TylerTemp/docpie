@@ -1,6 +1,5 @@
 import sys
 import logging
-import warnings
 
 from docpie.error import DocpieExit, DocpieError
 from docpie.parser import UsageParser, OptionParser
@@ -18,9 +17,9 @@ logger = logging.getLogger('docpie')
 
 class Docpie(dict):
 
-    # Docpie verison
+    # Docpie version
     # it's not a good idea but it can avoid loop importing
-    _version = '0.1.2'
+    _version = '0.2.0'
 
     option_name = 'Options:'
     usage_name = 'Usage:'

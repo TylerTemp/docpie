@@ -7,6 +7,7 @@ from docpie.error import DocpieError
 import logging
 import re
 import textwrap
+import warnings
 
 logger = logging.getLogger('docpie.parser')
 
@@ -264,15 +265,10 @@ class OptionParser(Parser):
     indent_re = re.compile(r'^(?P<indent> *)')
     to_space_re = re.compile(r',\s?|=')
 
-    options_re_str = (r'(?P<raw>'
-                       r'(?P<title>[\ \t]*'
-                        r'(?P<prefix>[^\n]*?)'
-                        r'[\ \t]*{0}[\ \t]*'
-                       r')'
-                       r'(?P<sep>\n?)'
-                       r'(?P<section>.*?)'
-                      r')'
-                      r'([\ \t]*$|[\ \t]*\n$|[\ \t]*\n[\ \t]*\n)')
+    visible_empty_line_re = re.compile(r'^\s*?\n*|\n(:?[\ \t]*\n)+',
+                                       flags=re.DOTALL)
+
+    option_split_re_str = (r'([^\n]*{0}[\ \t]*\n?)')
 
     # split_re = re.compile(r'(<.*?>)|\s?')
     # default ::= chars "[default: " chars "]"
@@ -319,35 +315,57 @@ class OptionParser(Parser):
         # Help Options:
         #   -o, --output   output stream
 
-        match_iter = re.finditer(
-            cls.options_re_str.format(name),
-            text,
-            flags=re.DOTALL | (0 if case_sensitive else re.IGNORECASE))
+        es_name = re.escape(name)
+
+        option_split_re = re.compile(
+            cls.option_split_re_str.format(es_name),
+            flags=re.DOTALL | (0 if case_sensitive else re.IGNORECASE)
+        )
 
         raw_content = {}
         formal_collect = []
 
-        for match in match_iter:
-            dic = match.groupdict()
-            logger.debug(dic)
-            prefix = dic['prefix']
-            if prefix in raw_content:
-                raise DocpieError('duplicated options section %s' % prefix)
-            raw_content[prefix] = dic['raw']
+        try:
+            with warnings.catch_warnings():
+                warnings.simplefilter("ignore")
+                split = cls.visible_empty_line_re.split(text)
+        except ValueError:  # python >= 3.5
+            return None, {}
 
-            if dic['sep'] == '\n':
-                formal_collect.append(dic['section'])
-            else:
-                logger.info('%r', dic['title'])
-                replace = ' ' * len(dic['title'])
-                drop_name = match.expand('%s\g<sep>\g<section>' % replace)
-                formal_collect.append(drop_name)
+        for text in filter(lambda x: x and x.strip(), split):
 
-        formal_result = None
+            # logger.debug('get options group:\n%r', text)
+            try:
+                with warnings.catch_warnings():
+                    warnings.simplefilter("ignore")
+                    split_options = option_split_re.split(text)
+            except ValueError:  # python >= 3.5
+                continue
+
+            split_options.pop(0)
+
+            for title, section in zip(split_options[::2], split_options[1::2]):
+                prefix, _, end = title.partition(name)
+
+                prefix = prefix.strip()
+
+                if prefix in raw_content:
+                    raise DocpieError('duplicated options section %s' % prefix)
+
+                section = section.rstrip()
+                if end.endswith('\n'):
+                    formal = section
+                else:
+                    formal = ' ' * len(title) + section
+
+                formal_collect.append(formal)
+                raw_content[prefix] = title + section
+
         if formal_collect:
-            formal_collect[-1] = formal_collect[-1].rstrip()
-            formal_result = \
-                '\n'.join(textwrap.dedent(x) for x in formal_collect)
+            formal_result = '\n'.join(
+                textwrap.dedent(x) for x in formal_collect)
+        else:
+            formal_result = None
 
         return formal_result, raw_content
 
@@ -595,6 +613,7 @@ class UsageParser(Parser):
 
     @classmethod
     def parse(cls, text, name, case_sensitive=False):
+        name = re.escape(name)
         match = re.search(
             cls.usage_re_str.format(name),
             text,

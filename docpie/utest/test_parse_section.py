@@ -11,6 +11,8 @@ class OptionsTest(unittest.TestCase):
 
     def test_parse(self):
         doc = '''
+        Not Part
+
             Options:
                 -a
                 -b
@@ -33,9 +35,10 @@ class OptionsTest(unittest.TestCase):
 
             Inline2 Options:   -k
                                -l
-
             Nearer Options: -m
-                             -n'''
+                             -n
+
+        Not Part'''
         fmted, dic = self.p(doc)
         # print(fmted)
         # for k, v in dic.items():

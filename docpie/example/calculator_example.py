@@ -2,9 +2,7 @@
 Not a serious example.
 
 Usage:
-  calculator_example.py <value> ( ( + | - | * | / ) <value> )...
-
-
+  calculator_example.py <value> ( <"+" or "-" or "*" or "/"> <value> )...
   calculator_example.py <function> <value> [( , <value> )]...
   calculator_example.py (-h | --help)
 
@@ -17,12 +15,6 @@ Options:
   -h, --help
 '''
 
-from docpie import docpie, Docpie
-from docopt import docopt
-from docpie import bashlog
+from docpie import docpie
 
-# bashlog.stdoutlogger(None, bashlog.DEBUG)
-
-print(docopt(__doc__))
-# print(docpie(__doc__))
-Docpie(__doc__).preview()
+print(docpie(__doc__))
