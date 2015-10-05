@@ -21,7 +21,7 @@ docpie
 -   [新特性] 支持多个Option区块定义
 -   [更改] **不兼容更改** 移除``Docpie.option_text``属性，新增``Docpie.option_sections``属性。参见下方"Adcanced Usage"
 
-详情请移步`完整更新日志 <https://github.com/TylerTemp/docpie/blob/master/CHANGELOG.md>`__
+详情请移步 `完整更新日志 <https://github.com/TylerTemp/docpie/blob/master/CHANGELOG.md>`__
 
 
 
@@ -35,7 +35,7 @@ docpie
 
 **docpie更强大！**
 
-如果你还没用过``docpie``或者``docopt``，试试这个。它可以根据``__doc__``
+如果你还没用过 ``docpie`` 或者 ``docopt`` ，试试这个。它可以根据``__doc__``
 字符串解析命令行：
 
 .. code:: python
@@ -165,7 +165,9 @@ docpie
 
 ``docpie`` 已经在以下Python版本中测试过：
 
-2.6, 2.7, 3.2, 3.3, 3.4, 3.5
+2.6, 2.7
+
+3.2, 3.3, 3.4, 3.5
 
 pypy-2.0, pypy-2.6, pypy3-2.4
 
@@ -176,7 +178,7 @@ pypy-2.0, pypy-2.6, pypy3-2.4
 
     from docpie import docpie
 
-你可以在`主页 <http://docpie.comes.today>`__ 查看快速导览。
+你可以在 `主页 <http://docpie.comes.today>`__ 查看快速导览。
 
 API
 ~~~
@@ -365,21 +367,21 @@ Usage格式
 
 你也可以将短option的参数与option写在一起。
 
-  .. code:: python
+.. code:: python
 
-      '''
-      Usage:
-        prog [options]
+  '''
+  Usage:
+    prog [options]
 
-      Options:
-        -a <value>  -a expects one value
-      '''
-      from docpie import docpie
-      print(docpie(__doc__, ['prog', '-abc']))
-      # {'--': False, '-a': 'bc'}
+  Options:
+    -a <value>  -a expects one value
+  '''
+  from docpie import docpie
+  print(docpie(__doc__, ['prog', '-abc']))
+  # {'--': False, '-a': 'bc'}
 
-  `在线试试
-  >> <http://docpie.comes.today/try/?example=attachvalue>`__
+`在线试试
+>> <http://docpie.comes.today/try/?example=attachvalue>`__
 
 你还可以指定某个元素允许多次出现：
 
@@ -729,6 +731,7 @@ extra参数
       }
     )
 
+    pie.docpie()
     print(pie)
 
 现在试试：
@@ -771,7 +774,8 @@ set_auto_handler
 
     pie = Docpie(__doc__)
     pie.set_auto_handler('-m', moo_handler)
-    print(pie.docpie())
+    pie.docpie()
+    print(pie)
 
 这样的话 ``Docpie`` 会同时自动处理 ``-m`` 和 ``--moo`` 。
 

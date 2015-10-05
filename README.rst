@@ -172,7 +172,9 @@ Install nightly/dev version:
 
 ``docpie`` has been tested with Python:
 
-2.6, 2.7, 3.2, 3.3, 3.4, 3.5
+2.6, 2.7
+
+3.2, 3.3, 3.4, 3.5
 
 pypy-2.0, pypy-2.6, pypy3-2.4
 
@@ -402,23 +404,23 @@ you can several short options into one. ``-abc`` can mean ``-a -b -c``.
 
 `try it now >> <http://docpie.comes.today/try/?example=attachopt>`__
 
-You can also write short flag and its value together
+You can also write short option and its value together
 
-  .. code:: python
+.. code:: python
 
-      '''
-      Usage:
-        prog [options]
+  '''
+  Usage:
+    prog [options]
 
-      Options:
-        -a <value>  -a expects one value
-      '''
-      from docpie import docpie
-      print(docpie(__doc__, ['prog', '-abc']))
-      # {'--': False, '-a': 'bc'}
+  Options:
+    -a <value>  -a expects one value
+  '''
+  from docpie import docpie
+  print(docpie(__doc__, ['prog', '-abc']))
+  # {'--': False, '-a': 'bc'}
 
-  `try it now
-  >> <http://docpie.comes.today/try/?example=attachvalue>`__
+`try it now
+>> <http://docpie.comes.today/try/?example=attachvalue>`__
 
 If your pattern allows to match argument-less option (a flag) several
 times:
@@ -804,6 +806,7 @@ You can costomize this by passing ``extra`` argument, e.g.
       }
     )
 
+    pie.docpie()
     print(pie)
 
 now try the following command:
@@ -847,7 +850,8 @@ make all synonymous options have the same behavior. e.g.
 
     pie = Docpie(__doc__)
     pie.set_auto_handler('-m', moo_handler)
-    print(pie.docpie())
+    pie.docpie()
+    print(pie)
 
 Then ``Docpie`` will handle both ``-m`` & ``--moo``.
 
