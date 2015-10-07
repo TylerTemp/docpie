@@ -1,4 +1,9 @@
-\[TODO: stdopt/attachopt/attachvalue needs to re-init the instance\]
+TODO:  ``<a|b>`` will be parsed as ``<a | b>``, which is not correct
+
+## 0.2.1
+
+*   [fix] stdopt/attachopt/attachvalue in `set_config`
+    will re-init the `Docpie` instance
 
 ## 0.2.0
 

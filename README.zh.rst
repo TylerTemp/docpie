@@ -15,13 +15,12 @@ docpie
 日志
 ---------
 
-版本 0.2.0:
+版本 0.2.1:
 
--   [新特性] 参数``appearedonly``允许只显示用户输入的option（仅影响option,不影响command/argument）
--   [新特性] 支持多个Option区块定义
--   [更改] **不兼容更改** 移除``Docpie.option_text``属性，新增``Docpie.option_sections``属性。参见下方"Adcanced Usage"
+-   [修正] ``set_config`` 修改 ``stdopt`` / ``attachopt`` / ``attachvalue``
+    会导致重新初始化实例，从而保证解析的正确性。
 
-详情请移步 `完整更新日志 <https://github.com/TylerTemp/docpie/blob/master/CHANGELOG.md>`__
+`完整更新日志 <https://github.com/TylerTemp/docpie/blob/master/CHANGELOG.md>`__
 
 
 
@@ -649,6 +648,9 @@ API
 
 ``set_config`` 允许你在实例化 ``Docpie`` 后更改配置。要求参数与初始化参数一致，除了不接受
 ``doc`` 参数。
+
+注意，修改 ``stdopt`` / ``attachopt`` / ``attachvalue`` 会导致重新初始化实例，你应该
+新初始化一个``Docpie``对象，而非修改这三个参数。
 
 .. code:: python
 

@@ -19,7 +19,7 @@ class Docpie(dict):
 
     # Docpie version
     # it's not a good idea but it can avoid loop importing
-    _version = '0.2.0'
+    _version = '0.2.1'
 
     option_name = 'Options:'
     usage_name = 'Usage:'
@@ -56,36 +56,39 @@ class Docpie(dict):
 
         if doc is not None:
             self.doc = doc
-            usage_str, self.usage_text = UsageParser.parse(
-                doc, self.usage_name, self.case_sensitive)
-            opt_str, self.option_sections = OptionParser.parse(
-                doc, self.option_name, self.case_sensitive)
-            if self.usage_text is None:
-                raise DocpieError('"Usage:" not found')
+            self._init()
 
-            opt_parser = OptionParser(
-                opt_str, self.stdopt, self.attachopt, self.attachvalue)
-            self.options = opt_parser.get_chain()
-            opt_2_ins = opt_parser.name_2_instance
+    def _init(self):
+        usage_str, self.usage_text = UsageParser.parse(
+            self.doc, self.usage_name, self.case_sensitive)
+        opt_str, self.option_sections = OptionParser.parse(
+            self.doc, self.option_name, self.case_sensitive)
+        if self.usage_text is None:
+            raise DocpieError('"Usage:" not found')
 
-            self.usages, all_opts = UsageParser(
-                usage_str, self.name, self.options, opt_2_ins,
-                self.stdopt, self.attachopt, self.attachvalue
-            ).get_chain_and_all_options()
+        opt_parser = OptionParser(
+            opt_str, self.stdopt, self.attachopt, self.attachvalue)
+        self.options = opt_parser.get_chain()
+        opt_2_ins = opt_parser.name_2_instance
 
-            self.all_opt_names = set()
-            self.require_arg_opt_names = set()
+        self.usages, all_opts = UsageParser(
+            usage_str, self.name, self.options, opt_2_ins,
+            self.stdopt, self.attachopt, self.attachvalue
+        ).get_chain_and_all_options()
 
-            for opt_ins in all_opts:
-                self.all_opt_names.update(opt_ins.names)
-                if opt_ins.ref:
-                    self.require_arg_opt_names.update(opt_ins.names)
+        self.all_opt_names = set()
+        self.require_arg_opt_names = set()
 
-            self.opt_names = [x[0].names for x in self.options]
+        for opt_ins in all_opts:
+            self.all_opt_names.update(opt_ins.names)
+            if opt_ins.ref:
+                self.require_arg_opt_names.update(opt_ins.names)
 
-            logger.debug(self.opt_names)
+        self.opt_names = [x[0].names for x in self.options]
 
-            self.set_config(help=help, version=version)
+        logger.debug(self.opt_names)
+
+        self.set_config(help=self.help, version=self.version)
 
     def docpie(self, argv=None):
         """match the argv for each usages, return dict.
@@ -478,16 +481,25 @@ class Docpie(dict):
 
     def set_config(self, **config):
         """Shadow all the current config."""
+        reinit = False
         if 'stdopt' in config:
-            self.stdopt = config.pop('stdopt')
+            stdopt = config.pop('stdopt')
+            reinit = (stdopt != self.stdopt)
+            self.stdopt = stdopt
         if 'attachopt' in config:
-            self.attachopt = config.pop('attachopt')
+            attachopt = config.pop('attachopt')
+            reinit = reinit or (attachopt != self.attachopt)
+            self.attachopt = attachopt
         if 'attachvalue' in config:
-            self.attachvalue = config.pop('attachvalue')
+            attachvalue = config.pop('attachvalue')
+            reinit = reinit or (attachvalue != self.attachvalue)
+            self.attachvalue = attachvalue
         if 'auto2dashes' in config:
             self.auto2dashes = config.pop('auto2dashes')
         if 'name' in config:
-            self.name = config.pop('name')
+            name = config.pop('name')
+            reinit = reinit or (name != self.name)
+            self.name = name
         if 'help' in config:
             self.help = config.pop('help')
             self._set_or_remove_extra_handler(
@@ -499,7 +511,9 @@ class Docpie(dict):
                 ('--version', '-v'),
                 self.version_handler)
         if 'case_sensitive' in config:
-            self.case_sensitive = config.pop('case_sensitive')
+            case_sensitive = config.pop('case_sensitive')
+            reinit = reinit or (case_sensitive != self.case_sensitive)
+            self.case_sensitive = case_sensitive
         if 'optionsfirst' in config:
             self.options_first = config.pop('optionsfirst')
         if 'appearedonly' in config:
@@ -510,6 +524,10 @@ class Docpie(dict):
         if config:  # should be empty
             raise ValueError(
                 '%s is/are not accepted key argument(s)' % list(config.keys()))
+
+        if self.doc is not None and reinit:
+            logger.info('changed config require reinit instance')
+            self._init()
 
     def _set_or_remove_extra_handler(self, set_handler, find_order, handler):
         for flag in find_order:

@@ -298,6 +298,7 @@ Options: --all  All.
         doc = '''Usage: prog [options]
 
         Options: --verbose  Verbose.
+                 --version  print version
         '''
         sys.argv = ['prog', '--ver']  # --version? --verbose?
         self.assertRaises(DocpieExit, docpie, doc, version='sth')
@@ -1629,16 +1630,16 @@ Options: -a, --all=<here>
         doc = '''Usage: prog [-v | -vv | -vvv] [<arg>]'''
 
         sys.argv = ['prog']
-        self.eq(doc, {'-v': 0, '<arg>':None ,'--': False})
+        self.eq(doc, {'-v': 0, '<arg>': None, '--': False})
 
         sys.argv = ['prog', '-v']
-        self.eq(doc, {'-v': 1, '<arg>':None ,'--': False})
+        self.eq(doc, {'-v': 1, '<arg>': None, '--': False})
 
         sys.argv = ['prog', '-vv']
-        self.eq(doc, {'-v': 2, '<arg>':None ,'--': False})
+        self.eq(doc, {'-v': 2, '<arg>': None, '--': False})
 
         sys.argv = ['prog', '-vvv']
-        self.eq(doc, {'-v': 3, '<arg>':None ,'--': False})
+        self.eq(doc, {'-v': 3, '<arg>': None, '--': False})
 
         sys.argv = ['prog', '-vvvv']
         self.fail(doc)

@@ -16,7 +16,7 @@ __all__ = ('docpie', 'Docpie',
 # it's not a good idea but it can avoid loop importing
 __version__ = Docpie._version
 
-__timestamp__ = 1444058660.712521  # last sumbit
+__timestamp__ = 1444182026.319846  # last sumbit
 
 
 def docpie(doc, argv=None, help=True, version=None,
@@ -60,8 +60,14 @@ def docpie(doc, argv=None, help=True, version=None,
     case_sensitive: bool (default: False)
         specifies if it need case sensitive when matching
         "Usage:" and "Options:"
+    optionsfirst: bool (default: False)
+        everything after first positional argument will be interpreted as
+        positional argument
+    appearedonly: bool (default: False)
+        when set True, the options that never appear in argv will not
+        be put in result. Note this only affect options
     extra: dict
-        customize pre-handled options. see
+        customize pre-handled options. See
         https://github.com/TylerTemp/docpie#auto-handler
         for more infomation.
     Returns

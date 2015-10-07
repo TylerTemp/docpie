@@ -17,16 +17,13 @@ View on: `HomePage <http://docpie.comes.today>`__ /
 ChangeLog
 ---------
 
-version 0.2.0:
+version 0.2.1:
 
--   [new] ``appearedonly`` argument to allow only show use inputted options
-    (only options, won't affect commands/arguments)
--   [new] multi options section supported.
--   [change] **break-change** remove ``Docpie.option_text`` attribute,
-    add ``Docpie.option_sections`` attribute. See "Adcanced Usage" below
+-   [fix] changing ``stdopt`` / ``attachopt`` / ``attachvalue``
+    in ``set_config`` will re-initialize the instance. You should
+    init a new ``Docpie`` instead of changing them.
 
-See `full changelog <https://github.com/TylerTemp/docpie/blob/master/CHANGELOG.md>`__
-for details
+`full changelog <https://github.com/TylerTemp/docpie/blob/master/CHANGELOG.md>`__
 
 
 Introduction
@@ -670,7 +667,7 @@ The left arguments that have not introduced are as follow:
    This only works when ``stdopt=True``.
 -  ``case_sensitive`` (bool, default ``False``) specifies if it need
    case sensitive when matching "Usage:" and "Options:"
--  ``appearedonly``(bool, default ``False``). When set to ``True``,
+-  ``appearedonly`` (bool, default ``False`` ). When set to ``True``,
    ``docpie`` will not add options that never appeared in ``argv``.
    Consider the following situation:
 
@@ -716,6 +713,9 @@ Change Configuration
 ``set_config`` allows you to change the argument after you initialized
 ``Docpie``. ``**config`` is a dict, and the keys can only be what
 ``__init__`` accepts except ``doc``
+
+Note changing ``stdopt`` / ``attachopt`` / ``attachvalue`` will re-initialize
+the instance. You may init a new ``Docpie`` instance.
 
 .. code:: python
 

@@ -27,7 +27,7 @@ setup(
     license='MIT',
     description=("An easy and Pythonic way to create "
                  "your POSIX command line interface"),
-    keywords='option arguments parsing optparse argparse getopt',
+    keywords='option arguments parsing optparse argparse getopt docopt',
     long_description=open(
         os.path.join(os.path.dirname(__file__), 'README.rst')).read(),
     platforms='any',
