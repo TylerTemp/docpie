@@ -1840,6 +1840,16 @@ Options: -a, --all=<here>
         self.eq(doc, {'-a': True, '-b': False, '-c': True, '-d': False,
                       '--': False})
 
+    def test_inside_angle_brancket(self):
+        # "<+|-|*|/>" should not be interpreted as "<+ | - | * | />"
+        doc = '''Usage:
+        prog <value> (<+|-|*|/> <value>)...'''
+
+        sys.argv = 'prog 1 + 2 - 3 * 4 / 5'.split()
+        self.eq(doc, {'<+|-|*|/>': ['+', '-', '*', '/'],
+                      '<value>': ['1', '2', '3', '4', '5'],
+                      '--': False})
+
 
 class APITest(unittest.TestCase):
 

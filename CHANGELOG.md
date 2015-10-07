@@ -1,9 +1,10 @@
-TODO:  ``<a|b>`` will be parsed as ``<a | b>``, which is not correct
+TODO:
 
 ## 0.2.1
 
 *   [fix] stdopt/attachopt/attachvalue in `set_config`
     will re-init the `Docpie` instance
+*   [fix] ``<a|b>`` will not be parsed as ``<a | b>`` now.
 
 ## 0.2.0
 

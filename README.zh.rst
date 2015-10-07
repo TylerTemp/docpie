@@ -19,6 +19,7 @@ docpie
 
 -   [修正] ``set_config`` 修改 ``stdopt`` / ``attachopt`` / ``attachvalue``
     会导致重新初始化实例，从而保证解析的正确性。
+-   [修正] 尖括号Argument可以包含空格和竖线。 ``<a |b>`` 是一个正确的Argument。
 
 `完整更新日志 <https://github.com/TylerTemp/docpie/blob/master/CHANGELOG.md>`__
 

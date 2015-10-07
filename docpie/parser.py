@@ -581,6 +581,7 @@ class OptionParser(Parser):
 
 class UsageParser(Parser):
 
+    angle_bracket_re = re.compile(r'(<.*?>)')
     wrap_symbol_re = re.compile(r'(\[options\]|\.\.\.|\||\[|\]|\(|\))')
     split_re = re.compile(r'(\[options\]|\S*<.*?>\S*)|\s+')
     # will match '-', '--', and
@@ -668,14 +669,48 @@ class UsageParser(Parser):
 
     def _parse_line_to_lis(self, line, name=None):
         if name is not None:
-            if name not in line:
+            _, find_name, line = line.partition(name)
+            if not find_name:
                 raise DocpieError(
-                    '%s is not in usage pattern %s' % (name, line))
+                    '%s is not in usage pattern %s' % (name, _))
 
-            _, line = line.split(name, 1)
-        wrapped_space = self.wrap_symbol_re.sub(r' \1 ', line.strip())
-        logger.debug(wrapped_space)
-        result = [x for x in self.split_re.split(wrapped_space) if x]
+        # wrapped_space = self.wrap_symbol_re.sub(r' \1 ', line.strip())
+        # logger.debug(wrapped_space)
+        # result = [x for x in self.split_re.split(wrapped_space) if x]
+
+        angle_bracket_re = self.angle_bracket_re
+        wrap_symbol_re = self.wrap_symbol_re
+
+        try:
+            with warnings.catch_warnings():
+                warnings.simplefilter('ignore')
+                sep_by_angle = angle_bracket_re.split(line)
+        except ValueError:
+            sep_by_angle = [line]
+
+        wrap_space = []
+        for index, each_block in enumerate(sep_by_angle):
+            if index % 2:
+                wrap_space.append(each_block)
+                continue
+
+            if not each_block:
+                continue
+
+            warped_space = wrap_symbol_re.sub(r' \1 ', each_block)
+
+            wrap_space.append(warped_space)
+
+        wraped = ''.join(wrap_space)
+
+        try:
+            with warnings.catch_warnings():
+                warnings.simplefilter('ignore')
+                sep = self.split_re.split(wraped)
+        except ValueError:
+            sep = [wraped]
+
+        result = list(filter(None, sep))
 
         # drop name
         if name is None:

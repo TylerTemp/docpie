@@ -22,6 +22,8 @@ version 0.2.1:
 -   [fix] changing ``stdopt`` / ``attachopt`` / ``attachvalue``
     in ``set_config`` will re-initialize the instance. You should
     init a new ``Docpie`` instead of changing them.
+-   [fix] argument using angle bracket can contain space and pipe.
+    ``<a |b>`` is a correct argument.
 
 `full changelog <https://github.com/TylerTemp/docpie/blob/master/CHANGELOG.md>`__
 

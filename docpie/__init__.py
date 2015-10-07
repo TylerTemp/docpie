@@ -16,7 +16,7 @@ __all__ = ('docpie', 'Docpie',
 # it's not a good idea but it can avoid loop importing
 __version__ = Docpie._version
 
-__timestamp__ = 1444182026.319846  # last sumbit
+__timestamp__ = 1444204025.427281  # last sumbit
 
 
 def docpie(doc, argv=None, help=True, version=None,
