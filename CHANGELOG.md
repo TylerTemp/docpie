@@ -1,5 +1,3 @@
-TODO:
-
 ## 0.2.1
 
 *   [fix] stdopt/attachopt/attachvalue in `set_config`
