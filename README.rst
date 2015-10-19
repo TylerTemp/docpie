@@ -15,11 +15,10 @@ View on: `HomePage <http://docpie.comes.today>`__ /
 ChangeLog
 ---------
 
-version 0.2.2:
+version 0.2.3:
 
--   [fix] a bug in test that some tests will not report even they
-    fail
--   [fix] ``help`` & ``version`` won't work because of the previous refactor, sorry
+-   [fix] when "Usage" stack as `-a<val>` and "Options"
+    annouced as `-a <val>    an option` it will raise an error
 
 `full changelog <https://github.com/TylerTemp/docpie/blob/master/CHANGELOG.md>`__
 

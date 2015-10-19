@@ -127,8 +127,10 @@ class Parser(object):
                     if lt_index > 2:
                         token.insert(0, '-' + atom[2:])
                         prepended = True
+                    # -a<sth>
                     else:
                         arg_token = Token([atom[lt_index:]])
+                        # rest = atom[lt_index:]
                 # -a<sth> -> -a <sth>; -abc<sth> -> -abc <sth>
                 else:
                     flag_ = atom[:lt_index]
@@ -161,6 +163,8 @@ class Parser(object):
                     else:
                         if rest:
                             arg_token = Token([rest])
+                        elif arg_token:
+                            pass
                         else:
                             _current = token.current()
                             if _current in '([':

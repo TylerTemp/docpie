@@ -1,3 +1,8 @@
+## 0.2.3
+
+*   [fix] when "Usage" stack as `-a<val>` and "Options"
+    annouced as `-a <val>    an option` it will raise an error
+
 ## 0.2.2
 
 *   [fix] a bug in test that some tests will not report when they
