@@ -56,6 +56,7 @@ Life is short, man! You can simply do it this way:
 Now run it
 
 .. code:: bash
+
    $ python cp.py a.txt b.txt c.txt /tmp cp.log
    {'--': False,
     '--help': False,
@@ -71,7 +72,7 @@ Now run it
 
 Write a ``__doc__``, pass it to a function, DONE! Isn't it simple?
 
-[try it \>\>](http://docpie.comes.today/try?example=ship)
+`try it \>\> <http://docpie.comes.today/try?example=ship>`__
 
 Installation
 ------------
@@ -102,7 +103,7 @@ Get Start!
 Interested? Visit `Document <http://docpie.comes.today/document/quick-start/>`__
 and get start!
 
-Or you can `try it in your browser <docpie.comes.today/try/>`__:
+Or you can `try it in your browser <http://docpie.comes.today/try/>`__
 
 Why docpie?
 -----------
