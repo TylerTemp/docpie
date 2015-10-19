@@ -1,7 +1,7 @@
 """
 An easy and Pythonic command-line interface parser.
 
- * https://github.com/TylerTemp/docpie
+ * http://docpie.comes.today
  * Repository and issue-tracker: https://github.com/TylerTemp/docpie
  * Licensed under terms of MIT license (see LICENSE)
  * Copyright (c) 2015 TylerTemp, tylertempdev@gmail.com
@@ -16,7 +16,7 @@ __all__ = ('docpie', 'Docpie',
 # it's not a good idea but it can avoid loop importing
 __version__ = Docpie._version
 
-__timestamp__ = 1444204025.427281  # last sumbit
+__timestamp__ = 1445266339.907632  # last sumbit
 
 
 def docpie(doc, argv=None, help=True, version=None,
@@ -68,7 +68,7 @@ def docpie(doc, argv=None, help=True, version=None,
         be put in result. Note this only affect options
     extra: dict
         customize pre-handled options. See
-        https://github.com/TylerTemp/docpie#auto-handler
+        http://docpie.comes.today/document/advanced-apis/
         for more infomation.
     Returns
     -------
@@ -105,7 +105,7 @@ def docpie(doc, argv=None, help=True, version=None,
     See also
     --------
     * Full documentation is available in README.md as well as online
-      at https://github.com/TylerTemp/docpie#readme
+      at http://docpie.comes.today/document/quick-start/
     """
 
     kwargs = locals()

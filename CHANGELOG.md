@@ -1,3 +1,9 @@
+## 0.2.2
+
+*   [fix] a bug in test that some tests will not report when they
+    fail
+*   [fix] `help` & `version` won't work because of the previous refactor
+
 ## 0.2.1
 
 *   [fix] stdopt/attachopt/attachvalue in `set_config`

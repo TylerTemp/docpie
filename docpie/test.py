@@ -1753,15 +1753,21 @@ Options: -a, --all=<here>
             with self.assertRaisesRegex(DocpieExit, "^Unknown option: "):
                 docpie(doc)
 
-            with StdoutRedirect():
+            with StdoutRedirect() as f:
                 doc = 'Usage: prog -abc'
 
                 sys.argv = 'prog -ha'.split()
                 # help
                 with self.assertRaises(SystemExit) as e:
                     docpie(doc)
-                    if e is not None:
-                        self.assertEqual(str(e), '')
+
+                args = e.exception.args
+                if len(args) == 1:
+                    self.assertIsNone(args[0])  # pypy
+                else:
+                    self.assertEqual(e.exception.args, ())
+
+            self.assertEqual(f.read(), 'Usage: prog -abc\n')
 
     def test_auto_expand_raise_short_option_stack(self):
         if hasattr(self, 'assertRaisesRegex'):
@@ -1771,16 +1777,21 @@ Options: -a, --all=<here>
             with self.assertRaisesRegex(DocpieExit, "^Unknown option: "):
                 docpie(doc)
 
-            with StdoutRedirect() as f:
-                doc = 'Usage: prog [-abc]'
+            doc = 'Usage: prog [-abc]'
+            sys.argv = 'prog -ah'.split()
 
-                sys.argv = 'prog -ah'.split()
+            with StdoutRedirect() as f:
                 # help
                 with self.assertRaises(SystemExit) as e:
                     docpie(doc)
-                    if e is not None:
-                        self.assertEqual(str(e), '')
-                    self.assertTrue(f.read().startswith('Usage: prog [-abc]'))
+
+            args = e.exception.args
+            if len(args) == 1:
+                self.assertIsNone(args[0])
+            else:
+                self.assertEqual(args, ())
+
+            self.assertEqual(f.read(), 'Usage: prog [-abc]\n')
 
     def test_option_disorder_match(self):
         doc = 'Usage: prog -b -a'
@@ -1850,6 +1861,41 @@ Options: -a, --all=<here>
                       '<value>': ['1', '2', '3', '4', '5'],
                       '--': False})
 
+    def test_fix_init_bug(self):
+        doc = '''Naval Fate.
+
+Usage:
+  prog -v | --version
+
+Options:
+  -v, --version     Show version.
+        '''
+
+        if (sys.version_info[0] == 2 and sys.version_info[1] <= 6 or
+                not hasattr(self, 'assertRaises')):
+            sys.stdout.write('skip test_fix_init_bug')
+            sys.stdout.flush()
+            return
+
+        sys.argv = 'prog sth -v'.split()
+        with StdoutRedirect() as f:
+            with self.assertRaises(SystemExit) as e:
+                docpie(doc, version='1.1.1')
+        info = f.read()
+        try:
+            unicode
+        except NameError:
+            pass
+        else:
+            if isinstance(info, unicode):
+                info = str(info)
+        self.assertEqual(info, '1.1.1\n')
+        args = e.exception.args
+        if len(args) == 1:
+            self.assertIsNone(args[0])
+        else:
+            self.assertEqual(args, ())
+
 
 class APITest(unittest.TestCase):
 
@@ -1894,7 +1940,7 @@ class APITest(unittest.TestCase):
         self.eq({'--': False}, doc, '', appearedonly=True)
 
 
-class StdoutRedirect(StringIO):
+class Writer(StringIO):
 
     if sys.hexversion >= 0x03000000:
         def u(self, string):
@@ -1903,18 +1949,24 @@ class StdoutRedirect(StringIO):
         def u(self, string):
             return unicode(string)
 
-    def write(self, s):
-        super(StdoutRedirect, self).write(self.u(s))
+    def write(self, string):
+        return super(Writer, self).write(self.u(string))
+
+
+class StdoutRedirect(object):
+    fake_out = Writer()
 
     def __enter__(self):
+        self.fake_out.seek(0)
+        self.fake_out.truncate()
         self.real_out = sys.stdout
-        sys.stdout = self
-        return super(StdoutRedirect, self).__enter__()
+        sys.stdout = self.fake_out
+        return self.fake_out
 
     def __exit__(self, exc_type, exc_val, exc_tb):
+        self.fake_out.seek(0)
         sys.stdout = self.real_out
-        return super(StdoutRedirect, self).__exit__(exc_type, exc_val, exc_tb)
-
+        return False
 
 def case():
     return (unittest.TestLoader().loadTestsFromTestCase(DocpieBasicTest),

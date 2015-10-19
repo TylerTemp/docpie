@@ -19,7 +19,7 @@ class Docpie(dict):
 
     # Docpie version
     # it's not a good idea but it can avoid loop importing
-    _version = '0.2.1'
+    _version = '0.2.2'
 
     option_name = 'Options:'
     usage_name = 'Usage:'
@@ -56,6 +56,8 @@ class Docpie(dict):
 
         if doc is not None:
             self.doc = doc
+            self.help = help
+            self.version = version
             self._init()
 
     def _init(self):
@@ -505,6 +507,7 @@ class Docpie(dict):
             self._set_or_remove_extra_handler(
                 self.help, ('--help', '-h'), self.help_handler)
         if 'version' in config:
+            logger.debug(config['version'])
             self.version = config.pop('version')
             self._set_or_remove_extra_handler(
                 self.version is not None,
