@@ -1,3 +1,7 @@
+## 0.2.4
+
+*   [fix] Support windows style line separator `/r/n`
+
 ## 0.2.3
 
 *   [fix] when "Usage" stack as `-a<val>` and "Options"

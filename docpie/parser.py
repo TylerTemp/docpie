@@ -244,16 +244,17 @@ class Parser(object):
 
         return Either(*groups)
 
-    @staticmethod
-    def drop_started_empty_lines(text):
+    started_empty_lines = re.compile(r'^\s*?\n(?P<rest>.*)')
+
+    @classmethod
+    def drop_started_empty_lines(cls, text):
         # drop the empty lines at start
         # different from lstrip
         logger.debug(repr(text))
-        lis = text.splitlines()
-        while lis and not lis[0].strip():
-            lis.pop(0)
-
-        return '\n'.join(lis)
+        m = cls.started_empty_lines.match(text)
+        if m is None:
+            return text
+        return m.groupdict()['rest']
 
 
 class OptionParser(Parser):
@@ -269,10 +270,10 @@ class OptionParser(Parser):
     indent_re = re.compile(r'^(?P<indent> *)')
     to_space_re = re.compile(r',\s?|=')
 
-    visible_empty_line_re = re.compile(r'^\s*?\n*|\n(:?[\ \t]*\n)+',
+    visible_empty_line_re = re.compile(r'^\s*?\n*|\r?\n(:?[\ \t]*\r?\n)+',
                                        flags=re.DOTALL)
 
-    option_split_re_str = (r'([^\n]*{0}[\ \t]*\n?)')
+    option_split_re_str = (r'([^\r\n]*{0}[\ \t]*\r?\n?)')
 
     # split_re = re.compile(r'(<.*?>)|\s?')
     # default ::= chars "[default: " chars "]"
@@ -599,7 +600,7 @@ class UsageParser(Parser):
     usage_re_str = (r'(?:^|\n)'
                     r'(?P<raw>'
                      r'(?P<name>[\ \t]*{0}[\ \t]*)'
-                     r'(?P<sep>\n?)'
+                     r'(?P<sep>(\r?\n)?)'
                      r'(?P<section>.*?)'
                     r')'
                     r'\s*'
@@ -628,7 +629,7 @@ class UsageParser(Parser):
             return None, None
         dic = match.groupdict()
         logger.debug(dic)
-        if dic['sep'] == '\n':
+        if dic['sep'] in ('\n', '\r\n'):
             return dic['section'], dic['raw']
         reallen = len(dic['name'])
         replace = ''.ljust(reallen)

@@ -1943,6 +1943,31 @@ Options:
         sys.argv = ['prog', '-ah']
         self.eq(doc, {'-a': 'h', '--': False})
 
+    def test_windows_style_break_line(self):
+        doc = (
+            '\r\n'
+            'Usage:\r\n'
+            '   prog [options] cmd1\r\n'
+            '   prog [options] cmd2\r\n'
+            '\r\n'
+            'Options:\r\n'
+            '   -o --option    an option\r\n'
+            '\r\n'
+            'Another Options:\r\n'
+            '   -a              another option\r\n'
+            'Near Options:\r\n'
+            '   -n              a closer option secion'
+        )
+
+        doc_unix_style = doc.replace('\r', '')
+
+        sys.argv = ['prog', 'cmd2']
+        expect = {'cmd1': False, 'cmd2': True, '-o': False,
+                  '--option': False, '-a': False, '-n': False,
+                  '--': False}
+        self.eq(doc.replace('\r', ''), expect)
+        self.eq(doc, expect)
+
 
 class APITest(unittest.TestCase):
 

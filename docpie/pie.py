@@ -19,7 +19,7 @@ class Docpie(dict):
 
     # Docpie version
     # it's not a good idea but it can avoid loop importing
-    _version = '0.2.3'
+    _version = '0.2.4'
 
     option_name = 'Options:'
     usage_name = 'Usage:'
@@ -54,10 +54,11 @@ class Docpie(dict):
             auto2dashes=auto2dashes, name=name, case_sensitive=case_sensitive,
             optionsfirst=optionsfirst, appearedonly=appearedonly, extra={})
 
+        self.help = help
+        self.version = version
+
         if doc is not None:
             self.doc = doc
-            self.help = help
-            self.version = version
             self._init()
 
     def _init(self):

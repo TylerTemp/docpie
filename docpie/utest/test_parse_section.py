@@ -66,6 +66,7 @@ class OptionsTest(unittest.TestCase):
              'Inline': ('            Inline Options: -i\n'
                         '                            -j')})
 
+
 class UsageTest(unittest.TestCase):
 
     def p(self, text, name='Usage:', case_sensitive=False):
@@ -95,6 +96,46 @@ class UsageTest(unittest.TestCase):
         result = self.p(doc)
         self.assertEqual(result[0], expect)
         self.assertEqual(result[1], expect2)
+
+    def test_windows_style_line_breaker_multi(self):
+        doc = (
+            'Usage:\r\n'
+            '   prog\r\n'
+        )
+
+        expect_clear = (
+            '   prog'
+        )
+
+        expect_with_title = (
+            'Usage:\r\n'
+            '   prog'
+        )
+
+        result = self.p(doc)
+        self.assertEqual(result[0], expect_clear)
+        self.assertEqual(result[1], expect_with_title)
+
+    def test_windows_style_line_breaker_inline(self):
+        doc = (
+            'Usage: blah\r\n'
+            '       blah\r\n'
+        )
+
+        expect_clear = (
+            '       blah\r\n'
+            '       blah'
+        )
+
+        expect_with_title = (
+            'Usage: blah\r\n'
+            '       blah'
+        )
+
+        result = self.p(doc)
+        self.assertEqual(result[0], expect_clear)
+        self.assertEqual(result[1], expect_with_title)
+
 
 if __name__ == '__main__':
     # from docpie.bashlog import stdoutlogger, DEBUG
