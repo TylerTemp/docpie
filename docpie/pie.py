@@ -72,7 +72,6 @@ class Docpie(dict):
         oparser.parse(self.doc)
         self.option_sections = oparser.raw_content
         self.options = oparser.instances
-        logger.debug(self.options)
 
         uparser.parse(self.doc, self.name, self.options)
         self.usage_text = uparser.raw_content
@@ -87,10 +86,6 @@ class Docpie(dict):
                 self.require_arg_opt_names.update(opt_ins.names)
 
         self.opt_names = [x[0].names for x in self.options]
-
-        logger.debug(self.opt_names)
-        logger.debug(self.all_opt_names)
-        logger.debug(uparser.all_options)
 
         self.set_config(help=self.help, version=self.version)
 
@@ -324,6 +319,8 @@ class Docpie(dict):
 
             found = False
             for auto, handler in self.extra.items():
+                if not callable(handler):
+                    continue
 
                 if auto.startswith('--') and inputted.startswith('--'):
                     logger.debug('%s <~ %s', inputted, auto)
