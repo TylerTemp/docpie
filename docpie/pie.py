@@ -62,27 +62,26 @@ class Docpie(dict):
             self._init()
 
     def _init(self):
-        usage_str, self.usage_text = UsageParser.parse(
-            self.doc, self.usage_name, self.case_sensitive)
-        opt_str, self.option_sections = OptionParser.parse(
-            self.doc, self.option_name, self.case_sensitive)
-        if self.usage_text is None:
-            raise DocpieError('"Usage:" not found')
+        uparser = UsageParser(
+            self.usage_name, self.case_sensitive,
+            self.stdopt, self.attachopt, self.attachvalue)
+        oparser = OptionParser(
+            self.option_name, self.case_sensitive,
+            self.stdopt, self.attachopt, self.attachvalue)
 
-        opt_parser = OptionParser(
-            opt_str, self.stdopt, self.attachopt, self.attachvalue)
-        self.options = opt_parser.get_chain()
-        opt_2_ins = opt_parser.name_2_instance
+        oparser.parse(self.doc)
+        self.option_sections = oparser.raw_content
+        self.options = oparser.instances
+        logger.debug(self.options)
 
-        self.usages, all_opts = UsageParser(
-            usage_str, self.name, self.options, opt_2_ins,
-            self.stdopt, self.attachopt, self.attachvalue
-        ).get_chain_and_all_options()
+        uparser.parse(self.doc, self.name, self.options)
+        self.usage_text = uparser.raw_content
+        self.usages = uparser.instances
 
         self.all_opt_names = set()
         self.require_arg_opt_names = set()
 
-        for opt_ins in all_opts:
+        for opt_ins in uparser.all_options:
             self.all_opt_names.update(opt_ins.names)
             if opt_ins.ref:
                 self.require_arg_opt_names.update(opt_ins.names)
@@ -90,6 +89,8 @@ class Docpie(dict):
         self.opt_names = [x[0].names for x in self.options]
 
         logger.debug(self.opt_names)
+        logger.debug(self.all_opt_names)
+        logger.debug(uparser.all_options)
 
         self.set_config(help=self.help, version=self.version)
 
@@ -508,7 +509,6 @@ class Docpie(dict):
             self._set_or_remove_extra_handler(
                 self.help, ('--help', '-h'), self.help_handler)
         if 'version' in config:
-            logger.debug(config['version'])
             self.version = config.pop('version')
             self._set_or_remove_extra_handler(
                 self.version is not None,

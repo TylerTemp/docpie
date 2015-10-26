@@ -16,7 +16,7 @@ class Parser(object):
 
     option_name_2_instance = {}
 
-    def _parse_pattern(self, token):
+    def parse_pattern(self, token):
         logger.debug('get token %s', token)
         elements = []
         while token:
@@ -48,7 +48,7 @@ class Parser(object):
 
         bracket_token = Token(lis)
 
-        instances = self._parse_pattern(bracket_token)
+        instances = self.parse_pattern(bracket_token)
 
         return instance_type(*instances, **{'repeat': repeat})
 
@@ -194,7 +194,7 @@ class Parser(object):
         if flag is not None:
             logger.debug('parsing flag %s, %s, %s', flag, arg_token, token)
             if arg_token is not None:
-                ref_lis = self._parse_pattern(Token(arg_token))
+                ref_lis = self.parse_pattern(Token(arg_token))
                 ref = Required(*ref_lis).fix()
             else:
                 ref = None
@@ -289,54 +289,49 @@ class OptionParser(Parser):
     default_re = re.compile(r'\[default: (?P<default>.*?)\] *$',
                             flags=re.IGNORECASE)
 
-    def __init__(self, text, stdopt, attachopt, attachvalue):
+    def __init__(self, option_name, case_sensitive,
+                 stdopt, attachopt, attachvalue):
 
         self.stdopt = stdopt
         self.attachopt = attachopt
         self.attachvalue = attachvalue
-
-        self.name_2_instance = {}
-        if text is None or not text.strip():    # empty
-            self._opt_and_default_str = []
-        else:
-            self._opt_and_default_str = list(self._parse_text(text))
-
-        self._chain = self._parse_to_instance(self._opt_and_default_str)
-
-    def get_chain(self):
-        return self._chain
-        # return [Optional(x) for x in self._chain]
-
-    @classmethod
-    def parse(cls, text, name, case_sensitive=False):
-        # TODO: allow options separate with single break line
-        # currently:
-        # different option section must be separated with at
-        # least one visible empty line
-        #
-        # Options:
-        #   -f, --flag     a flag
-        #
-        # Help Options:
-        #   -o, --output   output stream
-
-        es_name = re.escape(name)
-
-        option_split_re = re.compile(
-            cls.option_split_re_str.format(es_name),
-            flags=re.DOTALL | (0 if case_sensitive else re.IGNORECASE)
+        self.case_sensitive = case_sensitive
+        self.option_name = option_name
+        self.option_split_re = re.compile(
+            self.option_split_re_str.format(option_name),
+            flags= re.DOTALL if case_sensitive else (re.DOTALL | re.IGNORECASE)
         )
 
-        raw_content = {}
+        self.raw_content = {}
+        self.formal_content = None
+        self.name_2_instance = {}
+
+        # if text is None or not text.strip():    # empty
+        #     self._opt_and_default_str = []
+        # else:
+        #     self._opt_and_default_str = list(self._parse_text(text))
+        #
+        # self._chain = self._parse_to_instance(self._opt_and_default_str)
+
+    def parse(self, text):
+        self.parse_content(text)
+        names_and_default = self.parse_names_and_default()
+        self.instances = self.parse_to_instance(names_and_default)
+
+    def parse_content(self, text):
+        raw_content = self.raw_content
+        raw_content.clear()
         formal_collect = []
 
         try:
             with warnings.catch_warnings():
                 warnings.simplefilter("ignore")
-                split = cls.visible_empty_line_re.split(text)
+                split = self.visible_empty_line_re.split(text)
         except ValueError:  # python >= 3.5
-            return None, {}
+            return
 
+        option_split_re = self.option_split_re
+        name = self.option_name
         for text in filter(lambda x: x and x.strip(), split):
 
             # logger.debug('get options group:\n%r', text)
@@ -372,9 +367,13 @@ class OptionParser(Parser):
         else:
             formal_result = None
 
-        return formal_result, raw_content
+        self.formal_content = formal_result
 
-    def _parse_text(self, text):
+    def parse_names_and_default(self):
+        text = self.formal_content
+        if not text:
+            return []
+
         collect = []
         to_list = text.splitlines()
 
@@ -382,7 +381,7 @@ class OptionParser(Parser):
         # this will ensure in `[default: xxx]`,
         # the `xxx`(e.g: `\t`, `,`) will not be changed by _format_line
         previous_line = to_list.pop(0)
-        collect.append(self._parse_line(previous_line))
+        collect.append(self.parse_line_option_indent(previous_line))
 
         for line in to_list:
             indent_match = self.indent_re.match(line)
@@ -395,20 +394,20 @@ class OptionParser(Parser):
 
             # new option line
             # deal the default for previous option
-            collect[-1]['default'] = self._parse_default(previous_line)
+            collect[-1]['default'] = self.parse_default(previous_line)
             # deal this option
-            collect.append(self._parse_line(line))
+            collect.append(self.parse_line_option_indent(line))
             logger.debug(collect[-1])
             previous_line = line
         else:
-            collect[-1]['default'] = self._parse_default(previous_line)
+            collect[-1]['default'] = self.parse_default(previous_line)
 
         return ((each['option'], each['default']) for each in collect)
 
     spaces_re = re.compile(r'(\ \ \s*|\t\s*)')
 
     @classmethod
-    def _cut_first_spaces_outside_bracket(cls, string):
+    def cut_first_spaces_outside_bracket(cls, string):
         right = cls.spaces_re.split(string)
         left = []
         if right and right[0] == '':    # re matches the start of the string
@@ -435,9 +434,9 @@ class OptionParser(Parser):
         return ''.join(left), cutted, ''.join(right)
 
     @classmethod
-    def _parse_line(cls, line):
+    def parse_line_option_indent(cls, line):
         opt_str, separater, description_str = \
-                cls._cut_first_spaces_outside_bracket(line)
+                cls.cut_first_spaces_outside_bracket(line)
 
         logger.debug('%(line)s -> %(opt_str)r, '
                      '%(separater)r, '
@@ -451,17 +450,17 @@ class OptionParser(Parser):
         return {'option': opt_str.strip(), 'indent': indent}
 
     @classmethod
-    def _parse_default(cls, line):
+    def parse_default(cls, line):
         m = cls.default_re.search(line)
         if m is None:
             return None
         return m.groupdict()['default']
 
-    def _parse_to_instance(self, lis):
+    def parse_to_instance(self, lis):
         opts = []
         for opt_str, default in lis:
             logger.debug('%s:%r' % (opt_str, default))
-            opt, repeat = self._parse_opt_str(opt_str)
+            opt, repeat = self.parse_opt_str(opt_str)
             opt.default = default
             result = Optional(opt, repeat=repeat)
             for name in opt.names:
@@ -469,19 +468,19 @@ class OptionParser(Parser):
             opts.append(result)
         return opts
 
-    def _split_short_by_cfg(self, s):
+    def split_short_by_cfg(self, option_str):
         if self.stdopt:
-            if (not s.startswith('--') and
-                    len(s) > 1):
-                return s[:2], s[2:]
-        return s, ''
+            if (not option_str.startswith('--') and
+                    len(option_str) > 1):
+                return option_str[:2], option_str[2:]
+        return option_str, ''
 
-    def _parse_opt_str(self, opt):
+    def parse_opt_str(self, opt):
 
         repeat = False
 
         # -sth=<goes> ON -> -sth, <goes>, ON
-        opt_lis = self._opt_str_to_list(opt)
+        opt_lis = self.opt_str_to_list(opt)
         logger.debug('%r -> %s' % (opt, opt_lis))
 
         first = opt_lis.pop(0)
@@ -492,7 +491,7 @@ class OptionParser(Parser):
         # -sth -> name=-s, value=th
         # else:
         # -sth -> name=-sth, value=''
-        name, value = self._split_short_by_cfg(first)
+        name, value = self.split_short_by_cfg(first)
         opt_ins = Option(name)
         if value == '...':
             repeat = True
@@ -515,7 +514,7 @@ class OptionParser(Parser):
         args = []    # store the current args after option
         for each in opt_lis:
             if each.startswith('-'):    # alias
-                name, value = self._split_short_by_cfg(each)
+                name, value = self.split_short_by_cfg(each)
                 opt_ins.names.add(name)
                 if value:
                     args_ins.append(Required(Argument(value)))
@@ -528,7 +527,7 @@ class OptionParser(Parser):
                         repeat = True
                     else:
                         this_arg = Required(
-                                            *self._parse_pattern(Token(args))
+                                            *self.parse_pattern(Token(args))
                                            ).fix()
                         if this_arg is not None:
                             args_ins.append(this_arg)
@@ -545,7 +544,7 @@ class OptionParser(Parser):
                     repeat = True
                 else:
                     this_arg = Required(
-                        *self._parse_pattern(Token(args))).fix()
+                        *self.parse_pattern(Token(args))).fix()
                     if this_arg is not None:
                         args_ins.append(this_arg)
 
@@ -576,7 +575,7 @@ class OptionParser(Parser):
         opt_ins.ref = current_ins
         return opt_ins, repeat
 
-    def _opt_str_to_list(self, opt):
+    def opt_str_to_list(self, opt):
         dropped_comma_and_equal = opt.replace(',', ' ').replace('=', ' ')
         wrapped_space = self.wrap_symbol_re.sub(
             r' \1 ', dropped_comma_and_equal)
@@ -606,47 +605,74 @@ class UsageParser(Parser):
                     r'\s*'
                     r'(?:\n\s*\n|\n\s*$|$)')
 
-    def __init__(self, text, name, options, option_name_2_instance,
+    def __init__(self, usage_name, case_sensitive,
                  stdopt, attachopt, attachvalue):
 
-        self.option_name_2_instance = option_name_2_instance
-        self.options = options
-
+        self.usage_name = re.escape(usage_name)
+        self.case_sensitive = case_sensitive
         self.stdopt = stdopt
         self.attachopt = attachopt
         self.attachvalue = attachvalue
-        self._chain = self._parse_text(text, name)
 
-    @classmethod
-    def parse(cls, text, name, case_sensitive=False):
-        name = re.escape(name)
+        self.option_name_2_instance = {}
+        self.options = None
+        self.raw_content = None
+        self.formal_content = None
+        self.options = None
+        self.instances = None
+        self.all_options = None
+        # self._chain = self._parse_text(text, name)
+
+    def parse(self, text, name, options):
+        self.options = options
+        self.set_option_name_2_instance(options)
+        self.parse_content(text)
+        if self.formal_content is None:
+            raise DocpieError('"Usage:" not found')
+        self.parse_2_instance(name)
+        self.parse_instance()
+
+    def set_option_name_2_instance(self, options):
+        opt_2_ins = self.option_name_2_instance
+        for each in options:
+            opt_ins = each[0]
+            for name in opt_ins.names:
+                opt_2_ins[name] = each
+
+    def parse_content(self, text):
         match = re.search(
-            cls.usage_re_str.format(name),
+            self.usage_re_str.format(self.usage_name),
             text,
-            flags=re.DOTALL | (0 if case_sensitive else re.IGNORECASE))
+            flags=(re.DOTALL
+                   if self.case_sensitive
+                   else (re.DOTALL | re.IGNORECASE)))
 
         if match is None:
-            return None, None
+            return
+
         dic = match.groupdict()
         logger.debug(dic)
+        self.raw_content = dic['raw']
         if dic['sep'] in ('\n', '\r\n'):
-            return dic['section'], dic['raw']
+            self.formal_content = dic['section']
+            return
+
         reallen = len(dic['name'])
         replace = ''.ljust(reallen)
         drop_name = match.expand('%s\g<sep>\g<section>' % replace)
-        return cls.drop_started_empty_lines(drop_name).rstrip(), dic['raw']
+        self.formal_content = self.drop_started_empty_lines(drop_name).rstrip()
 
-    def _parse_text(self, text, name):
+    def parse_2_instance(self, name):
         result = []
-        for each_line in self._split_line_by_indent(text):
-            raw_str_lis = self._parse_line_to_lis(each_line, name)
-            chain = self._parse_pattern(Token(raw_str_lis))
+        for each_line in self.split_line_by_indent(self.formal_content):
+            raw_str_lis = self.parse_line_to_lis(each_line, name)
+            chain = self.parse_pattern(Token(raw_str_lis))
             result.append(chain)
-        return result
+        self.instances = result
 
     indent_re = re.compile(r'^ *')
 
-    def _split_line_by_indent(self, text):
+    def split_line_by_indent(self, text):
         lines = text.splitlines()
         if len(lines) == 1:
             yield lines[0]
@@ -672,7 +698,7 @@ class UsageParser(Parser):
         else:
             yield ' '.join(line_to_join)
 
-    def _parse_line_to_lis(self, line, name=None):
+    def parse_line_to_lis(self, line, name=None):
         if name is not None:
             _, find_name, line = line.partition(name)
             if not find_name:
@@ -724,7 +750,7 @@ class UsageParser(Parser):
         return result
 
     @classmethod
-    def _find_optionshortcut_and_outside_option_names(cls, lis):
+    def find_optionshortcut_and_outside_option_names(cls, lis):
         opt_ouside = []
         opt_cuts = []
         for element in lis:
@@ -732,7 +758,7 @@ class UsageParser(Parser):
                 opt_cuts.append(element)
             elif isinstance(element, list):
                 outside, srtcuts = \
-                    cls._find_optionshortcut_and_outside_option_names(element)
+                    cls.find_optionshortcut_and_outside_option_names(element)
                 opt_ouside.extend(outside)
                 opt_cuts.extend(srtcuts)
             elif isinstance(element, Option):
@@ -740,17 +766,17 @@ class UsageParser(Parser):
 
         return opt_ouside, opt_cuts
 
-    def get_chain_and_all_options(self):
+    def parse_instance(self):
         result = []
         all_options = [x[0] for x in self.option_name_2_instance.values()]
-        for each_usage in self._chain:
+        for each_usage in self.instances:
             ins = Required(*each_usage).fix()
             if ins is None:
                 result.append(Optional())
                 continue
 
             outside_opts, opt_shortcuts = \
-                self._find_optionshortcut_and_outside_option_names(ins)
+                self.find_optionshortcut_and_outside_option_names(ins)
 
             for opt_cut in opt_shortcuts:
                 for opt_ins in outside_opts:
@@ -762,4 +788,5 @@ class UsageParser(Parser):
                 usage.push_option_ahead()
                 result.append(usage)
 
-        return result, all_options
+        self.instances = result
+        self.all_options = all_options
