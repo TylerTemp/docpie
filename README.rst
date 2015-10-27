@@ -15,10 +15,14 @@ View on: `HomePage <http://docpie.comes.today>`__ /
 ChangeLog
 ---------
 
-version 0.2.3:
+version 0.2.4:
 
--   [fix] when "Usage" stack as `-a<val>` and "Options"
-    annouced as `-a <val>    an option` it will raise an error
+-   [fix] Support windows style line separator ``/r/n``
+
+version 0.2.5:
+
+-   [fix] When "Usage" section contains "Options:"
+    (e.g. "``prog <options:>``"), it won't be parsed as "Option" section
 
 `full changelog <https://github.com/TylerTemp/docpie/blob/master/CHANGELOG.md>`__
 
