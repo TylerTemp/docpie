@@ -25,10 +25,7 @@ class MyPie(Docpie):
     usage_name = 'SYNOPSIS'
     option_name = 'OPTIONS'
 
-# Note: a bug here
-# if `case_sensitive=False`, "OPTIONS" will also match "[options]"
-# which is not correct
 
-pie = MyPie(__doc__, case_sensitive=True, version=__version__)
+pie = MyPie(__doc__, version=__version__)
 pie.docpie()
 print(pie)

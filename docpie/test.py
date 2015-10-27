@@ -1959,13 +1959,23 @@ Options:
             '   -n              a closer option secion'
         )
 
-        doc_unix_style = doc.replace('\r', '')
-
         sys.argv = ['prog', 'cmd2']
         expect = {'cmd1': False, 'cmd2': True, '-o': False,
                   '--option': False, '-a': False, '-n': False,
                   '--': False}
         self.eq(doc.replace('\r', ''), expect)
+        self.eq(doc, expect)
+
+    def test_usage_content_options_title(self):
+        doc = """
+        Usage: prog <Options:>
+
+        Options:
+            -h, --help"""
+
+        sys.argv = ['prog', 'sth']
+        expect = {'<Options:>': 'sth', '-h': False, '--help': False,
+                  '--': False}
         self.eq(doc, expect)
 
 

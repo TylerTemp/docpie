@@ -19,7 +19,7 @@ class Docpie(dict):
 
     # Docpie version
     # it's not a good idea but it can avoid loop importing
-    _version = '0.2.4'
+    _version = '0.2.5'
 
     option_name = 'Options:'
     usage_name = 'Usage:'
@@ -69,12 +69,15 @@ class Docpie(dict):
             self.option_name, self.case_sensitive,
             self.stdopt, self.attachopt, self.attachvalue)
 
-        oparser.parse(self.doc)
+        uparser.parse_content(self.doc)
+        self.usage_text = uparser.raw_content
+        prefix, _, suffix = self.doc.partition(self.usage_text)
+
+        oparser.parse(prefix + suffix)
         self.option_sections = oparser.raw_content
         self.options = oparser.instances
 
-        uparser.parse(self.doc, self.name, self.options)
-        self.usage_text = uparser.raw_content
+        uparser.parse(None, self.name, self.options)
         self.usages = uparser.instances
 
         self.all_opt_names = set()

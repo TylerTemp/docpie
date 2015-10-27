@@ -1,3 +1,8 @@
+## 0.2.5
+
+*   [fix] When "Usage" section contains "Options:"
+    (e.g. "`prog <options:>`"), it won't be parsed as "Option" section
+
 ## 0.2.4
 
 *   [fix] Support windows style line separator `/r/n`

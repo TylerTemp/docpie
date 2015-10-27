@@ -650,7 +650,8 @@ class UsageParser(Parser):
     def parse(self, text, name, options):
         self.options = options
         self.set_option_name_2_instance(options)
-        self.parse_content(text)
+        if text is not None:
+            self.parse_content(text)
         if self.formal_content is None:
             raise DocpieError('"Usage:" not found')
         self.parse_2_instance(name)
