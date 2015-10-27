@@ -22,29 +22,26 @@ class Parser(object):
         while token:
             atom = token.current()
             if atom in '([':
-                elements.append(self._parse_bracket(token))
+                elements.append(self.parse_bracket(token))
             elif atom == '|':
                 elements.append(token.next())
             else:
                 assert atom != '...', 'fix me: unexpected "..." when parsing'
-                elements.extend(self._parse_element(token))
+                elements.extend(self.parse_element(token))
 
         logger.debug(elements)
         if '|' in elements:
-            elements[:] = [self._parse_pipe(elements)]
+            elements[:] = [self.parse_pipe(elements)]
         logger.debug('parsed result %s', elements)
         return elements
 
-    def _parse_bracket(self, token):
+    def parse_bracket(self, token):
         start = token.next()
         instance_type = Required if start == '(' else Optional
 
         lis = token.till_end_bracket(start)
 
-        repeat = False
-        while token.current() == '...':
-            repeat = True
-            token.next()
+        repeat = token.check_ellipsis_and_drop()
 
         bracket_token = Token(lis)
 
@@ -52,29 +49,23 @@ class Parser(object):
 
         return instance_type(*instances, **{'repeat': repeat})
 
-    def _parse_element(self, token):
+    def parse_element(self, token):
         atom = token.next()
         assert atom is not None
         if atom == '[options]':
-            # `[options] ...`? Note `[options...]` won't work
-            repeat = False
-            while token and token.current() == '...':
-                repeat = True
-                token.next()
-            if repeat:
-                ins = Optional(OptionsShortcut(self.options), repeat=True)
-            else:
-                ins = OptionsShortcut(self.options)
-            return (ins,)
+            return self.parse_options_shortcut(atom, token)
 
         if atom in ('-', '--'):
-            if token.current() == '...':
-                repeat = True
-                token.next()
-            else:
-                repeat = False
-            return (Command(atom, repeat=repeat),)
+            return self.parse_dash(atom , token)
 
+        if atom.startswith('-'):
+            result = self.parse_option_with_arg(atom, token)
+            if result is not None:
+                return result
+
+        return self.parse_other_element(atom, token)
+
+    def parse_option_with_arg(self, current, token):
         flag = None
         arg_token = None
         prepended = False
@@ -82,119 +73,18 @@ class Parser(object):
 
         # --all=<sth>... -> --all=<sth> ...
         # --all=(<sth> <else>)... -> --all= ( <sth> <else> ) ...
-        if atom.startswith('--') and '=' in atom:
-            flag_, arg_ = atom.split('=', 1)
-            if Atom.get_class(flag_) is Option:
-                flag = flag_
-                if arg_:
-                    arg_token = Token([arg_])
-                else:
-                    next_arg = token.next()
-                    if next_arg not in ('(', '['):
-                        raise DocpieError('format error: %s' % atom)
-                    tk = [next_arg]
-                    tk.extend(token.till_end_bracket(next_arg))
-                    tk.append(')' if next_arg == '(' else ']')
-                    arg_token = Token(tk)
-
-                if token.current() == '...':
-                    arg_token.append(token.next())
-
-            # if '<' in atom and atom.endswith('>'):
-            #  and not self.stdopt:
-            #     index = atom.index('<')
-            #     flag_, arg_ = atom[:index], atom[index:]
-            #     if Atom.get_class(flag_) is Option:
-            # and Atom.get_class(arg_) is Argument:
-            #         flag = flag_
-            #         arg_token = Token([arg_])
+        if current.startswith('--') and '=' in current:
+            flag, arg_token = self.get_long_option_with_arg(current, token)
 
         # -a<sth> -aSTH -asth, -a, -abc<sth>
-        elif atom.startswith('-') and not atom.startswith('--'):
-            rest = None
-
-            lt_index = atom.find('<')
-            # -a<sth> -abc<sth>
-            if lt_index >= 0 and atom.endswith('>'):
-                # -a<sth> -> -a <sth>; -abc<sth> -> -a -bc<sth>
-                if self.stdopt and self.attachopt:
-                    if not self.attachvalue:
-                        raise DocpieError(
-                            "You can't write %s while attachvalue=False" %
-                            atom)
-                    flag_ = atom[:2]
-                    # -abc<sth>
-                    if lt_index > 2:
-                        token.insert(0, '-' + atom[2:])
-                        prepended = True
-                    # -a<sth>
-                    else:
-                        arg_token = Token([atom[lt_index:]])
-                        # rest = atom[lt_index:]
-                # -a<sth> -> -a <sth>; -abc<sth> -> -abc <sth>
-                else:
-                    flag_ = atom[:lt_index]
-                    arg_token = Token([atom[lt_index:]])
-            else:
-                flag_, rest = atom[:2], atom[2:]
-
-            if Atom.get_class(flag_) is Option:
-                flag = flag_
-                # announced in Options
-                if flag in opt_2_ins:
-                    ins = opt_2_ins[flag_][0]
-                    # In Options it requires no argument
-                    if ins.ref is None:
-                        # sth stacked with it
-                        if rest:
-                            if Atom.get_class(rest) is Argument:
-                                raise DocpieError(
-                                    ('%s announced difference in '
-                                     'Options(%s) and Usage(%s)') %
-                                    (flag_, ins, atom))
-                            if not (self.stdopt and self.attachopt):
-                                raise DocpieError(
-                                    ("You can't write %s while it requires "
-                                     "argument and attachopt=False") % atom)
-
-                            token.insert(0, '-' + rest)
-                            prepended = True
-                    # In Options it requires argument
-                    else:
-                        if rest:
-                            arg_token = Token([rest])
-                        elif arg_token:
-                            pass
-                        else:
-                            _current = token.current()
-                            if _current in '([':
-                                tk = [token.next()]
-                                tk.extend(token.till_end_bracket(tk[0]))
-                                tk.append(')' if tk[0] == '(' else ']')
-                                arg_token = Token(tk)
-                            elif _current in ('...', '|'):
-                                raise DocpieError(
-                                    ('%s requires argument in Options(%s) '
-                                     'but hit "%s" in Usage') %
-                                    atom, ins, _current)
-                            else:
-                                arg_token = Token([token.next()])
-
-                        if token.current() == '...':
-                            arg_token.append(token.next())
-                elif rest:
-                    if not (self.stdopt and self.attachopt):
-                        raise DocpieError(
-                            "You can't write %s while it requires argument "
-                            "and attachopt=False" % atom)
-                    # -asth -> -a -sth
-                    token.insert(0, '-' + rest)
-                    prepended = True
+        elif current.startswith('-') and not current.startswith('--'):
+            flag, arg_token, prepended = \
+                self.get_short_option_with_arg(current, token)
 
         if flag is not None:
             logger.debug('parsing flag %s, %s, %s', flag, arg_token, token)
             if arg_token is not None:
-                ref_lis = self.parse_pattern(Token(arg_token))
+                ref_lis = self.parse_pattern(arg_token)
                 ref = Required(*ref_lis).fix()
             else:
                 ref = None
@@ -218,18 +108,152 @@ class Parser(object):
         if prepended:
             token.pop(0)
 
-        atom_class = Atom.get_class(atom)
-        ins = atom_class(atom)
+    def get_long_option_with_arg(self, current, token):
+        flag, arg = current.split('=', 1)
+        if Atom.get_class(flag) is Option:
+            if arg:
+                arg_token = Token([arg])
+            else:
+                next_arg = token.next()
+                if next_arg not in '([':
+                    raise DocpieError('format error: %s' % current)
+                tk = [next_arg]
+                tk.extend(token.till_end_bracket(next_arg))
+                tk.append(')' if next_arg == '(' else ']')
+                arg_token = Token(tk)
 
-        if token.current() == '...':
-            token.next()
-            # Not work on py2.6
-            # ins = Required(*ins_lis, repeat=True)
+            if token.current() == '...':
+                arg_token.append(token.next())
+
+            return flag, arg_token
+
+    def get_short_option_with_arg(self, current, token):
+        flag = None
+        arg_token = None
+        rest = None
+        prepended = False
+
+        # -a<sth> -abc<sth>
+        if current.find('<') >= 0 and current.endswith('>'):
+            temp_flag, arg_token, prepended = \
+                self.get_short_option_with_angle_bracket(current, token)
+        else:
+            temp_flag, rest = current[:2], current[2:]
+
+        if Atom.get_class(temp_flag) is Option:
+            flag = temp_flag
+            arg_token, prepended = \
+                self.get_short_option_arg(flag, token, arg_token, rest)
+
+        return flag, arg_token, prepended
+
+    def get_short_option_with_angle_bracket(self, current, token):
+        lt_index = current.find('<')
+        prepended = False
+        arg_token = None
+        if self.stdopt and self.attachopt:
+            # -a<sth> -> -a <sth>; -abc<sth> -> -a -bc<sth>
+            if not self.attachvalue:
+                raise DocpieError(
+                    "You can't write %s while attachvalue=False" %
+                    current)
+
+            flag = current[:2]
+            # -abc<sth>
+            if lt_index > 2:
+                token.insert(0, '-' + current[2:])
+                prepended = True
+            # -a<sth>
+            else:
+                arg_token = Token([current[lt_index:]])
+                # rest = atom[lt_index:]
+        # -a<sth> -> -a <sth>; -abc<sth> -> -abc <sth>
+        else:
+            flag = current[:lt_index]
+            arg_token = Token([current[lt_index:]])
+
+        return flag, arg_token, prepended
+
+    def get_short_option_arg(self, current, token, arg_token, rest):
+        opt_2_ins = self.option_name_2_instance
+        prepended = False
+
+        if current in opt_2_ins:
+            ins = opt_2_ins[current][0]
+            # In Options it requires no argument
+            if ins.ref is None:
+                # sth stacked with it
+                if rest:
+                    if Atom.get_class(rest) is Argument:
+                        raise DocpieError(
+                            ('%s announced difference in '
+                             'Options(%s) and Usage(%s)') %
+                            (current, ins, current))
+                    if not (self.stdopt and self.attachopt):
+                        raise DocpieError(
+                            ("You can't write %s while it requires "
+                             "argument and attachopt=False") % current)
+
+                    token.insert(0, '-' + rest)
+                    prepended = True
+            # In Options it requires argument
+            else:
+                if rest:
+                    arg_token = Token([rest])
+                elif arg_token:
+                    pass
+                else:
+                    _current = token.current()
+                    if _current in '([':
+                        tk = [token.next()]
+                        tk.extend(token.till_end_bracket(tk[0]))
+                        tk.append(')' if tk[0] == '(' else ']')
+                        arg_token = Token(tk)
+                    elif _current in ('...', '|'):
+                        raise DocpieError(
+                            ('%s requires argument in Options(%s) '
+                             'but hit "%s" in Usage') %
+                            current, ins, _current)
+                    else:
+                        arg_token = Token([token.next()])
+
+                if token.current() == '...':
+                    arg_token.append(token.next())
+        elif rest:
+            if not (self.stdopt and self.attachopt):
+                raise DocpieError(
+                    "You can't write %s while it requires argument "
+                    "and attachopt=False" % current)
+            # -asth -> -a -sth
+            token.insert(0, '-' + rest)
+            prepended = True
+
+        return arg_token, prepended
+
+    def parse_other_element(self, current, token):
+        atom_class = Atom.get_class(current)
+        ins = atom_class(current)
+
+        repeat = token.check_ellipsis_and_drop()
+        if repeat:
             ins = Required(ins, **{'repeat': True})
 
         return (ins,)
 
-    def _parse_pipe(self, lis):
+    def parse_options_shortcut(self, current, token):
+        # `[options] ...`? Note `[options...]` won't work
+        ins = OptionsShortcut(self.options)
+        repeat = token.check_ellipsis_and_drop()
+        if repeat:
+            ins = Optional(ins, repeat=True)
+
+        return (ins,)
+
+    def parse_dash(self, current, token):
+        repeat = token.check_ellipsis_and_drop()
+        return (Command(current, repeat=repeat),)
+
+    def parse_pipe(self, lis):
         assert '...' not in lis
         assert len(lis) >= 3
         assert lis[0] != '|' != lis[-1]
@@ -323,24 +347,24 @@ class OptionParser(Parser):
         raw_content.clear()
         formal_collect = []
 
-        try:
-            with warnings.catch_warnings():
-                warnings.simplefilter("ignore")
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            try:
                 split = self.visible_empty_line_re.split(text)
-        except ValueError:  # python >= 3.5
-            return
+            except ValueError:  # python >= 3.5
+                return
 
         option_split_re = self.option_split_re
         name = self.option_name
         for text in filter(lambda x: x and x.strip(), split):
 
             # logger.debug('get options group:\n%r', text)
-            try:
-                with warnings.catch_warnings():
-                    warnings.simplefilter("ignore")
+            with warnings.catch_warnings():
+                warnings.simplefilter("ignore")
+                try:
                     split_options = option_split_re.split(text)
-            except ValueError:  # python >= 3.5
-                continue
+                except ValueError:  # python >= 3.5
+                    continue
 
             split_options.pop(0)
 
@@ -712,12 +736,12 @@ class UsageParser(Parser):
         angle_bracket_re = self.angle_bracket_re
         wrap_symbol_re = self.wrap_symbol_re
 
-        try:
-            with warnings.catch_warnings():
-                warnings.simplefilter('ignore')
+        with warnings.catch_warnings():
+            warnings.simplefilter('ignore')
+            try:
                 sep_by_angle = angle_bracket_re.split(line)
-        except ValueError:
-            sep_by_angle = [line]
+            except ValueError:
+                sep_by_angle = [line]
 
         wrap_space = []
         for index, each_block in enumerate(sep_by_angle):
@@ -734,12 +758,12 @@ class UsageParser(Parser):
 
         wraped = ''.join(wrap_space)
 
-        try:
-            with warnings.catch_warnings():
-                warnings.simplefilter('ignore')
+        with warnings.catch_warnings():
+            warnings.simplefilter('ignore')
+            try:
                 sep = self.split_re.split(wraped)
-        except ValueError:
-            sep = [wraped]
+            except ValueError:
+                sep = [wraped]
 
         result = list(filter(None, sep))
 

@@ -30,15 +30,7 @@ NoneType = type(None)
 
 
 class Atom(object):
-    # when stdopt=True, long option should only start with `--`
-    # Otherwith, `-flag` is also long options
-    # and `-flag=sth` will be considered as `-flag` and `=sth`
-    # and attachopt won't work
-    # and attachvalue is forced to be `True`
 
-    # short option should not use `=`,
-    # `-asth` equals `-a sth`, `-a=sth` equals `-a =sth`
-    # long option can use
     flag_or_upper_re = re.compile(r'^(?P<hyphen>-{0,2})'
                                   r'($|[\da-zA-Z_][\da-zA-Z_\-]*$)')
     angular_bracket_re = re.compile(r'^<.*?>$')

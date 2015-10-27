@@ -13,6 +13,12 @@ class Token(list):
     def current(self):
         return self[0] if self else None
 
+    def check_ellipsis_and_drop(self):
+        if self and self[0] == '...':
+            self.pop(0)
+            return True
+        return False
+
     def till_end_bracket(self, start):
         # start bracket should not in self
         end = self._brackets[start]
