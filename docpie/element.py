@@ -359,6 +359,9 @@ class Option(Atom):
             result = {'self': opt_value, 'ref': ref_value}
         return result
 
+    def matched(self):
+        return self.value in ([], None, -1, 0)
+
     @classmethod
     def convert_2_dict(cls, obj):
         ref = obj.ref
@@ -486,6 +489,9 @@ class Command(Atom):
         for name in self.names:
             result[name] = value
         return result
+
+    def matched(self):
+        return self.value
 
 
 class Argument(Atom):
@@ -616,6 +622,9 @@ class Argument(Atom):
                 else:
                     result.append(each)
             return result
+
+    def matched(self):
+        return self.value
 
     def __eq__(self, other):
         if isinstance(other, Argument):
@@ -872,55 +881,120 @@ class Unit(list):
         # (<arg>)... (<arg> <arg>)
         # (<arg> <arg>)... <arg>
 
-        collected = []
-        for index, element in enumerate(self):
-            if (isinstance(element, Unit) and
-                    element.repeat and
-                    len(element) == 1 and
-                    isinstance(element[0], Argument) and
-                    element[0].value):
+        ele_num = len(self)
+        for index_1, element in enumerate(self, 1):
+            if index_1 == ele_num:    # the last one
+                return False
 
-                rest = self[index + 1:]
-                need_balance = []
-                take_arg = True
-                for each in rest:
-                    if take_arg:
-                        if isinstance(each, Argument):
-                            need_balance.append(each)
-                        else:
-                            take_arg = False
-                            # check if ret is matched
-                            if isinstance(each, (Optional, OptionsShortcut)):
-                                continue
-                            elif each.match(Argv([], True, True,
-                                                 True, True),
-                                            False):
-                                # use an empty token to test
-                                continue
-                            return False
+            if isinstance(element, OptionsShortcut):
+                continue
 
-                need_arg_number = len(need_balance)
-                to_rent_arg = element[0]
-                to_rent_value = to_rent_arg.value
-                can_borrow_number = len(to_rent_value)
-                if isinstance(element, Required):
-                    can_borrow_number -= 1
-                if can_borrow_number < need_arg_number:
+            if not element.matched():
+                logger.debug('%r not matched at all', element)
+                return False
+
+            # 1, 0, list
+            ellipsis_args = self.can_lend_value(element)
+            if ellipsis_args == 1:
+                continue
+            elif ellipsis_args == 0:
+                return False
+            else:
+                rest = self[index_1:]
+                assert rest, 'fixme: rest should not be empty'
+                rest_args = self.can_borrow_value(rest)
+                if rest_args is None:
                     return False
 
-                logger.debug('balance %s(%s) -> %s', element, to_rent_arg,
-                             need_balance)
+                return self.balance_value(ellipsis_args, rest_args)
+        return False
 
-                for need_value_arg in need_balance[::-1]:
-                    need_value_arg.value = to_rent_value.pop()
-                    logger.debug('set %s value %s',
-                                 need_value_arg, need_value_arg.value)
-                return True
+    def can_lend_value(self, element):
+        # return 1 if should continue
+        # return 0 if should stop
+        # return flat elements list if it can borrow value
 
-            elif (not isinstance(element, (Optional, OptionsShortcut)) and
-                    not element.match(Argv([], True, True, True, True),
-                                      False)):
-                return False
+        if isinstance(element, Atom):
+            return 1
+
+        # then it's Unit
+        if not element.repeat:
+            return 1
+
+        # then it's Unit & repeatable
+        return self.lend_flat(element)
+
+    def lend_flat(self, element):
+        flat = []
+        for each in element:
+            if not isinstance(each, (Unit, Argument)):
+                return 0
+            if isinstance(each, Unit):
+                # Should not contain repeatable anymore
+                if each.repeat:
+                    return 0
+                flatted = self.lend_flat(each)
+                if flatted in (0, 1):
+                    return flatted
+                flat.extend(flatted)
+            elif isinstance(each, Argument):
+                flat.append(each)
+            else:
+                return 0
+        return flat
+
+    def can_borrow_value(self, elements):
+        flat = []
+        for element in elements:
+            if isinstance(element, Unit):
+                if element.repeat:
+                    return None
+
+                if isinstance(element, Optional):
+                    continue
+                elif isinstance(element, Required):
+                    flatted = self.can_borrow_value(element)
+                    if flatted is None:
+                        return None
+                    flat.extend(flatted)
+            elif isinstance(element, (Command, Argument)):
+                flat.append(element)
+
+        # empty flat is meaningless
+        return flat or None
+
+    def balance_value(self, from_, to):
+        required_unit = len(to)
+        supported_unit = len(from_)
+        supported_times = min(len(ele.value) for ele in from_) - 1
+        required_times, rest = divmod(required_unit, supported_unit)
+        if rest or required_times > supported_times:
+            logger.debug('Not suit to balance: %s -> %s', from_, to)
+            return False
+
+        from_history = [x.dump_value() for x in from_]
+        to_history = [x.dump_value() for x in to]
+
+        collected_value = []
+        for _ in range(required_times):
+            for ele in from_:
+                collected_value.append(ele.value.pop(-1))
+
+        collected_value.reverse()
+
+        logger.debug('collected value %s', collected_value)
+        argv = Argv(collected_value, True, True, True, True)
+        if not all(x.match(argv, False) for x in to):
+            logger.debug('balance match failed')
+            for ele, value in zip(from_, from_history):
+                ele.load_value(value)
+            for ele, value in zip(to, to_history):
+                ele.load_value(value)
+            return False
+
+        logger.debug('balance succeed')
+        return True
+
 
     # TODO: check if this is buggy
     def merge_value(self, value_list):
@@ -988,6 +1062,9 @@ class Unit(list):
             result.append(new)
 
         return result
+
+    def matched(self):
+        return all(x.matched() for x in self)
 
     @classmethod
     def convert_2_dict(cls, obj):

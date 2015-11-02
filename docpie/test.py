@@ -1421,8 +1421,12 @@ Options: -a, --all=<here>
         sys.argv = ['prog', '1', '2', '3']
         self.eq(doc, {'<a>': ['1'], '<b>': '2', '<c>': '3', '--': False})
 
+        # change in 0.2.6
+        # When borrowing value, the lender will at least keep one value
+        # for itself
         sys.argv = ['prog', '1', '2']
-        self.eq(doc, {'<a>': [], '<b>': '1', '<c>': '2', '--': False})
+        # self.eq(doc, {'<a>': [], '<b>': '1', '<c>': '2', '--': False})
+        self.fail(doc)
 
         sys.argv = ['prog', '1']
         self.fail(doc)
@@ -1976,6 +1980,14 @@ Options:
         sys.argv = ['prog', 'sth']
         expect = {'<Options:>': 'sth', '-h': False, '--help': False,
                   '--': False}
+        self.eq(doc, expect)
+
+    def test_repeat_follow_command(self):
+        doc = """
+        Usage: prog <a>... <b> cmd"""
+
+        sys.argv = ['prog', '1', '2', '3', 'cmd']
+        expect = {'<a>': ['1', '2'], '<b>': '3', 'cmd': True, '--': False}
         self.eq(doc, expect)
 
 
