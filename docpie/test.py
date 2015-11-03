@@ -1990,6 +1990,51 @@ Options:
         expect = {'<a>': ['1', '2'], '<b>': '3', 'cmd': True, '--': False}
         self.eq(doc, expect)
 
+        doc = """Usage: prog <a>... cmd <b>"""
+
+        sys.argv = ['prog', '1', '2', 'cmd', '3']
+        expect = {'<a>': ['1', '2'], 'cmd': True, '<b>': '3', '--': False}
+        self.eq(doc, expect)
+
+    def test_repeat_required_grouped(self):
+        doc = """Usage: prog (<a> <b>)... <c> <d>"""
+        sys.argv = ['prog', 'a', 'b', 'a', 'b', 'c', 'd']
+        expect = {'<a>': ['a', 'a'], '<b>': ['b', 'b'], '<c>': 'c', '<d>': 'd',
+                  '--': False}
+        self.eq(doc, expect)
+
+        sys.argv = ['prog', 'a', 'b', 'a', 'b', 'c']
+        self.fail(doc)
+
+        sys.argv = ['prog', 'a', 'b', 'c', 'd']
+        expect = {'<a>': ['a'], '<b>': ['b'], '<c>': 'c', '<d>': 'd',
+                  '--': False}
+        self.eq(doc, expect)
+
+        sys.argv = ['prog', 'a', 'b']
+        self.fail(doc)
+
+    def test_repeat_optional_grouped(self):
+        doc = """Usage: prog [<a> <b>]... <c> <d>"""
+        sys.argv = ['prog', 'a', 'b', 'a', 'b', 'c', 'd']
+        expect = {'<a>': ['a', 'a'], '<b>': ['b', 'b'], '<c>': 'c', '<d>': 'd',
+                  '--': False}
+        self.eq(doc, expect)
+
+        sys.argv = ['prog', 'a', 'b', 'a', 'c', 'd']
+        expect = {'<a>': ['a', 'a'], '<b>': ['b'], '<c>': 'c', '<d>': 'd',
+                  '--': False}
+        self.eq(doc, expect)
+
+        sys.argv = ['prog', 'a', 'b', 'c', 'd']
+        expect = {'<a>': ['a'], '<b>': ['b'], '<c>': 'c', '<d>': 'd',
+                  '--': False}
+        self.eq(doc, expect)
+
+        sys.argv = ['prog', 'c', 'd']
+        self.fail(doc)
+        # expect = {'<a>': [], '<b>': [], '<c>': 'c', '<d>': 'd', '--': False}
+        # self.eq(doc, expect)
 
 class APITest(unittest.TestCase):
 

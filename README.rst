@@ -15,14 +15,25 @@ View on: `HomePage <http://docpie.comes.today>`__ /
 ChangeLog
 ---------
 
-version 0.2.4:
+version 0.2.6:
 
--   [fix] Support windows style line separator ``/r/n``
+-   [new] Now repeatable arguments have a better handling way.
 
-version 0.2.5:
+    First, the repeatable elements can be more than one argument,
+    and can be nested. But can only be argument (not option, not
+    command)
 
--   [fix] When "Usage" section contains "Options:"
-    (e.g. "``prog <options:>``"), it won't be parsed as "Option" section
+    .. code::
+
+        (<arg1> <arg2>)... <arg3>
+
+    Second, the elements after repeatable arguments can be argument
+    and command, and can be groupd
+
+    .. code::
+
+        <arg>... <arg2> cmd
+        <arg>... (cmd <arg2>) <arg3>
 
 `full changelog <https://github.com/TylerTemp/docpie/blob/master/CHANGELOG.md>`__
 
@@ -110,6 +121,11 @@ Or you can `try it in your browser <http://docpie.comes.today/try/>`__
 
 Why docpie?
 -----------
+
+``docpie`` can greatly reduce the work you need to be done for
+command-line interface. What you see is what you get.
+Every time you only need to update your document, and keep the
+code unchanged.
 
 See `here <http://docpie.comes.today/document/why-docpie/>`__ for more reasons.
 

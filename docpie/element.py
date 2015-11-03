@@ -905,8 +905,10 @@ class Unit(list):
                 rest_args = self.can_borrow_value(rest)
                 if rest_args is None:
                     return False
-
-                return self.balance_value(ellipsis_args, rest_args)
+                if isinstance(element, Required):
+                    return self.balance_required_value(ellipsis_args, rest_args)
+                else:
+                    return self.balance_optional_value(ellipsis_args, rest_args)
         return False
 
     def can_lend_value(self, element):
@@ -957,44 +959,88 @@ class Unit(list):
                     if flatted is None:
                         return None
                     flat.extend(flatted)
+            elif element.matched():
+                return None
             elif isinstance(element, (Command, Argument)):
                 flat.append(element)
 
         # empty flat is meaningless
         return flat or None
 
-    def balance_value(self, from_, to):
-        required_unit = len(to)
+    def balance_required_value(self, from_, to):
         supported_unit = len(from_)
-        supported_times = min(len(ele.value) for ele in from_) - 1
-        required_times, rest = divmod(required_unit, supported_unit)
+        required_num = len(to)
+        min_value_num = min(len(ele.value) for ele in from_)
+        supported_times = min_value_num - 1
+        required_times, rest = divmod(required_num, supported_unit)
         if rest or required_times > supported_times:
             logger.debug('Not suit to balance: %s -> %s', from_, to)
             return False
-
-        from_history = [x.dump_value() for x in from_]
-        to_history = [x.dump_value() for x in to]
-
+        backup = self.backup_before_balance(from_, to)
         collected_value = []
         for _ in range(required_times):
+            this_value = []
             for ele in from_:
-                collected_value.append(ele.value.pop(-1))
+                this_value.append(ele.value.pop(-1))
+            collected_value[:0] = this_value
 
-        collected_value.reverse()
+        argv = Argv(collected_value, True, True, True, True)
+        if not all(x.match(argv, False) for x in to):
+            logger.debug('balance %s match failed', self)
+            self.restore_for_balance(backup)
+            return False
+
+        logger.debug('balance %s succeed', self)
+        return True
+
+    def balance_optional_value(self, from_, to):
+        required_num = len(to)
+        min_value_num = min(len(ele.value) for ele in from_)
+
+        backup = self.backup_before_balance(from_, to)
+
+        collected_value = []
+        for ele in from_[::-1]:
+            if len(collected_value) == required_num:
+                break
+
+            this_value = ele.value
+            this_value_num = len(this_value)
+            if this_value_num != min_value_num:
+                collected_value.insert(0, this_value.pop(-1))
+                assert this_value_num - 1 == min_value_num, \
+                    "fixme: re-collect value num is wrong"
+
+        lack = required_num - len(collected_value)
+        while lack:
+            for ele in from_[::-1]:
+                val = ele.value
+                if len(val) == 1:
+                    logger.debug('balance failed, at least leave one value')
+                    self.restore_for_balance(backup)
+                    return False
+                collected_value.insert(0, val.pop(-1))
+                lack -= 1
+                if not lack:
+                    break
 
         logger.debug('collected value %s', collected_value)
         argv = Argv(collected_value, True, True, True, True)
         if not all(x.match(argv, False) for x in to):
             logger.debug('balance match failed')
-            for ele, value in zip(from_, from_history):
-                ele.load_value(value)
-            for ele, value in zip(to, to_history):
-                ele.load_value(value)
+            self.restore_for_balance(backup)
             return False
-
         logger.debug('balance succeed')
         return True
 
+    def backup_before_balance(self, from_, to):
+        return ((from_, tuple(x.dump_value() for x in from_)),
+                (to, tuple(x.dump_value() for x in to)))
+
+    def restore_for_balance(self, backup):
+        for each in backup:
+            for ele, val in zip(*each):
+                ele.load_value(val)
 
     # TODO: check if this is buggy
     def merge_value(self, value_list):

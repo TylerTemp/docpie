@@ -1,3 +1,23 @@
+## 0.2.6
+
+*   [new] Now repeatable arguments have a better handling way.
+
+    First, the repeatable elements can be more than one argument,
+    and can be nested. But can only be argument (not option, not
+    command)
+
+    ```
+    (<arg1> <arg2>)... <arg3>
+    ```
+
+    Second, the elements after repeatable arguments can be argument
+    and command, and can be groupd
+
+    ```
+    <arg>... <arg2> cmd
+    <arg>... (cmd <arg2>) <arg3>
+    ```
+
 ## 0.2.5
 
 *   [fix] When "Usage" section contains "Options:"
