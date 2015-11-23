@@ -1698,10 +1698,10 @@ Options: -a, --all=<here>
         """
 
         pie = Docpie(doc, version="Alpha")
-        dic = pie.convert_2_dict()
+        dic = pie.convert_to_dict()
         s = json.dumps(dic)
         d = json.loads(s)
-        new_pie = pie.convert_2_docpie(d)
+        new_pie = pie.convert_to_docpie(d)
 
         self.assertEqual(pie.usages, new_pie.usages)
         self.assertEqual(pie.options, new_pie.options)

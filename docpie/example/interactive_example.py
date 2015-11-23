@@ -1,5 +1,5 @@
 '''
-This example uses docopt with the built in cmd module to demonstrate an
+This example uses docpie with the built in cmd module to demonstrate an
 interactive command application.
 Usage:
     my_program tcp <host> <port> [--timeout=<seconds>]

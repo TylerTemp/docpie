@@ -1,3 +1,10 @@
+## TODO
+
+*   Refactory
+*   Support grouped Options
+*   Add a bash auto-complete tool [#2](https://github.com/TylerTemp/docpie/issues/2)
+*   Document needs a better organization
+
 ## 0.2.6
 
 *   [new] Now repeatable arguments have a better handling way.

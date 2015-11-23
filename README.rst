@@ -15,27 +15,12 @@ View on: `HomePage <http://docpie.comes.today>`__ /
 ChangeLog
 ---------
 
-version 0.2.6:
+version 0.2.7:
 
--   [new] Now repeatable arguments have a better handling way.
+-   [fix] a typo which will cause failed to throw an error when there is
+    an syntax error in your help message
 
-    First, the repeatable elements can be more than one argument,
-    and can be nested. But can only be argument (not option, not
-    command)
-
-    .. code::
-
-        (<arg1> <arg2>)... <arg3>
-
-    Second, the elements after repeatable arguments can be argument
-    and command, and can be groupd
-
-    .. code::
-
-        <arg>... <arg2> cmd
-        <arg>... (cmd <arg2>) <arg3>
-
-`full changelog <https://github.com/TylerTemp/docpie/blob/master/CHANGELOG.md>`__
+`full changelog & TODOs <https://github.com/TylerTemp/docpie/blob/master/CHANGELOG.md>`__
 
 
 Summary
@@ -137,8 +122,21 @@ the code in ``bashlog.py`` is taken from
 ``tracemore.py`` is from `python
 Cookbook <http://www.amazon.com/Python-Cookbook-Third-David-Beazley/dp/1449340377/ref=sr_1_1?ie=UTF8&qid=1440593849&sr=8-1&keywords=python+cookbook>`__
 
+Many examples & tests are from ``docopt``.
+
 License
 -------
 
 ``docpie`` is released under
 `MIT-License <https://github.com/TylerTemp/docpie/blob/master/LICENSE>`__
+
+Donate
+------
+
+If you like this project, you can buy me a beer so I can make it better!
+
+.. image:: https://dn-tyler.qbox.me/alipay.ico
+    :target: https://dn-tyler.qbox.me/myalipay.png
+
+.. image:: //button.flattr.com/flattr-badge-large.png
+    :target: https://flattr.com/submit/auto?user_id=TylerTemp&url=https%3A%2F%2Fdocpie.comes.today

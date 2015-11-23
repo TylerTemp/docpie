@@ -98,7 +98,7 @@ class Parser(object):
                     raise DocpieError(
                         '%s announces differently in '
                         'Options(%r) and Usage(%r)' %
-                        (atom, opt_ins, ins))
+                        (flag, opt_ins, ins))
             if token.current() == '...':
                 ins = Required(ins, **{'repeat': True})
                 token.next()
