@@ -2036,6 +2036,21 @@ Options:
         # expect = {'<a>': [], '<b>': [], '<c>': 'c', '<d>': 'd', '--': False}
         # self.eq(doc, expect)
 
+    def test_an_unexpected_issue(self):
+        doc = """
+        Usage: prog [options] --keep
+               prog [options]
+
+        Options:
+            -k, --keep"""
+
+        # --keep followed by an option which is not in `Options`
+        # this will RANDOMLY FAIL!!!!
+        sys.argv = ['prog', '--keep']
+        expect = {'--keep': True, '-k': True,
+                  '--': False}
+        self.eq(doc, expect)
+
 class APITest(unittest.TestCase):
 
     def eq(self, result, doc, argv=None, help=True, version=None,

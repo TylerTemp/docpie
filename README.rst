@@ -138,5 +138,29 @@ If you like this project, you can buy me a beer so I can make it better!
 .. image:: https://dn-tyler.qbox.me/alipay.ico
     :target: https://dn-tyler.qbox.me/myalipay.png
 
-.. image:: //button.flattr.com/flattr-badge-large.png
+.. image:: https://button.flattr.com/flattr-badge-large.png
     :target: https://flattr.com/submit/auto?user_id=TylerTemp&url=https%3A%2F%2Fdocpie.comes.today
+
+
+Known Issue
+-----------
+
+A bug here:
+
+This will randomly fail. I've found the reason and I'm working on it.
+
+```python
+"""
+Usage: prog [options] --keep
+       prog [options]
+
+Options:
+    -k, --keep
+"""
+
+from docpie import docpie
+import sys
+sys.argv = [sys.argv[0], '--keep']
+
+assert docpie(__doc__)['--keep'] = True  # randomly fail
+```

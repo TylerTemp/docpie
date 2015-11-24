@@ -189,6 +189,19 @@ class Docpie(dict):
             name_in_value = names.intersection(self)
             if name_in_value:  # add default if necessary
                 one_name = name_in_value.pop()
+                # a bug here:
+                # e.g:
+                # Usage: prog [options] --keep
+                #        prog [options]
+                #
+                # Options:
+                #   -k, --keep
+                #
+                # When "prog --keep", at this point, the result is
+                # {'-k': False, '--keep': True}
+                # if pop '-k' -> result will be False
+                # if pop '--keep' -> result will be True
+                logger.debug('in names, pop %s, self %s', one_name, self)
                 value_in_usage = self[one_name]
                 if not value_in_usage:  # need default
                     if default is None:  # no default, use old matched one
