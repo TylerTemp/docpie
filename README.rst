@@ -149,18 +149,18 @@ A bug here:
 
 This will randomly fail. I've found the reason and I'm working on it.
 
-```python
-"""
-Usage: prog [options] --keep
-       prog [options]
+.. code:: python
 
-Options:
-    -k, --keep
-"""
+    """
+    Usage: prog [options] --keep
+           prog [options]
 
-from docpie import docpie
-import sys
-sys.argv = [sys.argv[0], '--keep']
+    Options:
+        -k, --keep
+    """
 
-assert docpie(__doc__)['--keep'] = True  # randomly fail
-```
+    from docpie import docpie
+    import sys
+    sys.argv = [sys.argv[0], '--keep']
+
+    assert docpie(__doc__)['--keep'] = True  # randomly fail
