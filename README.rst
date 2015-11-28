@@ -19,6 +19,7 @@ version 0.2.7:
 
 -   [fix] a typo which will cause failed to throw an error when there is
     an syntax error in your help message
+-   [fix] `#3 <https://github.com/TylerTemp/docpie/issues/3>`__
 
 `full changelog & TODOs <https://github.com/TylerTemp/docpie/blob/master/CHANGELOG.md>`__
 
@@ -139,28 +140,4 @@ If you like this project, you can buy me a beer so I can make it better!
     :target: https://dn-tyler.qbox.me/myalipay.png
 
 .. image:: https://button.flattr.com/flattr-badge-large.png
-    :target: https://flattr.com/submit/auto?user_id=TylerTemp&url=https%3A%2F%2Fdocpie.comes.today
-
-
-Known Issue
------------
-
-A bug here:
-
-This will randomly fail. I've found the reason and I'm working on it.
-
-.. code:: python
-
-    """
-    Usage: prog [options] --keep
-           prog [options]
-
-    Options:
-        -k, --keep
-    """
-
-    from docpie import docpie
-    import sys
-    sys.argv = [sys.argv[0], '--keep']
-
-    assert docpie(__doc__)['--keep'] = True  # randomly fail
+    :target: https://flattr.com/submit/auto?user_id=TylerTemp&url=http%3A%2F%2Fdocpie.comes.today

@@ -873,13 +873,11 @@ class Unit(list):
 
     # TODO: better solution
     def balance_value_for_ellipsis_args(self):
-        # This method is very simple now. It only works for:
-        # (<arg>)... <arg>
-        # [<arg>]... <arg>
-        # (<arg>)... <arg> <arg>
-        # This even won't for:
-        # (<arg>)... (<arg> <arg>)
-        # (<arg> <arg>)... <arg>
+        # This method can deal more complex situation now:
+        # (<arg1> <arg2>)... <arg3>
+        # <arg>... <arg2> cmd
+        # <arg>... (cmd <arg2>) <arg3>
+        # see: https://github.com/TylerTemp/docpie/blob/master/CHANGELOG.md#026
 
         ele_num = len(self)
         for index_1, element in enumerate(self, 1):

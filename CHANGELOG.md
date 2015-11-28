@@ -5,6 +5,12 @@
 *   Add a bash auto-complete tool [#2](https://github.com/TylerTemp/docpie/issues/2)
 *   Document needs a better organization
 
+## 0.2.7
+
+*   [fix] a typo which will cause failed to throw an error when there is
+    an syntax error in your help message
+*   \[fix\] [issue #3](https://github.com/TylerTemp/docpie/issues/3)
+
 ## 0.2.6
 
 *   [new] Now repeatable arguments have a better handling way.

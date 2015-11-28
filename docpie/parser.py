@@ -232,7 +232,14 @@ class Parser(object):
 
     def parse_other_element(self, current, token):
         atom_class = Atom.get_class(current)
-        ins = atom_class(current)
+        args = set([current])
+
+        opt_name_2_ins = self.option_name_2_instance
+        if atom_class is Option and current in opt_name_2_ins:
+            ins_in_opt = opt_name_2_ins[current]
+            args.update(ins_in_opt[0].names)
+
+        ins = atom_class(*args)
 
         repeat = token.check_ellipsis_and_drop()
         if repeat:
@@ -655,7 +662,7 @@ class UsageParser(Parser):
         if self.formal_content is None:
             raise DocpieError('"Usage:" not found')
         self.parse_2_instance(name)
-        self.parse_instance()
+        self.fix_option_and_empty()
 
     def set_option_name_2_instance(self, options):
         opt_2_ins = self.option_name_2_instance
@@ -791,7 +798,7 @@ class UsageParser(Parser):
 
         return opt_ouside, opt_cuts
 
-    def parse_instance(self):
+    def fix_option_and_empty(self):
         result = []
         all_options = [x[0] for x in self.option_name_2_instance.values()]
         for each_usage in self.instances:

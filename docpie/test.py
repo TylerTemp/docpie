@@ -2036,7 +2036,7 @@ Options:
         # expect = {'<a>': [], '<b>': [], '<c>': 'c', '<d>': 'd', '--': False}
         # self.eq(doc, expect)
 
-    def test_an_unexpected_issue(self):
+    def test_issue_3(self):
         doc = """
         Usage: prog [options] --keep
                prog [options]
@@ -2049,7 +2049,33 @@ Options:
         sys.argv = ['prog', '--keep']
         expect = {'--keep': True, '-k': True,
                   '--': False}
-        self.eq(doc, expect)
+        # usually 1 fail out of 3
+        for _ in range(6):
+            self.eq(doc, expect)
+
+    def test_issue_3_not_alias_for_opt(self):
+        expect = {'-k': True, '--keep': True, '--': False}
+
+        doc1 = """
+        Usage: prog -k
+
+        Options:
+            -k, --keep"""
+
+        doc2 = """
+        Usage: prog --keep
+
+        Options:
+            -k, --keep"""
+
+        argv1 = ['prog', '-k']
+        argv2 = ['prog', '--keep']
+
+        for doc in (doc1, doc2):
+            for argv in (argv1, argv2):
+                sys.argv = argv
+                self.eq(doc, expect)
+
 
 class APITest(unittest.TestCase):
 

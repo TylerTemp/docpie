@@ -9,14 +9,17 @@ An easy and Pythonic command-line interface parser.
 
 from docpie.error import DocpieException, DocpieExit, DocpieError
 from docpie.pie import Docpie
+from logging import getLogger
 
 __all__ = ('docpie', 'Docpie',
-           'DocpieException', 'DocpieExit', 'DocpieError')
+           'DocpieException', 'DocpieExit', 'DocpieError', 'logger')
 
 # it's not a good idea but it can avoid loop importing
 __version__ = Docpie._version
 
-__timestamp__ = 1446515075.193317  # last sumbit
+__timestamp__ = 1448676460.911294  # last sumbit
+
+logger = getLogger('docpie')
 
 
 def docpie(doc, argv=None, help=True, version=None,
