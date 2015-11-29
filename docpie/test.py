@@ -2076,6 +2076,19 @@ Options:
                 sys.argv = argv
                 self.eq(doc, expect)
 
+    def test_new_fix_for_options_not_raise(self):
+        doc = """
+        Usage:
+            prog [options]
+
+        Options:
+        """
+        sys.argv = ['prog']
+        self.eq(doc, {'--': False})
+
+        sys.argv = ['prog', 'sth']
+        self.fail(doc)
+
 
 class APITest(unittest.TestCase):
 

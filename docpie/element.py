@@ -92,7 +92,7 @@ class Atom(object):
     def load_value(self, value):
         self.value = value
 
-    def expand_either(self):
+    def expand(self):
         return [self]
 
     @classmethod
@@ -119,6 +119,9 @@ class Atom(object):
         # Not work on py2.6
         # return cls(*names, default=default)
         return cls(*names, **{'default': default})
+
+    def copy(self):
+        return self.__class__(*self.names)
 
     def __str__(self):
         return '/'.join(self.names)
@@ -361,6 +364,9 @@ class Option(Atom):
 
     def matched(self):
         return self.value in ([], None, -1, 0)
+
+    def copy(self):
+        return self.__class__(*self.names, **{'ref': self.ref})
 
     @classmethod
     def convert_2_dict(cls, obj):
@@ -1094,21 +1100,26 @@ class Unit(list):
             result.update(this_result)
         return result
 
-    def expand_either(self):
-        cls = Required if isinstance(self, Required) else Optional
+    def expand(self):
+        cls = self.__class__
         repeat = self.repeat
         if len(self) == 1 and isinstance(self[0], Either):
-            return [cls(each, repeat=repeat).fix() for each in self[0]]
+            return [cls(each, repeat=repeat) for each in self[0]]
 
         result = []
-        for expanded in product(*(x.expand_either() for x in self)):
-            new = cls(*expanded, repeat=repeat).fix()
+        for expanded in product(*(x.expand() for x in self)):
+            new = cls(*expanded, repeat=repeat)
+            # new = cls(*(e.copy() for e in expanded), repeat=repeat)
             result.append(new)
 
         return result
 
     def matched(self):
         return all(x.matched() for x in self)
+
+    def copy(self):
+        return self.__class__(*(x.copy() for x in self),
+                              **{'repeat': self.repeat})
 
     @classmethod
     def convert_2_dict(cls, obj):
@@ -1311,6 +1322,8 @@ class OptionsShortcut(object):
         return False
 
     def fix(self):
+        if all(self.need_hide(*x[0].names) for x in self.options):
+            return None
         return self
 
     def dump_value(self):
@@ -1329,8 +1342,13 @@ class OptionsShortcut(object):
 
         return result
 
-    def expand_either(self):
+    def expand(self):
         return [self]
+        # return [Optional(x for x in self.options
+        #                  if not self.need_hide(*x[0].names))]
+
+    def copy(self):
+        return self
 
     @classmethod
     def convert_2_dict(cls, obj):

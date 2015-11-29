@@ -816,7 +816,7 @@ class UsageParser(Parser):
 
             all_options.extend(outside_opts)
 
-            for usage in ins.expand_either():
+            for usage in ins.expand():
                 usage.push_option_ahead()
                 result.append(usage)
 
