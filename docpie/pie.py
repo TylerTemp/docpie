@@ -291,13 +291,13 @@ class Docpie(dict):
                     logger.info('matched usage %s / %s', each, argv_clone)
                     return True, each, argv_clone.dashes
 
-                each.reset()
+                # each.reset()
                 logger.info('matching %s left %s, checking failed',
                             each, argv_clone)
                 continue
 
             elif argv_clone.error is None:
-                each.reset()
+                # each.reset()
                 logger.info('failed matching usage %s / %s', each, argv_clone)
 
             else:

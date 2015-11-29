@@ -1108,8 +1108,8 @@ class Unit(list):
 
         result = []
         for expanded in product(*(x.expand() for x in self)):
-            new = cls(*expanded, repeat=repeat)
-            # new = cls(*(e.copy() for e in expanded), repeat=repeat)
+            # new = cls(*expanded, repeat=repeat)
+            new = cls(*(e.copy() for e in expanded), repeat=repeat)
             result.append(new)
 
         return result
@@ -1343,12 +1343,13 @@ class OptionsShortcut(object):
         return result
 
     def expand(self):
-        return [self]
-        # return [Optional(x for x in self.options
-        #                  if not self.need_hide(*x[0].names))]
-
-    def copy(self):
-        return self
+        # return [self]
+        real = []
+        for each in self.options:
+            if self.need_hide(*each[0].names):
+                continue
+            real.append(each)
+        return [Optional(*real)]
 
     @classmethod
     def convert_2_dict(cls, obj):

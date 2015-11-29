@@ -2089,6 +2089,17 @@ Options:
         sys.argv = ['prog', 'sth']
         self.fail(doc)
 
+    def test_option_not_reset_cause_fail(self):
+        doc = """
+        Usage: prog [options] a
+               prog [options] b
+
+        Options:
+            -a"""
+
+        sys.argv = ['prog', '-a', 'b']
+        self.eq(doc, {'-a': True, 'a': False, 'b': True, '--': False})
+
 
 class APITest(unittest.TestCase):
 
