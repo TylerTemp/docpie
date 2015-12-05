@@ -295,12 +295,16 @@ class Option(Atom):
 
             return False
 
+        to_match_ref_argv = argv.clone()
         if attached_value is None:
-            to_match_ref_argv = argv.clone()
-            to_match_ref_argv[:] = argv[index:]
-            del argv[index:]
+            # --force=[<val>] <arg>
+            # --force -- value
+            if argv.current(index) == '--' and argv.auto_dashes:
+                del to_match_ref_argv[:]
+            else:
+                to_match_ref_argv[:] = argv[index:]
+                del argv[index:]
         else:
-            to_match_ref_argv = argv.clone()
             to_match_ref_argv[:] = [attached_value]
 
         result = self.ref.match(to_match_ref_argv, repeat_match)

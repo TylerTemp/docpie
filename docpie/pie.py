@@ -20,7 +20,7 @@ class Docpie(dict):
 
     # Docpie version
     # it's not a good idea but it can avoid loop importing
-    _version = '0.2.7'
+    _version = '0.2.8'
 
     option_name = 'Options:'
     usage_name = 'Usage:'

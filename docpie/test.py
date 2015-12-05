@@ -2100,6 +2100,23 @@ Options:
         sys.argv = ['prog', '-a', 'b']
         self.eq(doc, {'-a': True, 'a': False, 'b': True, '--': False})
 
+    def test_unstd_option_value_cause_double_dashes_failed(self):
+        doc = """
+        Usage: prog [options] <arg>
+
+        Options:
+            --force[=<value>]
+            -a
+        """
+
+        sys.argv = ['prog', '--force', '--', 'val']
+        expect = {'--force': None, '--': True, '<arg>': 'val', '-a': False}
+        self.eq(doc, expect)
+
+        sys.argv = ['prog', '--force', '-a', 'val']
+        expect = {'--force': None, '--': False, '<arg>': 'val', '-a': True}
+        self.eq(doc, expect)
+
 
 class APITest(unittest.TestCase):
 

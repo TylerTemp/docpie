@@ -5,6 +5,22 @@
 *   Add a bash auto-complete tool [#2](https://github.com/TylerTemp/docpie/issues/2)
 *   Document needs a better organization
 
+## 0.2.8
+
+*   [fix] the following situation will not failed now (note: not recommended, not POSIX standard)
+
+        """
+        Usage: prog [options] <arg>
+
+        Options:
+            --force[=<value>]
+        """
+
+        from docpie import docpie
+        docpie(__doc__, ['prog', '--force', '--', 'val'])
+        # {'--': True, '--force': None, '<arg>': 'val'}
+
+
 ## 0.2.7
 
 *   [fix] a typo which will cause failed to throw an error when there is

@@ -15,11 +15,23 @@ View on: `HomePage <http://docpie.comes.today>`__ /
 ChangeLog
 ---------
 
-version 0.2.7:
+version 0.2.8:
 
--   [fix] a typo which will cause failed to throw an error when there is
-    an syntax error in your help message
--   [fix] `#3 <https://github.com/TylerTemp/docpie/issues/3>`__
+-   [fix] the following situation will not failed now (note: not recommended, not POSIX standard)
+
+    .. code:: python
+
+        """
+        Usage: prog [options] <arg>
+
+        Options:
+            --force[=<value>]
+        """
+
+        from docpie import docpie
+        docpie(__doc__, ['prog', '--force', '--', 'val'])
+        # {'--': True, '--force': None, '<arg>': 'val'}
+
 
 `full changelog & TODOs <https://github.com/TylerTemp/docpie/blob/master/CHANGELOG.md>`__
 
