@@ -2117,6 +2117,20 @@ Options:
         expect = {'--force': None, '--': False, '<arg>': 'val', '-a': True}
         self.eq(doc, expect)
 
+    def test_option_value_handle_dashes(self):
+        # not standard
+        doc = """Usage: prog [options] C
+
+        Options:
+            --all=[A B]
+        """
+
+        sys.argv = ['prog', '--all', '--', 'A', 'B', 'C']
+        self.fail(doc)
+
+        sys.argv = ['prog', '--all', 'A', '--', 'B', 'C']
+        self.fail(doc)
+
 
 class APITest(unittest.TestCase):
 
