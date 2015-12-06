@@ -818,7 +818,14 @@ class UsageParser(Parser):
 
             for usage in ins.expand():
                 usage.push_option_ahead()
-                result.append(usage)
+                # [options] -a
+                # Options: -a
+                # TODO: better solution
+                r = usage.fix()
+                if r is None:
+                    result.append(Optional())
+                else:
+                    result.append(r)
 
         self.instances = result
         self.all_options = all_options
