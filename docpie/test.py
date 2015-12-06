@@ -2160,6 +2160,113 @@ class APITest(unittest.TestCase):
         '''
         self.eq({'--': False}, doc, '', appearedonly=True)
 
+    def test_issue_4(self):
+        # https://github.com/TylerTemp/docpie/issues/4
+        doc = """
+        Example of program which uses [options] shortcut in pattern.
+
+        Usage:
+          options_shortcut_example.py --help | --version
+          options_shortcut_example.py [options] (do --after=<float> [--grace])... <port>...
+
+        Arguments:
+          <port>                   give port
+
+        Generic options:
+          -h --help                show this help message and exit
+          --version                show version and exit
+          -n, --number N           use N as a number
+          -t, --timeout TIMEOUT    set timeout TIMEOUT seconds
+          --apply                  apply changes to database
+          -q                       operate in quiet mode
+
+        Commands:
+          do                       do smth
+
+        Command options:
+          --after=<float>          do smth after <float> time
+          --grace                  do smth with grace
+        """
+        argv = ['options_shortcut_example.py', '-n', '6', 'do', '--after=4', 'a.txt']
+        expect = {
+            '--': False,
+            '--after': ['4'],
+            '--apply': False,
+            '--grace': 0,
+            '--help': False,
+            '--number': '6',
+            '--timeout': None,
+            '--version': False,
+            '-h': False,
+            '-n': '6',
+            '-q': False,
+            '-t': None,
+            '<port>': ['a.txt'],
+            'do': 1}
+        self.eq(expect, doc, argv)
+        self.eq(expect, doc, argv, optionsfirst=True)
+
+        doc2 = """
+        Example of program which uses [options] shortcut in pattern.
+
+        Usage:
+          options_shortcut_example.py --help | --version
+          options_shortcut_example.py [options] (do [--after=<float>] [--grace])... <port>...
+
+        Arguments:
+          <port>                   give port
+
+        Generic options:
+          -h --help                show this help message and exit
+          --version                show version and exit
+          -n, --number N           use N as a number
+          -t, --timeout TIMEOUT    set timeout TIMEOUT seconds
+          --apply                  apply changes to database
+          -q                       operate in quiet mode
+
+        Commands:
+          do                       do smth
+
+        Command options:
+          --after=<float>          do smth after <float> time
+          --grace                  do smth with grace
+        """
+
+        self.eq(expect, doc2, argv)
+        self.eq(expect, doc2, argv, optionsfirst=True)
+
+    def test_issue_4_real_reason(self):
+        doc = """Usage: prog [options] [--want=<val2>] <arg>
+
+        Options:
+            -e, --expect=<val>"""
+
+        argv = ['prog', '--expect=sth', 'arg']  # this won't fail
+        expect = {'--': False, '--expect': 'sth', '-e': 'sth', '--want': None,
+                  '<arg>': 'arg'}
+        self.eq(expect, doc, argv)
+        self.eq(expect, doc, argv, optionsfirst=True)
+
+        argv = ['prog', '--expect', 'sth', 'arg']
+        self.eq(expect, doc, argv, optionsfirst=True)
+        # this will fail on 0.2.8
+        argv = ['prog', '-e', 'sth', 'arg']
+        self.eq(expect, doc, argv, optionsfirst=True)
+
+        argv = ['prog', '--want', 'sth', 'arg']
+        expect = {'--': False, '--expect': None, '-e': None, '--want': 'sth',
+                  '<arg>': 'arg'}
+        self.eq(expect, doc, argv, optionsfirst=True)
+
+        doc = """Usage: prog [options] -w<val> <arg>"""
+        argv = ['prog', '-w', 'sth', 'arg']
+        expect = {'--': False, '-w': 'sth', '<arg>': 'arg'}
+        # this will fail on 0.2.8
+        self.eq(expect, doc, argv, optionsfirst=True)
+
+        argv = ['prog', '-wsth', 'arg']
+        self.eq(expect, doc, argv, optionsfirst=True)
+
 
 class Writer(StringIO):
 
