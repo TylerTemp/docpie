@@ -5,6 +5,21 @@
 *   Add a bash auto-complete tool [#2](https://github.com/TylerTemp/docpie/issues/2)
 *   Document needs a better organization
 
+## 0.3.0
+
+*   [fix] can't parse options expecting arguments in usage
+    correctly, due to a previous code changing
+
+        """
+        Usage: prog [options] --color <COLOR>
+
+        Options:
+            --color=<COLOR>
+        """
+        from docpie import docpie
+        print(docpie(__doc__), ['prog', '--color', 'red'])
+        # {'--': False, '--color': 'red'}
+
 ## 0.2.9
 
 *   [fix] `optionsfirst` can work as expected (previously it can not recognize the

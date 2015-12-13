@@ -15,19 +15,22 @@ View on: `HomePage <http://docpie.comes.today>`__ /
 ChangeLog
 ---------
 
-version 0.2.9:
+version 0.3.0:
 
--   [fix] ``optionsfirst`` can work as expected (previously it can not recognize the
-    expected arguments of a option and leads to fail):
+-   [fix] can't parse options expecting arguments in usage
+    correctly, due to a previous code changing
 
     .. code:: python
 
         """
-        Usage: prog [options] -w<val> <arg>
+        Usage: prog [options] --color <COLOR>
+
+        Options:
+            --color=<COLOR>
         """
         from docpie import docpie
-        print(docpie(__doc__), ['prog', '-w', 'sth', 'arg'], optionsfirst=True)
-        # {'--': False, '-w': 'sth', '<arg>': 'arg'}
+        print(docpie(__doc__), ['prog', '--color', 'red'])
+        # {'--': False, '--color': 'red'}
 
 
 `full changelog & TODOs <https://github.com/TylerTemp/docpie/blob/master/CHANGELOG.md>`__

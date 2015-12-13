@@ -100,7 +100,7 @@ class Parser(object):
                         'Options(%r) and Usage(%r)' %
                         (flag, opt_ins, ins))
             if token.current() == '...':
-                ins = Required(ins, **{'repeat': True})
+                ins = Required(ins, repeat=True)
                 token.next()
 
             return (ins,)
@@ -236,15 +236,42 @@ class Parser(object):
 
         opt_name_2_ins = self.option_name_2_instance
         if atom_class is Option and current in opt_name_2_ins:
-            ins_in_opt = opt_name_2_ins[current]
-            args.update(ins_in_opt[0].names)
+            ins_in_opt = opt_name_2_ins[current][0]
+            args.update(ins_in_opt.names)
+            if ins_in_opt.ref is not None:
+                ref_current = token.next()
+                ref_token = Token()
+                if ref_current in '([':
+                    ref_token.append(ref_current)
+                    ref_token.extend(token.till_end_bracket(ref_current))
+                    ref_token.append(')' if ref_current == '(' else ']')
+                else:
+                    ref_token.extend(('(', ref_current, ')'))
+
+                ref_ins = self.parse_pattern(ref_token)
+
+                logger.debug(ins_in_opt.ref)
+                logger.debug(ref_ins[0])
+
+                if len(ref_ins) != 1:
+                    raise DocpieError(
+                        '%s announced difference in Options(%s) and Usage(%s)' %
+                        (current, ins_in_opt, ref_ins))
+
+                if ins_in_opt.ref != ref_ins[0]:
+                    raise DocpieError(
+                        '%s announced difference in Options(%s) and Usage(%s)' %
+                        (current, ins_in_opt, ref_ins))
+
+                ins = atom_class(*args, **{'ref': ins_in_opt.ref})
+                return (ins,)
 
         ins = atom_class(*args)
 
         repeat = token.check_ellipsis_and_drop()
         if repeat:
-            ins = Required(ins, **{'repeat': True})
-
+            ins = Required(ins, repeat=True)
+        logger.debug('%s -> %s', current, ins)
         return (ins,)
 
     def parse_options_shortcut(self, current, token):

@@ -2131,6 +2131,24 @@ Options:
         sys.argv = ['prog', '--all', 'A', '--', 'B', 'C']
         self.fail(doc)
 
+    def test_options_argument_in_usage(self):
+        doc = """
+        Usage: prog [options] --color <COLOR>
+
+        Options:
+            --color=<COLOR>
+        """
+
+        sys.argv = ['prog', '--color', 'red']
+        self.eq(doc, {'--': False, '--color': 'red'})
+
+        doc2 = """
+        Usage: prog [options] -c <COLOR>
+
+        Options:
+            -c, --color=<COLOR>
+        """
+        self.eq(doc2, {'--': False, '--color': 'red', '-c': 'red'})
 
 class APITest(unittest.TestCase):
 
