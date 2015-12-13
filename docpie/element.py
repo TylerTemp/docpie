@@ -1443,32 +1443,6 @@ class Either(list):
         return list(result)
 
 
-class EndOfOptions(object):
-
-    def __init__(self, options_first):
-        self.options_first = options_first
-        self.appended = False
-
-    def match(self, argv, *a, **k):
-        if self.options_first and not self.appended:
-            argv.insert(0, '--')
-            self.appended = True
-
-        return True
-
-    # def get_sys_default_value(self, *a, **k):
-    #     return {}
-    #
-    # def get_value(self, *a, **k):
-    #     return {}
-
-    def __str__(self):
-        return '{end-of-options}'
-
-    def __repr__(self):
-        return 'EndOfOptions(options_first=%s)' % self.options_first
-
-
 def convert_2_dict(obj):
     return obj.convert_2_dict(obj)
 
