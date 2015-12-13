@@ -14,7 +14,7 @@
         Usage: prog [options] -w<val> <arg>
         """
         from docpie import docpie
-        print(docpie(__doc__), ['prog', '-w', 'sth', 'arg'])
+        print(docpie(__doc__), ['prog', '-w', 'sth', 'arg'], optionsfirst=True)
         # {'--': False, '-w': 'sth', '<arg>': 'arg'}
 
 ## 0.2.8
