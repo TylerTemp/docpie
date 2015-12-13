@@ -2145,6 +2145,17 @@ class APITest(unittest.TestCase):
 
         self.assertEqual(docpie(**pieargs), result)
 
+    def fail_(self, doc, argv=None, help=True, version=None,
+              stdopt=True, attachopt=True, attachvalue=True,
+              auto2dashes=True, name=None, case_sensitive=False,
+              optionsfirst=False, appearedonly=False, extra={},
+              exception=DocpieExit):
+        pieargs = locals()
+        pieargs.pop('self')
+        pieargs.pop('exception')
+
+        self.assertRaises(exception, docpie, **pieargs)
+
     def test_options_first(self):
         doc = 'Usage: prog [-a] cmd [<args>...]'
 
@@ -2218,7 +2229,7 @@ class APITest(unittest.TestCase):
             '<port>': ['a.txt'],
             'do': 1}
         self.eq(expect, doc, argv)
-        self.eq(expect, doc, argv, optionsfirst=True)
+        self.fail_(doc, argv, optionsfirst=True)
 
         doc2 = """
         Example of program which uses [options] shortcut in pattern.
@@ -2247,7 +2258,24 @@ class APITest(unittest.TestCase):
         """
 
         self.eq(expect, doc2, argv)
-        self.eq(expect, doc2, argv, optionsfirst=True)
+        # should NOT use optionsfirst here.
+        except_options_first = {
+            '--': False,
+            '--after': [],
+            '--apply': False,
+            '--grace': 0,
+            '--help': False,
+            '--number': '6',
+            '--timeout': None,
+            '--version': False,
+            '-h': False,
+            '-n': '6',
+            '-q': False,
+            '-t': None,
+            '<port>': ['--after=4', 'a.txt'],
+            'do': 1
+        }
+        self.eq(except_options_first, doc2, argv, optionsfirst=True)
 
     def test_issue_4_real_reason(self):
         doc = """Usage: prog [options] [--want=<val2>] <arg>

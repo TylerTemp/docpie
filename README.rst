@@ -15,22 +15,19 @@ View on: `HomePage <http://docpie.comes.today>`__ /
 ChangeLog
 ---------
 
-version 0.2.8:
+version 0.2.9:
 
--   [fix] the following situation will not failed now (note: not recommended, not POSIX standard)
+-   [fix] ``optionsfirst`` can work as expected (previously it can not recognize the
+    expected arguments of a option and leads to fail):
 
     .. code:: python
 
         """
-        Usage: prog [options] <arg>
-
-        Options:
-            --force[=<value>]
+        Usage: prog [options] -w<val> <arg>
         """
-
         from docpie import docpie
-        docpie(__doc__, ['prog', '--force', '--', 'val'])
-        # {'--': True, '--force': None, '<arg>': 'val'}
+        print(docpie(__doc__), ['prog', '-w', 'sth', 'arg'])
+        # {'--': False, '-w': 'sth', '<arg>': 'arg'}
 
 
 `full changelog & TODOs <https://github.com/TylerTemp/docpie/blob/master/CHANGELOG.md>`__

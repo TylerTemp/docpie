@@ -307,6 +307,7 @@ class Option(Atom):
         else:
             to_match_ref_argv[:] = [attached_value]
 
+        to_match_ref_argv.auto_dashes = False
         result = self.ref.match(to_match_ref_argv, repeat_match)
 
         if attached_value is not None and to_match_ref_argv:
@@ -1440,6 +1441,32 @@ class Either(list):
         for each in self:
             result.update(each.arg_range())
         return list(result)
+
+
+class EndOfOptions(object):
+
+    def __init__(self, options_first):
+        self.options_first = options_first
+        self.appended = False
+
+    def match(self, argv, *a, **k):
+        if self.options_first and not self.appended:
+            argv.insert(0, '--')
+            self.appended = True
+
+        return True
+
+    # def get_sys_default_value(self, *a, **k):
+    #     return {}
+    #
+    # def get_value(self, *a, **k):
+    #     return {}
+
+    def __str__(self):
+        return '{end-of-options}'
+
+    def __repr__(self):
+        return 'EndOfOptions(options_first=%s)' % self.options_first
 
 
 def convert_2_dict(obj):

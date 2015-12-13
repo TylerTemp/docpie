@@ -39,8 +39,7 @@ class Docpie(dict):
     extra = {}
 
     opt_names = []
-    all_opt_names = set()
-    require_arg_opt_names = set()
+    opt_names_required_max_args = {}
 
     def __init__(self, doc=None, help=True, version=None,
                  stdopt=True, attachopt=True, attachvalue=True,
@@ -81,13 +80,16 @@ class Docpie(dict):
         uparser.parse(None, self.name, self.options)
         self.usages = uparser.instances
 
-        self.all_opt_names = set()
-        self.require_arg_opt_names = set()
+        self.opt_names_required_max_args = {}
 
         for opt_ins in uparser.all_options:
-            self.all_opt_names.update(opt_ins.names)
             if opt_ins.ref:
-                self.require_arg_opt_names.update(opt_ins.names)
+                max_arg = max(opt_ins.arg_range())
+            else:
+                max_arg = 0
+
+            for each_name in opt_ins.names:
+                self.opt_names_required_max_args[each_name] = max_arg
 
         self.opt_names = [x[0].names for x in self.options]
 
@@ -269,11 +271,11 @@ class Docpie(dict):
             argv = argv.split()
 
         # the things in extra may not be announced
-        all_opt_names = set(self.all_opt_names)
-        all_opt_names.update(self.extra.keys())
+        all_opt_requried_max_args = dict.fromkeys(self.extra, 0)
+        all_opt_requried_max_args.update(self.opt_names_required_max_args)
         token = Argv(argv[1:], self.auto2dashes or self.options_first,
                      self.stdopt, self.attachopt, self.attachvalue,
-                     all_opt_names)
+                     all_opt_requried_max_args)
         token.formal(self.options_first)
         return token
 
@@ -309,7 +311,8 @@ class Docpie(dict):
             return False, argv_clone.error, argv_clone.dashes
 
     def check_flag_and_handler(self, token):
-        need_arg = self.require_arg_opt_names
+        need_arg = [name for name, expect in
+                    self.opt_names_required_max_args.items() if expect != 0]
         options = set()
 
         for ele in token:
@@ -432,8 +435,7 @@ class Docpie(dict):
             'option': option,
             'usage': usage,
             'option_names': [list(x) for x in self.opt_names],
-            'all_option_names': list(self.all_opt_names),
-            'requiring_argument_options': list(self.require_arg_opt_names)
+            'opt_names_required_max_args': self.opt_names_required_max_args
         }
     convert_2_dict = convert_to_dict
 
@@ -474,8 +476,7 @@ class Docpie(dict):
         self.option_sections = text['option_sections']
 
         self.opt_names = [set(x) for x in dic['option_names']]
-        self.all_opt_names = set(dic['all_option_names'])
-        self.require_arg_opt_names = set(dic['requiring_argument_options'])
+        self.opt_names_required_max_args = dic['opt_names_required_max_args']
         self.set_config(help=help, version=version)
 
         self.options = [convert_2_object(x) for x in dic['option']]

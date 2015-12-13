@@ -42,7 +42,7 @@ class Token(list):
 class Argv(list):
 
     def __init__(self, argv, auto2dashes,
-                 stdopt, attachopt, attachvalue, known=[]):
+                 stdopt, attachopt, attachvalue, known={}):
 
         super(Argv, self).__init__(argv)
         self.auto_dashes = auto2dashes
@@ -58,10 +58,14 @@ class Argv(list):
     def formal(self, options_first):
         names = self.known
         result = []
+        skip = 0
         for index, each in enumerate(self):
+            if skip:
+                skip -= 1
+                continue
             # first command/argument
             if (options_first and
-                    (each in ('-', '--') or not each.startswith('--'))):
+                    (each in ('-', '--') or not each.startswith('-'))):
                 result.extend((each, '--'))  # add '--' after it
                 result.extend(self[index + 1:])
                 break
@@ -73,6 +77,8 @@ class Argv(list):
             if each == '-':
                 result.append(each)
                 continue
+
+            expect_args = 0
 
             # this won't work when -abc, and it actually means -a -b -c,
             # but -b, -c is not defined
@@ -89,12 +95,21 @@ class Argv(list):
 
                 result.append(each)
 
-            elif not each.startswith('--') or each in names:
+                expect_args = names[this_opt]
+                if this_opt != each:
+                    expect_args = 0
+
+            elif not each.startswith('--'):
                 result.append(each)
+                continue
             else:
                 option, equal, value = each.partition('=')
-                if option == '--' or option in names:
+                if option in names:
                     result.append(each)
+                    if equal:
+                        expect_args = 0
+                    else:
+                        expect_args = names[option]
                 else:
                     possible = list(
                         filter(lambda x: x.startswith(option), names))
@@ -118,6 +133,16 @@ class Argv(list):
                         )
                         result.extend(self[index:])
                         break
+
+            if expect_args:
+                total_rest = self[index + 1:]
+                if len(total_rest) < expect_args:
+                    to_append = total_rest
+                else:
+                    to_append = total_rest[:expect_args]
+
+                skip = len(to_append)
+                result.extend(to_append)
 
         logger.debug('%s -> %s', self, result)
         self[:] = result

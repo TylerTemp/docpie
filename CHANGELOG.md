@@ -5,6 +5,18 @@
 *   Add a bash auto-complete tool [#2](https://github.com/TylerTemp/docpie/issues/2)
 *   Document needs a better organization
 
+## 0.2.9
+
+*   [fix] `optionsfirst` can work as expected (previously it can not recognize the
+    expected arguments of a option and lead to fail):
+
+        """
+        Usage: prog [options] -w<val> <arg>
+        """
+        from docpie import docpie
+        print(docpie(__doc__), ['prog', '-w', 'sth', 'arg'])
+        # {'--': False, '-w': 'sth', '<arg>': 'arg'}
+
 ## 0.2.8
 
 *   [fix] the following situation will not failed now (note: not recommended, not POSIX standard)
