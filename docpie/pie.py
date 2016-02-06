@@ -84,7 +84,8 @@ class Docpie(dict):
 
         for opt_ins in uparser.all_options:
             if opt_ins.ref:
-                max_arg = max(opt_ins.arg_range())
+                # max_arg = max(opt_ins.arg_range())
+                max_arg = max(opt_ins.ref.arg_range())
             else:
                 max_arg = 0
 
