@@ -20,7 +20,7 @@ class Docpie(dict):
 
     # Docpie version
     # it's not a good idea but it can avoid loop importing
-    _version = '0.3.0'
+    _version = '0.3.1'
 
     option_name = 'Options:'
     usage_name = 'Usage:'
@@ -37,6 +37,7 @@ class Docpie(dict):
     options_first = False
     appeared_only = False
     extra = {}
+    namedoptions = False
 
     opt_names = []
     opt_names_required_max_args = {}
@@ -44,15 +45,20 @@ class Docpie(dict):
     def __init__(self, doc=None, help=True, version=None,
                  stdopt=True, attachopt=True, attachvalue=True,
                  auto2dashes=True, name=None, case_sensitive=False,
-                 optionsfirst=False, appearedonly=False, extra={}):
+                 optionsfirst=False, appearedonly=False, namedoptions=False,
+                 extra=None):
 
         super(Docpie, self).__init__()
+
+        if extra is None:
+            extra = {}
 
         # set config first
         self.set_config(
             stdopt=stdopt, attachopt=attachopt, attachvalue=attachvalue,
             auto2dashes=auto2dashes, name=name, case_sensitive=case_sensitive,
-            optionsfirst=optionsfirst, appearedonly=appearedonly, extra={})
+            optionsfirst=optionsfirst, appearedonly=appearedonly,
+            namedoptions=namedoptions, extra=extra)
 
         self.help = help
         self.version = version
@@ -64,13 +70,14 @@ class Docpie(dict):
     def _init(self):
         uparser = UsageParser(
             self.usage_name, self.case_sensitive,
-            self.stdopt, self.attachopt, self.attachvalue)
+            self.stdopt, self.attachopt, self.attachvalue, self.namedoptions)
         oparser = OptionParser(
             self.option_name, self.case_sensitive,
-            self.stdopt, self.attachopt, self.attachvalue)
+            self.stdopt, self.attachopt, self.attachvalue, self.namedoptions)
 
         uparser.parse_content(self.doc)
         self.usage_text = uparser.raw_content
+        # avoid usage contains "Options:" word
         prefix, _, suffix = self.doc.partition(self.usage_text)
 
         oparser.parse(prefix + suffix)
@@ -438,6 +445,7 @@ class Docpie(dict):
             'option_names': [list(x) for x in self.opt_names],
             'opt_names_required_max_args': self.opt_names_required_max_args
         }
+
     convert_2_dict = convert_to_dict
 
     @classmethod
@@ -527,15 +535,24 @@ class Docpie(dict):
             self.options_first = config.pop('optionsfirst')
         if 'appearedonly' in config:
             self.appeared_only = config.pop('appearedonly')
+        if 'namedoptions' in config:
+            namedoptions = config.pop('namedoptions')
+            reinit = reinit or (namedoptions != self.namedoptions)
+            self.namedoptions = namedoptions
         if 'extra' in config:
             self.extra.update(config.pop('extra'))
 
         if config:  # should be empty
             raise ValueError(
-                '%s is/are not accepted key argument(s)' % list(config.keys()))
+                '`%s` %s not accepted key argument%s' % (
+                    '`, `'.join(config),
+                    'is' if len(config) == 1 else 'are',
+                    '' if len(config) == 1 else 's'
+                ))
 
         if self.doc is not None and reinit:
-            logger.info('changed config require reinit instance')
+            logger.warning('You changed the config that requires re-initialized'
+                           ' `Docpie` object. Create a new one instead')
             self._init()
 
     def _set_or_remove_extra_handler(self, set_handler, find_order, handler):

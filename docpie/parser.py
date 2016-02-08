@@ -348,7 +348,7 @@ class OptionParser(Parser):
                             flags=re.IGNORECASE)
 
     def __init__(self, option_name, case_sensitive,
-                 stdopt, attachopt, attachvalue):
+                 stdopt, attachopt, attachvalue, namedoptions):
 
         self.stdopt = stdopt
         self.attachopt = attachopt
@@ -363,6 +363,7 @@ class OptionParser(Parser):
         self.raw_content = {}
         self.formal_content = None
         self.name_2_instance = {}
+        self.namedoptions = namedoptions
 
         # if text is None or not text.strip():    # empty
         #     self._opt_and_default_str = []
@@ -373,13 +374,19 @@ class OptionParser(Parser):
 
     def parse(self, text):
         self.parse_content(text)
-        names_and_default = self.parse_names_and_default()
-        self.instances = self.parse_to_instance(names_and_default)
+        title_names_and_default = self.parse_names_and_default()
+        self.instances = self.parse_to_instance(title_names_and_default)
 
     def parse_content(self, text):
+        """parse section to formal format
+
+        raw_content: {title: section(with title)}. For `help` access.
+
+        formal_content: {title: section} but the section has been dedented
+        without title. For parse instance"""
         raw_content = self.raw_content
         raw_content.clear()
-        formal_collect = []
+        formal_collect = {}
 
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
@@ -407,60 +414,75 @@ class OptionParser(Parser):
 
                 prefix = prefix.strip()
 
-                if prefix in raw_content:
-                    raise DocpieError('duplicated options section %s' % prefix)
-
                 section = section.rstrip()
                 if end.endswith('\n'):
                     formal = section
                 else:
                     formal = ' ' * len(title) + section
 
-                formal_collect.append(formal)
-                raw_content[prefix] = title + section
+                formal_collect.setdefault(title, []).append(formal)
+
+                if prefix in raw_content:
+                    # TODO: better handling way?
+                    if self.namedoptions:
+                        log = logger.warning
+                    else:
+                        log = logger.debug
+                    log('duplicated options section %s', prefix)
+
+                    raw_content[prefix] += '\n%s%s' % (title, section)
+                else:
+                    raw_content[prefix] = title
 
         if formal_collect:
-            formal_result = '\n'.join(
-                textwrap.dedent(x) for x in formal_collect)
-        else:
-            formal_result = None
+            for each_title, values in formal_collect:
+                value = '\n'.join(map(textwrap.dedent, values))
+                formal_collect[each_title] = value
 
-        self.formal_content = formal_result
+        self.formal_content = formal_collect
 
     def parse_names_and_default(self):
-        text = self.formal_content
-        if not text:
-            return []
+        """parse for `parse_content`
+        {title: [('-a, --all=STH', 'default'), ...]}"""
+        result = {}
+        for title, text in self.formal_content.items():
 
-        collect = []
-        to_list = text.splitlines()
-
-        # parse first line. Should NEVER failed.
-        # this will ensure in `[default: xxx]`,
-        # the `xxx`(e.g: `\t`, `,`) will not be changed by _format_line
-        previous_line = to_list.pop(0)
-        collect.append(self.parse_line_option_indent(previous_line))
-
-        for line in to_list:
-            indent_match = self.indent_re.match(line)
-            this_indent = len(indent_match.groupdict()['indent'])
-
-            if this_indent >= collect[-1]['indent']:
-                # A multi line description
-                previous_line = line
+            if not text:
+                result[title] = []
                 continue
 
-            # new option line
-            # deal the default for previous option
-            collect[-1]['default'] = self.parse_default(previous_line)
-            # deal this option
-            collect.append(self.parse_line_option_indent(line))
-            logger.debug(collect[-1])
-            previous_line = line
-        else:
-            collect[-1]['default'] = self.parse_default(previous_line)
+            collect = []
+            to_list = text.splitlines()
 
-        return ((each['option'], each['default']) for each in collect)
+            # parse first line. Should NEVER failed.
+            # this will ensure in `[default: xxx]`,
+            # the `xxx`(e.g: `\t`, `,`) will not be changed by _format_line
+            previous_line = to_list.pop(0)
+            collect.append(self.parse_line_option_indent(previous_line))
+
+            for line in to_list:
+                indent_match = self.indent_re.match(line)
+                this_indent = len(indent_match.groupdict()['indent'])
+
+                if this_indent >= collect[-1]['indent']:
+                    # A multi line description
+                    previous_line = line
+                    continue
+
+                # new option line
+                # deal the default for previous option
+                collect[-1]['default'] = self.parse_default(previous_line)
+                # deal this option
+                collect.append(self.parse_line_option_indent(line))
+                logger.debug(collect[-1])
+                previous_line = line
+            else:
+                collect[-1]['default'] = self.parse_default(previous_line)
+
+            result[title] = [
+                (each['option'], each['default']) for each in collect]
+
+        return result
 
     spaces_re = re.compile(r'(\ \ \s*|\t\s*)')
 
@@ -514,17 +536,21 @@ class OptionParser(Parser):
             return None
         return m.groupdict()['default']
 
-    def parse_to_instance(self, lis):
-        opts = []
-        for opt_str, default in lis:
-            logger.debug('%s:%r' % (opt_str, default))
-            opt, repeat = self.parse_opt_str(opt_str)
-            opt.default = default
-            result = Optional(opt, repeat=repeat)
-            for name in opt.names:
-                self.name_2_instance[name] = result
-            opts.append(result)
-        return opts
+    def parse_to_instance(self, title_of_name_and_default):
+        """{title: [Option(), ...]}"""
+        result = {}
+        for title, name_and_default in title_of_name_and_default:
+            result[title] = opts = []
+            for opt_str, default in name_and_default:
+                logger.debug('%s:%r' % (opt_str, default))
+                opt, repeat = self.parse_opt_str(opt_str)
+                opt.default = default
+                result = Optional(opt, repeat=repeat)
+                for name in opt.names:
+                    self.name_2_instance[name] = result
+                opts.append(result)
+
+        return result
 
     def split_short_by_cfg(self, option_str):
         if self.stdopt:
@@ -664,7 +690,7 @@ class UsageParser(Parser):
                     r'(?:\n\s*\n|\n\s*$|$)')
 
     def __init__(self, usage_name, case_sensitive,
-                 stdopt, attachopt, attachvalue):
+                 stdopt, attachopt, attachvalue, namedoptions):
 
         self.usage_name = re.escape(usage_name)
         self.case_sensitive = case_sensitive
@@ -672,7 +698,7 @@ class UsageParser(Parser):
         self.attachopt = attachopt
         self.attachvalue = attachvalue
 
-        self.option_name_2_instance = {}
+        self.titled_opt_to_ins = {}
         self.options = None
         self.raw_content = None
         self.formal_content = None
@@ -692,13 +718,19 @@ class UsageParser(Parser):
         self.fix_option_and_empty()
 
     def set_option_name_2_instance(self, options):
-        opt_2_ins = self.option_name_2_instance
-        for each in options:
-            opt_ins = each[0]
-            for name in opt_ins.names:
-                opt_2_ins[name] = each
+        """{title: {'-a': Option(), '--all': Option()}}"""
+        title_opt_2_ins = self.titled_opt_to_ins
+        title_opt_2_ins.clear()
+        for title, opts in options.items():
+            title_opt_2_ins[title] = opt_2_ins = {}
+            for each in opts:
+                opt_ins = each[0]  # get Option inside Optional/Required
+                for name in opt_ins.names:
+                    opt_2_ins[name] = each
 
     def parse_content(self, text):
+        """get Usage section and set to `raw_content`, `formal_content` of no
+        title and empty-line version"""
         match = re.search(
             self.usage_re_str.format(self.usage_name),
             text,

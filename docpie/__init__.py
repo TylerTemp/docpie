@@ -25,7 +25,8 @@ logger = getLogger('docpie')
 def docpie(doc, argv=None, help=True, version=None,
            stdopt=True, attachopt=True, attachvalue=True,
            auto2dashes=True, name=None, case_sensitive=False,
-           optionsfirst=False, appearedonly=False, extra={}):
+           optionsfirst=False, appearedonly=False, namedoptions=False,
+           extra=None):
     """
     Parse `argv` based on command-line interface described in `doc`.
 
