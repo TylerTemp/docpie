@@ -15,23 +15,13 @@ View on: `HomePage <http://docpie.comes.today>`__ /
 ChangeLog
 ---------
 
-version 0.3.0:
+version 0.3.1:
 
--   [fix] can't parse options expecting arguments in usage
-    correctly, due to a previous code changing
+-   [new] ``namedoptions`` feature
 
-    .. code:: python
+NOTE: the JSONlize function is broken currently.
 
-        """
-        Usage: prog [options] --color <COLOR>
-
-        Options:
-            --color=<COLOR>
-        """
-        from docpie import docpie
-        print(docpie(__doc__), ['prog', '--color', 'red'])
-        # {'--': False, '--color': 'red'}
-
+TODO: document this feature.
 
 `full changelog & TODOs <https://github.com/TylerTemp/docpie/blob/master/CHANGELOG.md>`__
 

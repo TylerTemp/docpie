@@ -5,6 +5,7 @@ from docpie.error import DocpieExit, DocpieError
 from docpie.parser import UsageParser, OptionParser
 from docpie.element import convert_2_object, convert_2_dict
 from docpie.tokens import Argv
+import warnings
 
 __all__ = ['Docpie']
 
@@ -49,6 +50,10 @@ class Docpie(dict):
                  extra=None):
 
         super(Docpie, self).__init__()
+
+        if case_sensitive:
+            warnings.warn('`case_sensitive` is deprecated, `docpie` is always '
+                          'case insensitive')
 
         if extra is None:
             extra = {}
@@ -99,7 +104,10 @@ class Docpie(dict):
             for each_name in opt_ins.names:
                 self.opt_names_required_max_args[each_name] = max_arg
 
-        self.opt_names = [x[0].names for x in self.options]
+        self.opt_names = []
+        for options in self.options.values():
+            for each_option in options:
+                self.opt_names.append(each_option[0].names)
 
         self.set_config(help=self.help, version=self.version)
 
@@ -189,73 +197,74 @@ class Docpie(dict):
 
     def _add_option_value(self):
         # add left option, add default value
-        for each in self.options:
-            option = each[0]
-            names = option.names
-            default = option.default
-            this_value = option.value
+        for options in self.options.values():
+            for each in options:
+                option = each[0]
+                names = option.names
+                default = option.default
+                this_value = option.value
 
-            logger.debug('%s/%s/%s', option, default, this_value)
+                logger.debug('%s/%s/%s', option, default, this_value)
 
-            name_in_value = names.intersection(self)
-            if name_in_value:  # add default if necessary
-                one_name = name_in_value.pop()
-                logger.debug('in names, pop %s, self %s', one_name, self)
-                value_in_usage = self[one_name]
-                if not value_in_usage:  # need default
-                    if default is None:  # no default, use old matched one
-                        final_value = value_in_usage
-                    elif (each.repeat or
-                            (value_in_usage is not True and
-                             value_in_usage is not False and
-                             isinstance(value_in_usage, (int, list)))):
-                        final_value = default.split()
-                    else:
-                        final_value = default
-                else:
-                    final_value = value_in_usage
-                if option.ref is None and each.repeat:
-                    final_value = int(final_value or 0)
-            # just add this key-value. Note all option here never been matched
-            elif self.appeared_only:
-                continue
-            else:
-                ref = option.ref
-
-                if default is not None:
-                    if (each.repeat or
-                            (this_value not in (True, False) and
-                             isinstance(this_value, (int, list)))):
-                        final_value = default.split()
-                    else:
-                        if ref is not None and max(ref.arg_range()) > 1:
+                name_in_value = names.intersection(self)
+                if name_in_value:  # add default if necessary
+                    one_name = name_in_value.pop()
+                    logger.debug('in names, pop %s, self %s', one_name, self)
+                    value_in_usage = self[one_name]
+                    if not value_in_usage:  # need default
+                        if default is None:  # no default, use old matched one
+                            final_value = value_in_usage
+                        elif (each.repeat or
+                                (value_in_usage is not True and
+                                 value_in_usage is not False and
+                                 isinstance(value_in_usage, (int, list)))):
                             final_value = default.split()
                         else:
                             final_value = default
-                else:
-                    if ref is not None:
-                        arg_range = ref.arg_range()
-                        # if min(arg_range) != 0:
-                        #     # It requires at least a value
-                        #     logger.info('%s expects value', option)
-                        #     raise DocpieExit(DocpieException.usage_str)
-                        if max(arg_range) == 1:
-                            final_value = None
-                        else:
-                            assert max(arg_range) > 1
-                            final_value = []
-                    # ref is None
-                    elif this_value is None:
-                        final_value = 0 if each.repeat else False
                     else:
-                        final_value = \
-                            int(this_value) if each.repeat else this_value
+                        final_value = value_in_usage
+                    if option.ref is None and each.repeat:
+                        final_value = int(final_value or 0)
+                # just add this key-value. Note all option here never been matched
+                elif self.appeared_only:
+                    continue
+                else:
+                    ref = option.ref
 
-            logger.debug('set %s value %s', names, final_value)
-            final = {}
-            for name in names:
-                final[name] = final_value
-            self.update(final)
+                    if default is not None:
+                        if (each.repeat or
+                                (this_value not in (True, False) and
+                                 isinstance(this_value, (int, list)))):
+                            final_value = default.split()
+                        else:
+                            if ref is not None and max(ref.arg_range()) > 1:
+                                final_value = default.split()
+                            else:
+                                final_value = default
+                    else:
+                        if ref is not None:
+                            arg_range = ref.arg_range()
+                            # if min(arg_range) != 0:
+                            #     # It requires at least a value
+                            #     logger.info('%s expects value', option)
+                            #     raise DocpieExit(DocpieException.usage_str)
+                            if max(arg_range) == 1:
+                                final_value = None
+                            else:
+                                assert max(arg_range) > 1
+                                final_value = []
+                        # ref is None
+                        elif this_value is None:
+                            final_value = 0 if each.repeat else False
+                        else:
+                            final_value = \
+                                int(this_value) if each.repeat else this_value
+
+                logger.debug('set %s value %s', names, final_value)
+                final = {}
+                for name in names:
+                    final[name] = final_value
+                self.update(final)
 
     def _dashes_value(self, dashes):
         result = self['--'] if '--' in self else dashes
@@ -416,6 +425,7 @@ class Docpie(dict):
             'attachvalue': self.attachvalue,
             'auto2dashes': self.auto2dashes,
             'case_sensitive': self.case_sensitive,
+            'namedoptions': self.namedoptions,
             'appearedonly': self.appeared_only,
             'optionsfirst': self.options_first,
             'option_name': self.option_name,
@@ -431,7 +441,10 @@ class Docpie(dict):
             'option_sections': self.option_sections,
         }
 
-        option = [convert_2_dict(x) for x in self.options]
+        # option = [convert_2_dict(x) for x in self.options]
+
+        option = {title: [convert_2_dict(x) for x in options]
+                          for title, options in self.options.items()}
 
         usage = [convert_2_dict(x) for x in self.usages]
 
@@ -469,7 +482,9 @@ class Docpie(dict):
         logger.debug('this: %s, old: %s', this_version, data_version)
         if data_version < this_version:
             raise ValueError('Not support old docpie data')
+
         assert dic['__class__'] == 'Docpie'
+
         config = dic['__config__']
         help = config.pop('help')
         version = config.pop('version')
@@ -487,10 +502,12 @@ class Docpie(dict):
         self.opt_names = [set(x) for x in dic['option_names']]
         self.opt_names_required_max_args = dic['opt_names_required_max_args']
         self.set_config(help=help, version=version)
+        self.options = {title: [convert_2_object(x, {}, self.namedoptions)
+                                for x in options]
+                        for title, options in dic['option'].items()}
 
-        self.options = [convert_2_object(x) for x in dic['option']]
-
-        self.usages = [convert_2_object(x, self.options) for x in dic['usage']]
+        self.usages = [convert_2_object(x, self.options, self.namedoptions)
+                       for x in dic['usage']]
 
         return self
 
@@ -613,21 +630,54 @@ class Docpie(dict):
         write(('[Quick preview of Docpie %s]' % self._version).center(80, '='))
         write('\n')
 
+        write(' sections '.center(80, '-'))
+
+        write('\n')
+        write(self.usage_text)
+        write('\n')
+        option_sections = self.option_sections
+        if option_sections:
+            write('\n')
+            write('\n'.join(option_sections.values()))
+        write('\n')
+
         write(' str '.center(80, '-'))
-        write('\nUsage:\n')
+        write('\n[%s]\n' % self.usage_name)
         for each in self.usages:
-            write('%s\n' % each)
-        write('\nOptions:\n')
-        for each in self.options:
-            write('%s\n' % each)
+            write('    %s\n' % each)
+        write('\n[Options:]\n\n')
+        for title, sections in self.options.items():
+            if title:
+                full_title = '%s %s' % (title, self.option_name)
+            else:
+                full_title = self.option_name
+
+            write(full_title)
+            write('\n')
+
+            for each in sections:
+                write('    %s\n' % each)
+
+            write('\n')
 
         write(' repr '.center(80, '-'))
-        write('\nUsage:\n')
+        write('\n[%s]\n' % self.usage_name)
         for each in self.usages:
-            write('%r\n' % each)
-        write('\n\nOptions:\n')
-        for each in self.options:
-            write('%r\n' % each)
+            write('    %r\n' % each)
+        write('\n[Options:]\n\n')
+        for title, sections in self.options.items():
+            if title:
+                full_title = '%s %s' % (title, self.option_name)
+            else:
+                full_title = self.option_name
+
+            write(full_title)
+            write('\n')
+
+            for each in sections:
+                write('    %r\n' % each)
+
+            write('\n')
 
         write(' auto handlers '.center(80, '-'))
         write('\n')

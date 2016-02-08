@@ -34,6 +34,7 @@ class Atom(object):
     flag_or_upper_re = re.compile(r'^(?P<hyphen>-{0,2})'
                                   r'($|[\da-zA-Z_][\da-zA-Z_\-]*$)')
     angular_bracket_re = re.compile(r'^<.*?>$')
+    options_re = re.compile('\[(?P<title>[^\s\]]*)options\]', re.IGNORECASE)
 
     def __init__(self, *names, **kwargs):
         self.names = set(names)
@@ -55,24 +56,29 @@ class Atom(object):
     @_cache
     def get_class(cls, atom):
         if atom in ('-', '--'):
-            return Command
+            return Command, None
         elif atom == '-?':
-            return Option
+            return Option, None
+
+        opt = cls.options_re.match(atom)
+        if opt is not None:
+            title = opt.groupdict()['title']
+            return OptionsShortcut, title
 
         m = cls.flag_or_upper_re.match(atom)
         if m:
             match = m.groupdict()
             if match['hyphen']:
-                return Option
+                return Option, None
             elif atom.isupper():
-                return Argument
+                return Argument, None
             else:
-                return Command
+                return Command, None
         elif cls.angular_bracket_re.match(atom):
-            return Argument
+            return Argument, None
         else:
             logger.debug('I guess %s is a Command' % atom)
-            return Command
+            return Command, None
 
     def arg_range(self):
         return [1]
@@ -151,6 +157,7 @@ class Option(Atom):
         names = self.names
         value = self.value
         ref = self.ref
+        logger.debug('%s in repeat: %s', self, in_repeat)
 
         multi = (in_repeat or (value is not True and
                                value is not False and
@@ -456,7 +463,7 @@ class Command(Atom):
                 logger.debug('%s matching %s failed', self, current)
                 return False
 
-        if current not in self.names or Atom.get_class(current) is Option:
+        if current not in self.names or Atom.get_class(current)[0] is Option:
             logger.debug('%s matching %s failed', self, current)
             return False
 
@@ -572,11 +579,11 @@ class Argument(Atom):
 
         if current.startswith('--') and '=' in current:
             opt, value = current.split('=', 1)
-            if Atom.get_class(opt) is Option:
+            if Atom.get_class(opt)[0] is Option:
                 logger.debug('%s matching %s failed', self, current)
                 return False
 
-        if Atom.get_class(current) is Option:
+        if Atom.get_class(current)[0] is Option:
             logger.debug('%s matching %s failed', self, current)
             return False
 
@@ -1262,8 +1269,9 @@ class Optional(Unit):
 class OptionsShortcut(object):
     error = None
 
-    def __init__(self, options):
+    def __init__(self, name, options):
         self._hide = set()
+        self.name = name
         self.options = options
 
     def set_hide(self, names):
@@ -1360,6 +1368,7 @@ class OptionsShortcut(object):
     def convert_2_dict(cls, obj):
         return {
             '__class__': obj.__class__.__name__,
+            'name': obj.name,
             # 'ref': [x.convert_2_dict(x) for x in obj.ref],
             'hide': tuple(obj._hide),
         }
@@ -1367,7 +1376,7 @@ class OptionsShortcut(object):
     @classmethod
     def convert_2_object(cls, dic, options):
         assert dic['__class__'] == 'OptionsShortcut'
-        ins = OptionsShortcut(options)
+        ins = OptionsShortcut(dic['name'], options)
         ins.set_hide(dic['hide'])
         return ins
 
@@ -1447,7 +1456,9 @@ def convert_2_dict(obj):
     return obj.convert_2_dict(obj)
 
 
-def convert_2_object(dic, options={}):
+formal_title_re = re.compile('[\-_]')
+
+def convert_2_object(dic, options, namedoptions):
     # never modify options
     cls_name = dic['__class__']
     if cls_name in ('Argument', 'Command', 'Option'):
@@ -1455,6 +1466,18 @@ def convert_2_object(dic, options={}):
     elif cls_name in ('Optional', 'Required'):
         return Unit.convert_2_object(dic)
     elif cls_name == 'OptionsShortcut':
-        return OptionsShortcut.convert_2_object(dic, options)
+
+        if namedoptions:
+            name = dic['name']
+            formal_name = formal_title_re.sub(' ', name.lower()).strip()
+            for title, opts in options.items():
+                if (formal_title_re.sub(' ', title.lower()).strip() ==
+                        formal_name):
+                    break
+            else:
+                raise AttributeError('Unexpected Error: %s not found' % name)
+        else:
+            opts = sum(options.values(), [])
+        return OptionsShortcut.convert_2_object(dic, opts)
     else:
         raise ValueError('%s can not be converted to object', dic)

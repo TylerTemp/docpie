@@ -14,7 +14,6 @@ logger = logging.getLogger('docpie.parser')
 
 class Parser(object):
 
-    option_name_2_instance = {}
 
     def parse_pattern(self, token):
         logger.debug('get token %s', token)
@@ -52,8 +51,6 @@ class Parser(object):
     def parse_element(self, token):
         atom = token.next()
         assert atom is not None
-        if atom == '[options]':
-            return self.parse_options_shortcut(atom, token)
 
         if atom in ('-', '--'):
             return self.parse_dash(atom , token)
@@ -69,7 +66,6 @@ class Parser(object):
         flag = None
         arg_token = None
         prepended = False
-        opt_2_ins = self.option_name_2_instance
 
         # --all=<sth>... -> --all=<sth> ...
         # --all=(<sth> <else>)... -> --all= ( <sth> <else> ) ...
@@ -90,15 +86,18 @@ class Parser(object):
                 ref = None
             ins = Option(flag, ref=ref)
 
-            if flag in opt_2_ins:
-                opt_ins = opt_2_ins[flag][0]
-                ins.names.update(opt_ins.names)
-                # != won't work on pypy
-                if not (ins == opt_ins):
-                    raise DocpieError(
-                        '%s announces differently in '
-                        'Options(%r) and Usage(%r)' %
-                        (flag, opt_ins, ins))
+            for opt_2_ins in self.titled_opt_to_ins.values():
+                if flag in opt_2_ins:
+                    opt_ins = opt_2_ins[flag][0]
+                    ins.names.update(opt_ins.names)
+                    # != won't work on pypy
+                    if not (ins == opt_ins):
+                        raise DocpieError(
+                            '%s announces differently in '
+                            'Options(%r) and Usage(%r)' %
+                            (flag, opt_ins, ins))
+                    break
+
             if token.current() == '...':
                 ins = Required(ins, repeat=True)
                 token.next()
@@ -110,7 +109,7 @@ class Parser(object):
 
     def get_long_option_with_arg(self, current, token):
         flag, arg = current.split('=', 1)
-        if Atom.get_class(flag) is Option:
+        if Atom.get_class(flag)[0] is Option:
             if arg:
                 arg_token = Token([arg])
             else:
@@ -140,7 +139,7 @@ class Parser(object):
         else:
             temp_flag, rest = current[:2], current[2:]
 
-        if Atom.get_class(temp_flag) is Option:
+        if Atom.get_class(temp_flag)[0] is Option:
             flag = temp_flag
             arg_token, prepended = \
                 self.get_short_option_arg(flag, token, arg_token, rest)
@@ -175,8 +174,12 @@ class Parser(object):
         return flag, arg_token, prepended
 
     def get_short_option_arg(self, current, token, arg_token, rest):
-        opt_2_ins = self.option_name_2_instance
         prepended = False
+
+        opt_2_ins = {}
+        # TODO: Better solution, maybe cache one
+        for options in self.titled_opt_to_ins.values():
+            opt_2_ins.update(options)
 
         if current in opt_2_ins:
             ins = opt_2_ins[current][0]
@@ -184,7 +187,7 @@ class Parser(object):
             if ins.ref is None:
                 # sth stacked with it
                 if rest:
-                    if Atom.get_class(rest) is Argument:
+                    if Atom.get_class(rest)[0] is Argument:
                         raise DocpieError(
                             ('%s announced difference in '
                              'Options(%s) and Usage(%s)') %
@@ -231,40 +234,45 @@ class Parser(object):
         return arg_token, prepended
 
     def parse_other_element(self, current, token):
-        atom_class = Atom.get_class(current)
+        atom_class, title = Atom.get_class(current)
+        if atom_class is OptionsShortcut:
+            return self.parse_options_shortcut(title, token)
+
         args = set([current])
 
-        opt_name_2_ins = self.option_name_2_instance
-        if atom_class is Option and current in opt_name_2_ins:
-            ins_in_opt = opt_name_2_ins[current][0]
-            args.update(ins_in_opt.names)
-            if ins_in_opt.ref is not None:
-                ref_current = token.next()
-                ref_token = Token()
-                if ref_current in '([':
-                    ref_token.append(ref_current)
-                    ref_token.extend(token.till_end_bracket(ref_current))
-                    ref_token.append(')' if ref_current == '(' else ']')
-                else:
-                    ref_token.extend(('(', ref_current, ')'))
+        if atom_class is Option:
+            for options in self.titled_opt_to_ins.values():
+                if current in options:
+                    ins_in_opt = options[current][0]
 
-                ref_ins = self.parse_pattern(ref_token)
+                    args.update(ins_in_opt.names)
+                    if ins_in_opt.ref is not None:
+                        ref_current = token.next()
+                        ref_token = Token()
+                        if ref_current in '([':
+                            ref_token.append(ref_current)
+                            ref_token.extend(token.till_end_bracket(ref_current))
+                            ref_token.append(')' if ref_current == '(' else ']')
+                        else:
+                            ref_token.extend(('(', ref_current, ')'))
 
-                logger.debug(ins_in_opt.ref)
-                logger.debug(ref_ins[0])
+                        ref_ins = self.parse_pattern(ref_token)
 
-                if len(ref_ins) != 1:
-                    raise DocpieError(
-                        '%s announced difference in Options(%s) and Usage(%s)' %
-                        (current, ins_in_opt, ref_ins))
+                        logger.debug(ins_in_opt.ref)
+                        logger.debug(ref_ins[0])
 
-                if ins_in_opt.ref != ref_ins[0]:
-                    raise DocpieError(
-                        '%s announced difference in Options(%s) and Usage(%s)' %
-                        (current, ins_in_opt, ref_ins))
+                        if len(ref_ins) != 1:
+                            raise DocpieError(
+                                '%s announced difference in Options(%s) and Usage(%s)' %
+                                (current, ins_in_opt, ref_ins))
 
-                ins = atom_class(*args, **{'ref': ins_in_opt.ref})
-                return (ins,)
+                        if ins_in_opt.ref != ref_ins[0]:
+                            raise DocpieError(
+                                '%s announced difference in Options(%s) and Usage(%s)' %
+                                (current, ins_in_opt, ref_ins))
+
+                        ins = atom_class(*args, **{'ref': ins_in_opt.ref})
+                        return (ins,)
 
         ins = atom_class(*args)
 
@@ -274,14 +282,34 @@ class Parser(object):
         logger.debug('%s -> %s', current, ins)
         return (ins,)
 
-    def parse_options_shortcut(self, current, token):
+    def parse_options_shortcut(self, title, token):
         # `[options] ...`? Note `[options...]` won't work
-        ins = OptionsShortcut(self.options)
+        options = self.find_options(title, self.options)
+        ins = OptionsShortcut(title, options)
         repeat = token.check_ellipsis_and_drop()
         if repeat:
             ins = Optional(ins, repeat=True)
 
         return (ins,)
+
+    def find_options(self, title, title_opt_2_ins):
+        formal_title = self.formal_title(title)
+        if self.namedoptions:
+            for exists_title, options in title_opt_2_ins.items():
+                if (formal_title == self.formal_title(exists_title)):
+                    logger.debug('find %s for %s', exists_title, title)
+                    return options
+            else:
+                logger.info('%s options not found in %s',
+                            title, title_opt_2_ins)
+                raise DocpieError('%s options not found' % title)
+
+        return sum(title_opt_2_ins.values(), [])
+
+    formal_title_re = re.compile('[\-_]')
+
+    def formal_title(self, title):
+        return self.formal_title_re.sub(' ', title.lower()).strip()
 
     def parse_dash(self, current, token):
         repeat = token.check_ellipsis_and_drop()
@@ -393,13 +421,13 @@ class OptionParser(Parser):
             try:
                 split = self.visible_empty_line_re.split(text)
             except ValueError:  # python >= 3.5
-                return
+                split = [text]
 
         option_split_re = self.option_split_re
         name = self.option_name
         for text in filter(lambda x: x and x.strip(), split):
 
-            # logger.debug('get options group:\n%r', text)
+            # logger.warning('get options group:\n%r', text)
             with warnings.catch_warnings():
                 warnings.simplefilter("ignore")
                 try:
@@ -407,6 +435,7 @@ class OptionParser(Parser):
                 except ValueError:  # python >= 3.5
                     continue
 
+            # logger.error(split_options)
             split_options.pop(0)
 
             for title, section in zip(split_options[::2], split_options[1::2]):
@@ -420,8 +449,9 @@ class OptionParser(Parser):
                 else:
                     formal = ' ' * len(title) + section
 
-                formal_collect.setdefault(title, []).append(formal)
+                formal_collect.setdefault(prefix, []).append(formal)
 
+                # logger.error((title, section))
                 if prefix in raw_content:
                     # TODO: better handling way?
                     if self.namedoptions:
@@ -432,10 +462,10 @@ class OptionParser(Parser):
 
                     raw_content[prefix] += '\n%s%s' % (title, section)
                 else:
-                    raw_content[prefix] = title
+                    raw_content[prefix] = title + section
 
         if formal_collect:
-            for each_title, values in formal_collect:
+            for each_title, values in formal_collect.items():
                 value = '\n'.join(map(textwrap.dedent, values))
                 formal_collect[each_title] = value
 
@@ -539,16 +569,17 @@ class OptionParser(Parser):
     def parse_to_instance(self, title_of_name_and_default):
         """{title: [Option(), ...]}"""
         result = {}
-        for title, name_and_default in title_of_name_and_default:
+        for title, name_and_default in title_of_name_and_default.items():
+            logger.debug((title, name_and_default))
             result[title] = opts = []
             for opt_str, default in name_and_default:
                 logger.debug('%s:%r' % (opt_str, default))
                 opt, repeat = self.parse_opt_str(opt_str)
                 opt.default = default
-                result = Optional(opt, repeat=repeat)
+                opt_ins = Optional(opt, repeat=repeat)
                 for name in opt.names:
-                    self.name_2_instance[name] = result
-                opts.append(result)
+                    self.name_2_instance[name] = opt_ins
+                opts.append(opt_ins)
 
         return result
 
@@ -670,8 +701,8 @@ class OptionParser(Parser):
 class UsageParser(Parser):
 
     angle_bracket_re = re.compile(r'(<.*?>)')
-    wrap_symbol_re = re.compile(r'(\[options\]|\.\.\.|\||\[|\]|\(|\))')
-    split_re = re.compile(r'(\[options\]|\S*<.*?>\S*)|\s+')
+    wrap_symbol_re = re.compile(r'(\[[^\]\s]*?options\]|\.\.\.|\||\[|\]|\(|\))')
+    split_re = re.compile(r'(\[[^\]\s]*?options\]|\S*<.*?>\S*)|\s+')
     # will match '-', '--', and
     # flag ::= "-" [ "-" ] chars "=<" chars ">"
     # it will also match '---flag', so use startswith('---') to check
@@ -702,9 +733,9 @@ class UsageParser(Parser):
         self.options = None
         self.raw_content = None
         self.formal_content = None
-        self.options = None
         self.instances = None
         self.all_options = None
+        self.namedoptions = namedoptions
         # self._chain = self._parse_text(text, name)
 
     def parse(self, text, name, options):
@@ -859,7 +890,12 @@ class UsageParser(Parser):
 
     def fix_option_and_empty(self):
         result = []
-        all_options = [x[0] for x in self.option_name_2_instance.values()]
+        all_options = []
+        logger.debug(self.titled_opt_to_ins)
+        for options in self.titled_opt_to_ins.values():
+            for each_potion in options.values():
+                all_options.append(each_potion[0])
+
         for each_usage in self.instances:
             ins = Required(*each_usage).fix()
             if ins is None:
@@ -868,6 +904,9 @@ class UsageParser(Parser):
 
             outside_opts, opt_shortcuts = \
                 self.find_optionshortcut_and_outside_option_names(ins)
+
+
+            logger.debug(outside_opts)
 
             for opt_cut in opt_shortcuts:
                 for opt_ins in outside_opts:

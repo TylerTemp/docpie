@@ -10,14 +10,15 @@ An easy and Pythonic command-line interface parser.
 from docpie.error import DocpieException, DocpieExit, DocpieError
 from docpie.pie import Docpie
 from logging import getLogger
+import warnings
 
-__all__ = ('docpie', 'Docpie',
-           'DocpieException', 'DocpieExit', 'DocpieError', 'logger')
+__all__ = ['docpie', 'Docpie',
+           'DocpieException', 'DocpieExit', 'DocpieError', 'logger']
 
 # it's not a good idea but it can avoid loop importing
 __version__ = Docpie._version
 
-__timestamp__ = 1450027365.346833  # last sumbit
+__timestamp__ = 1454954233.247476  # last sumbit
 
 logger = getLogger('docpie')
 
@@ -111,6 +112,10 @@ def docpie(doc, argv=None, help=True, version=None,
     * Full documentation is available in README.md as well as online
       at http://docpie.comes.today/document/quick-start/
     """
+
+    if case_sensitive:
+        warnings.warn('`case_sensitive` is deprecated, `docpie` is always '
+                      'case insensitive')
 
     kwargs = locals()
     argv = kwargs.pop('argv')
