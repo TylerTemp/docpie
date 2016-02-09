@@ -443,8 +443,9 @@ class Docpie(dict):
 
         # option = [convert_2_dict(x) for x in self.options]
 
-        option = {title: [convert_2_dict(x) for x in options]
-                          for title, options in self.options.items()}
+        option = {}
+        for title, options in self.options.items():
+            option[title] = [convert_2_dict(x) for x in options]
 
         usage = [convert_2_dict(x) for x in self.usages]
 
@@ -502,9 +503,11 @@ class Docpie(dict):
         self.opt_names = [set(x) for x in dic['option_names']]
         self.opt_names_required_max_args = dic['opt_names_required_max_args']
         self.set_config(help=help, version=version)
-        self.options = {title: [convert_2_object(x, {}, self.namedoptions)
-                                for x in options]
-                        for title, options in dic['option'].items()}
+        self.options = o = {}
+        for title, options in dic['option'].items():
+            opt_ins = [convert_2_object(x, {}, self.namedoptions)
+                       for x in options]
+            o[title] = opt_ins
 
         self.usages = [convert_2_object(x, self.options, self.namedoptions)
                        for x in dic['usage']]

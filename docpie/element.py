@@ -110,13 +110,13 @@ class Atom(object):
         }
 
     @classmethod
-    def convert_2_object(cls, dic):
+    def convert_2_object(cls, dic, options, namedoptions):
         names = dic['names']
         cls_name = dic['__class__']
         assert cls_name in ('Option', 'Command', 'Argument')
         if cls_name == 'Option':
             # raise NotImplementedError('call Option.convert_2_object instead')
-            return Option.convert_2_object(dic)
+            return Option.convert_2_object(dic, options, namedoptions)
         elif cls_name == 'Command':
             cls = Command
         elif cls_name == 'Argument':
@@ -388,13 +388,15 @@ class Option(Atom):
         return result
 
     @classmethod
-    def convert_2_object(cls, dic):
+    def convert_2_object(cls, dic, options, namedoptions):
         names = dic['names']
         cls_name = dic['__class__']
         assert cls_name == 'Option'
         default = dic['default']
         ref_value = dic['ref']
-        ref = None if ref_value is None else Unit.convert_2_object(ref_value)
+        ref = (None
+               if ref_value is None
+               else Unit.convert_2_object(ref_value, options, namedoptions))
         # Not work on py2.6
         # return cls(*names, default=default, ref=ref)
         return cls(*names, **{'default': default, 'ref': ref})
@@ -1142,14 +1144,15 @@ class Unit(list):
         }
 
     @classmethod
-    def convert_2_object(cls, dic):
+    def convert_2_object(cls, dic, options, namedoptions):
         cls_name = dic['__class__']
         assert cls_name in ('Optional', 'Required')
         if cls_name == 'Optional':
             cls = Optional
         else:
             cls = Required
-        atoms = (convert_2_object(x) for x in dic['atoms'])
+        atoms = [convert_2_object(x, options, namedoptions)
+                 for x in dic['atoms']]
         repeat = dic['repeat']
         # Not work on py2.6
         # return cls(*atoms, repeat=repeat)
@@ -1373,10 +1376,25 @@ class OptionsShortcut(object):
             'hide': tuple(obj._hide),
         }
 
+    formal_title_re = re.compile('[\-_]')
+
     @classmethod
-    def convert_2_object(cls, dic, options):
+    def convert_2_object(cls, dic, options, namedoptions):
         assert dic['__class__'] == 'OptionsShortcut'
-        ins = OptionsShortcut(dic['name'], options)
+
+        if namedoptions:
+            name = dic['name']
+            formal_name = cls.formal_title_re.sub(' ', name.lower()).strip()
+            for title, opts in options.items():
+                if (formal_title_re.sub(' ', title.lower()).strip() ==
+                        formal_name):
+                    break
+            else:
+                raise AttributeError('Unexpected Error: %s not found' % name)
+        else:
+            opts = sum(options.values(), [])
+
+        ins = OptionsShortcut(dic['name'], opts)
         ins.set_hide(dic['hide'])
         return ins
 
@@ -1458,26 +1476,22 @@ def convert_2_dict(obj):
 
 formal_title_re = re.compile('[\-_]')
 
+
 def convert_2_object(dic, options, namedoptions):
     # never modify options
     cls_name = dic['__class__']
-    if cls_name in ('Argument', 'Command', 'Option'):
-        return Atom.convert_2_object(dic)
-    elif cls_name in ('Optional', 'Required'):
-        return Unit.convert_2_object(dic)
-    elif cls_name == 'OptionsShortcut':
+    name_to_method = {
+        'Argument': Atom.convert_2_object,
+        'Command': Atom.convert_2_object,
+        'Option': Atom.convert_2_object,
 
-        if namedoptions:
-            name = dic['name']
-            formal_name = formal_title_re.sub(' ', name.lower()).strip()
-            for title, opts in options.items():
-                if (formal_title_re.sub(' ', title.lower()).strip() ==
-                        formal_name):
-                    break
-            else:
-                raise AttributeError('Unexpected Error: %s not found' % name)
-        else:
-            opts = sum(options.values(), [])
-        return OptionsShortcut.convert_2_object(dic, opts)
+        'Optional': Unit.convert_2_object,
+        'Required': Unit.convert_2_object,
+        'OptionsShourtcut': OptionsShortcut.convert_2_object,
+    }
+
+    if cls_name in name_to_method:
+        method = name_to_method[cls_name]
+        return method(dic, options, namedoptions)
     else:
         raise ValueError('%s can not be converted to object', dic)

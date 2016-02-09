@@ -19,9 +19,8 @@ version 0.3.1:
 
 -   [new] ``namedoptions`` feature
 
-NOTE: the JSONlize function is broken currently.
 
-TODO: document this feature.
+TODO: document this feature. Add test for this feature.
 
 `full changelog & TODOs <https://github.com/TylerTemp/docpie/blob/master/CHANGELOG.md>`__
 
