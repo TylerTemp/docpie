@@ -1,9 +1,12 @@
 ## TODO
 
 *   Refactory
-*   Support grouped Options
 *   Add a bash auto-complete tool [#2](https://github.com/TylerTemp/docpie/issues/2)
 *   Document needs a better organization
+
+## 0.3.1
+
+*   [new] Add `namedoptions` feature
 
 ## 0.3.0
 

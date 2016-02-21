@@ -2356,9 +2356,11 @@ class StdoutRedirect(object):
         sys.stdout = self.real_out
         return False
 
+
 def case():
-    return (unittest.TestLoader().loadTestsFromTestCase(DocpieBasicTest),
-            unittest.TestLoader().loadTestsFromTestCase(DocpieRunDefaultTest))
+    return (unittest.TestLoader().loadTestsFromTestCase(BasicTest),
+            unittest.TestLoader().loadTestsFromTestCase(RunDefaultTest),
+            unittest.TestLoader().loadTestsFromTestCase(APITest))
 
 
 def suite():

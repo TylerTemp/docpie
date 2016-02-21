@@ -4,7 +4,7 @@ An easy and Pythonic command-line interface parser.
  * http://docpie.comes.today
  * Repository and issue-tracker: https://github.com/TylerTemp/docpie
  * Licensed under terms of MIT license (see LICENSE)
- * Copyright (c) 2015 TylerTemp, tylertempdev@gmail.com
+ * Copyright (c) 2015-2016 TylerTemp, tylertempdev@gmail.com
 """
 
 from docpie.error import DocpieException, DocpieExit, DocpieError
