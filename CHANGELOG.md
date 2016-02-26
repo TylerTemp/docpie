@@ -6,7 +6,7 @@
 
 ## 0.3.1
 
-*   [new] Add `namedoptions` feature
+*   [new] Add `namedoptions` feature. [Document](https://github.com/TylerTemp/docpie/wiki/Advanced-APIs#namedoptions)
 
 ## 0.3.0
 

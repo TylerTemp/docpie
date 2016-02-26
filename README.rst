@@ -6,8 +6,7 @@ docpie
 
 `An easy and Pythonic way to create your POSIX command line`
 
-View on: `HomePage <http://docpie.comes.today>`__ /
-`GitHub <https://github.com/TylerTemp/docpie/>`__ /
+View on: `GitHub <https://github.com/TylerTemp/docpie/>`__ /
 `PyPi <https://pypi.python.org/pypi/docpie>`__
 
 .. contents::
@@ -17,10 +16,8 @@ ChangeLog
 
 version 0.3.1:
 
--   [new] ``namedoptions`` feature
+-   [new] ``namedoptions`` feature. `Document <https://github.com/TylerTemp/docpie/wiki/Advanced-APIs#namedoptions>`__
 
-
-TODO: document this feature. Add test for this feature.
 
 `full changelog & TODOs <https://github.com/TylerTemp/docpie/blob/master/CHANGELOG.md>`__
 
@@ -101,7 +98,7 @@ pypy-2.0, pypy-2.6, pypy3-2.4
 Get Start!
 ----------
 
-Interested? Visit `Document <http://docpie.comes.today/document/quick-start/>`__
+Interested? Visit `Wiki <https://github.com/TylerTemp/docpie/wiki>`__
 and get start!
 
 Or you can `try it in your browser <http://docpie.comes.today/try/>`__
@@ -114,7 +111,7 @@ command-line interface. What you see is what you get.
 Every time you only need to update your document, and keep the
 code unchanged.
 
-See `here <http://docpie.comes.today/document/why-docpie/>`__ for more reasons.
+See `here <https://github.com/TylerTemp/docpie/wiki/Why-docpie>`__ for more reasons.
 
 Reference
 ---------
