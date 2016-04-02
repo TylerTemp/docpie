@@ -15,8 +15,7 @@ setup(
         ],
         'docpie': [
             'example/*.py',
-            'example/git/*.py',
-            'utest/*.py'
+            'example/git/*.py'
       ],
     },
     version=__version__,

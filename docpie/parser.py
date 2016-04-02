@@ -14,7 +14,6 @@ logger = logging.getLogger('docpie.parser')
 
 class Parser(object):
 
-
     def parse_pattern(self, token):
         logger.debug('get token %s', token)
         elements = []

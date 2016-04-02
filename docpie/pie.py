@@ -1,7 +1,7 @@
 import sys
 import logging
 
-from docpie.error import DocpieExit, DocpieError
+from docpie.error import DocpieExit
 from docpie.parser import UsageParser, OptionParser
 from docpie.element import convert_2_object, convert_2_dict
 from docpie.tokens import Argv
@@ -133,7 +133,8 @@ class Docpie(dict):
             help_msg = self.usage_text
 
         if token.error is not None:
-            raise DocpieExit('%s\n\n%s' % (token.error, help_msg))
+            # raise DocpieExit('%s\n\n%s' % (token.error, help_msg))
+            self.exception_handler(token.error)
 
         matched, result, dashed = self._match(token)
         if not matched:
@@ -293,7 +294,10 @@ class Docpie(dict):
         token = Argv(argv[1:], self.auto2dashes or self.options_first,
                      self.stdopt, self.attachopt, self.attachvalue,
                      all_opt_requried_max_args)
-        token.formal(self.options_first)
+        none_or_error = token.formal(self.options_first)
+        logger.debug('formal token: %s; error: %s', token, none_or_error)
+        if none_or_error is not None:
+            return self.exception_handler(none_or_error)
         return token
 
     def _match(self, token):
@@ -381,6 +385,20 @@ class Docpie(dict):
             if found:
                 logger.info('find %s, auto handle it', auto)
                 handler(self, auto)
+
+    def exception_handler(self, error):
+        if self.option_sections:
+            help_msg = ('%s\n\n%s\n%s' %
+                        (error.args[0],
+                         self.usage_text,
+                         '\n'.join(self.option_sections.values())))
+        else:
+            help_msg = '%s\n\n%s' % (error.args[0], self.usage_text)
+
+        args = list(error.args)
+        args[0] = help_msg
+        error.args = tuple(args)
+        raise error
 
     @staticmethod
     def help_handler(docpie, flag):

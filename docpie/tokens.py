@@ -1,5 +1,5 @@
 import logging
-from docpie.error import DocpieError
+from docpie.error import DocpieError, UnknownOptionExit, AmbiguousPrefixExit
 
 logger = logging.getLogger('docpie.tokens')
 
@@ -89,7 +89,11 @@ class Argv(list):
                     this_opt = each
 
                 if this_opt not in names:
-                    self.error = 'Unknown option: %s.' % this_opt
+                    self.error = UnknownOptionExit(
+                        'Unknown option: %s.' % this_opt,
+                        option=this_opt,
+                        inside=each,
+                    )
                     result.extend(self[index:])
                     break
 
@@ -114,7 +118,11 @@ class Argv(list):
                     possible = list(
                         filter(lambda x: x.startswith(option), names))
                     if not possible:
-                        self.error = 'Unknown option: %s.' % option
+                        self.error = UnknownOptionExit(
+                            'Unknown option: %s.' % option,
+                            option=option,
+                            inside=each,
+                        )
                         result.extend(self[index:])
                         break
                         # Don't raise. It may be --help
@@ -127,9 +135,11 @@ class Argv(list):
                         logger.debug('expand %s -> %s', each, replace)
                         result.append(replace)
                     else:
-                        self.error = (
+                        self.error = AmbiguousPrefixExit(
                             '%s is not a unique prefix: %s?' %
-                            (option, ', '.join(possible))
+                            (option, ', '.join(possible)),
+                            prefix=option,
+                            ambiguous=possible
                         )
                         result.extend(self[index:])
                         break
