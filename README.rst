@@ -6,8 +6,7 @@ docpie
 
 `An easy and Pythonic way to create your POSIX command line`
 
-View on: `HomePage <http://docpie.comes.today>`__ /
-`GitHub <https://github.com/TylerTemp/docpie/>`__ /
+View on: `GitHub <https://github.com/TylerTemp/docpie/>`__ /
 `PyPi <https://pypi.python.org/pypi/docpie>`__
 
 .. contents::
@@ -17,9 +16,14 @@ ChangeLog
 
 version 0.3.2:
 
-TODO: changelog for 0.3.2
-
-TODO: Example for 0.3.2 new features
+-   [fix] options section titles were not set appropriate when options sections's
+    title was not started with ``Options:``
+-   [fix] options parser did not parse indent correctly. ``example/cp.py`` did not work
+-   [fix] when argv has ``--option=arg`` but ``--option`` actually accepts no argument,
+    raise `ExceptNoArgumentExit` instead of complaining "Unknown option: -arg"
+-   [new] New ``UnknownOptionExit``, ``ExceptNoArgumentExit``, ``ExpectArgumentExit``,
+    ``ExpectArgumentHitDoubleDashesExit``, ``AmbiguousPrefixExit``.
+    New exception handling way allowing you to customize any output.
 
 `full changelog & TODOs <https://github.com/TylerTemp/docpie/blob/master/CHANGELOG.md>`__
 
@@ -100,7 +104,7 @@ pypy-2.0, pypy-2.6, pypy3-2.4
 Get Start!
 ----------
 
-Interested? Visit `Document <http://docpie.comes.today/document/quick-start/>`__
+Interested? Visit `Wiki <https://github.com/TylerTemp/docpie/wiki>`__
 and get start!
 
 Or you can `try it in your browser <http://docpie.comes.today/try/>`__
@@ -113,7 +117,7 @@ command-line interface. What you see is what you get.
 Every time you only need to update your document, and keep the
 code unchanged.
 
-See `here <http://docpie.comes.today/document/why-docpie/>`__ for more reasons.
+See `here <https://github.com/TylerTemp/docpie/wiki/Why-docpie>`__ for more reasons.
 
 Reference
 ---------
