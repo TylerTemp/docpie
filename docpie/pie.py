@@ -1,11 +1,12 @@
 import sys
 import logging
 
+import warnings
+import copy
 from docpie.error import DocpieExit
 from docpie.parser import UsageParser, OptionParser
 from docpie.element import convert_2_object, convert_2_dict
 from docpie.tokens import Argv
-import warnings
 
 __all__ = ['Docpie']
 
@@ -21,7 +22,7 @@ class Docpie(dict):
 
     # Docpie version
     # it's not a good idea but it can avoid loop importing
-    _version = '0.3.1'
+    _version = '0.3.2'
 
     option_name = 'Options:'
     usage_name = 'Usage:'
@@ -136,16 +137,15 @@ class Docpie(dict):
             # raise DocpieExit('%s\n\n%s' % (token.error, help_msg))
             self.exception_handler(token.error)
 
-        matched, result, dashed = self._match(token)
-        if not matched:
-            if result is None:  # not matched
-                msg = help_msg
-            else:  # hit an error
-                msg = '%s%s\n\n%s' % (
-                    result,
-                    ' Use "--help" to see more' if self.help else '',
-                    self.usage_text)
-            raise DocpieExit(msg)
+        # error = None
+        try:
+            result, dashed = self._match(token)
+        except DocpieExit as e:
+            # error = e
+            self.exception_handler(e)
+
+        # if error is not None:
+        #     self.exception_handler(error)
 
         value = result.get_value(self.appeared_only, False)
         self.clear()
@@ -312,24 +312,16 @@ class Docpie(dict):
                          list(argv_clone) == ['--'])):
                     argv_clone.check_dash()
                     logger.info('matched usage %s / %s', each, argv_clone)
-                    return True, each, argv_clone.dashes
+                    return each, argv_clone.dashes
 
-                # each.reset()
                 logger.info('matching %s left %s, checking failed',
                             each, argv_clone)
-                continue
 
-            elif argv_clone.error is None:
-                # each.reset()
-                logger.info('failed matching usage %s / %s', each, argv_clone)
-
-            else:
-                logger.info('error in %s - %s', each, argv_clone.error)
-                return False, argv_clone.error, argv_clone.dashes
+            logger.info('failed matching usage %s / %s', each, argv_clone)
 
         else:
             logger.info('none matched')
-            return False, argv_clone.error, argv_clone.dashes
+            raise DocpieExit(None)
 
     def check_flag_and_handler(self, token):
         need_arg = [name for name, expect in
@@ -387,18 +379,22 @@ class Docpie(dict):
                 handler(self, auto)
 
     def exception_handler(self, error):
+        logger.debug('handling %r', error)
         if self.option_sections:
-            help_msg = ('%s\n\n%s\n%s' %
-                        (error.args[0],
-                         self.usage_text,
+            help_msg = ('%s\n%s' %
+                        (self.usage_text,
                          '\n'.join(self.option_sections.values())))
         else:
-            help_msg = '%s\n\n%s' % (error.args[0], self.usage_text)
+            help_msg = self.usage_text
 
         args = list(error.args)
+        if args[0] is not None:
+            help_msg = '%s\n\n%s' % (args[0], help_msg)
+
         args[0] = help_msg
         error.args = tuple(args)
-        raise error
+        logger.debug('re-raise %r', error)
+        raise copy.copy(error)
 
     @staticmethod
     def help_handler(docpie, flag):

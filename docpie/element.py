@@ -1,5 +1,7 @@
 import logging
 import re
+from docpie.error import ExceptNoArgumentExit,\
+                         ExpectArgumentExit, ExpectArgumentHitDoubleDashesExit
 try:
     from itertools import product
 except ImportError:
@@ -237,9 +239,6 @@ class Option(Atom):
         return result
 
     def match(self, argv, repeat_match):
-        if argv.error is not None:
-            logger.info('error in %s - %s', self, argv.error)
-            return False
 
         if not repeat_match and self.value:
             logger.debug('%s already has a value', self)
@@ -254,10 +253,10 @@ class Option(Atom):
         argv_value = argv.dump_value()
         # saver.save(self, argv)
 
-        find_it, attached_value, index = \
+        find_it, attached_value, index, _from = \
             argv.break_for_option(self.names)
 
-        if not find_it:
+        if find_it is None:
             logger.debug('not found matching %s in %s', self, argv)
             argv.load_value(argv_value)
             # saver.rollback(self, argv)
@@ -273,10 +272,10 @@ class Option(Atom):
 
         if self.ref is None:
             if attached_value is not None:
-                if argv.stdopt and argv.attachopt:
+                if argv.stdopt and argv.attachopt and not find_it.startswith('--'):
                     logger.debug("%s put -%s pack to argv %s",
                                  self, attached_value, argv)
-                    argv.insert(index, '-' + attached_value)
+                    argv.insert(index, '-' + attached_value, _from)
                     logger.debug('%s matched %s / %s', self, self.value, argv)
                     return True
                 logger.debug("%s doesn't have ref but argv is %s",
@@ -284,7 +283,11 @@ class Option(Atom):
                 # need restore?
                 # self.load_value(self_value)
                 # argv.load_value(argv_value)
-                return False
+                raise ExceptNoArgumentExit(
+                    '%s must not have argument(s)' % '/'.join(self.names),
+                    option=self.names,
+                    hit=attached_value
+                )
             logger.debug('%s matched %s / %s', self, self.value, argv)
             return True
 
@@ -297,10 +300,11 @@ class Option(Atom):
                 min(self.ref.arg_range()) > 0):
             logger.info(
                 '%s ref must fully match but failed because `--`', self)
-            argv.error = ('/'.join(self.names) +
-                          ' requires argument(s) but hits "--".')
-
-            return False
+            raise ExpectArgumentHitDoubleDashesExit(
+                ('/'.join(self.names) +
+                 ' requires argument(s) but hits "--".'),
+                option=self.names
+            )
 
         to_match_ref_argv = argv.clone()
         if attached_value is None:
@@ -320,15 +324,23 @@ class Option(Atom):
         if attached_value is not None and to_match_ref_argv:
             logger.info('%s ref must fully match but failed for %s',
                         self, to_match_ref_argv)
-            argv.error = ('%s requires argument(s).' % ('/'.join(self.names)))
-            return False
+            raise ExpectArgumentExit(
+                '%s requires argument(s).' % ('/'.join(self.names)),
+                option=self.names,
+                hit=to_match_ref_argv[0] if to_match_ref_argv else None)
 
         if not result:
             logger.debug('%s ref match failed %s', self, to_match_ref_argv)
+
+            raise ExpectArgumentExit(
+                '%s requires argument(s).' % ('/'.join(self.names)),
+                option=self.names,
+                hit=to_match_ref_argv[0] if to_match_ref_argv else None)
+
             # saver.rollback(self, argv)
-            self.load_value(self_value)
-            argv.load_value(argv_value)
-            return False
+            # self.load_value(self_value)
+            # argv.load_value(argv_value)
+            # return False
         # merge argv
         if attached_value is None:
             argv.extend(to_match_ref_argv)
@@ -438,9 +450,6 @@ class Command(Atom):
         # self.value = False
 
     def match(self, argv, repeat_match):
-        if argv.error is not None:
-            logger.info('error in %s - %s', self, argv.error)
-            return False
 
         if not repeat_match and self.value:
             logger.debug('%s already has a value %s', self, self.value)
@@ -533,9 +542,6 @@ class Argument(Atom):
         return value
 
     def match(self, argv, repeat_match):
-        if argv.error is not None:
-            logger.info('error in %s - %s', self, argv.error)
-            return False
 
         if not repeat_match and (self.value is not None and self.value != []):
             logger.info('%s already has a value %s', self, self.value)
@@ -826,7 +832,7 @@ class Unit(list):
         last_opt_or_arg = -1
 
         # the token is moving
-        while argv.error is None and old_status != new_status and argv:
+        while old_status != new_status and argv:
             old_status = new_status
             for index, each in enumerate(self):
                 if not argv:
@@ -874,9 +880,6 @@ class Unit(list):
                 break
             history_values.append(self.dump_value())
             new_status = argv.status()
-
-        if argv.error is not None:
-            return 0
 
         logger.debug('matching %s %s time(s)', self, full_match_count)
         if full_match_count:
@@ -1176,18 +1179,15 @@ class Unit(list):
 class Required(Unit):
 
     def match(self, argv, repeat_match):
-        if argv.error is not None:
-            logger.info('error in %s - %s', self, argv.error)
-            return False
 
         if not (repeat_match or self.repeat):
             logger.debug('try to match %s once, %s', self, argv)
             result = self.match_oneline(argv)
             logger.debug('%s matching status: %s', self, result)
-            return (argv.error is None) and result
+            return result
 
         logger.debug('try to match %s repeatedly', self)
-        return self.match_repeat(argv) and argv.error is None
+        return self.match_repeat(argv)
 
     def match_oneline(self, argv):
         # saver.save(self, argv)
@@ -1195,10 +1195,6 @@ class Required(Unit):
         argv_value = argv.dump_value()
 
         matched_status = self._match_oneline(argv)
-
-        if argv.error is not None:
-            logger.info('error in %s - %s', self, argv.error)
-            return False
 
         if all(matched_status):
             logger.debug('%s matched', self)
@@ -1235,22 +1231,16 @@ class Optional(Unit):
     def match_oneline(self, argv):
         # saver.save(self, argv)
         self._match_oneline(argv)
-        if argv.error is not None:
-            logger.info('error in %s - %s', self, argv.error)
-            return False
         return True
 
     def match(self, argv, repeat_match):
-        if argv.error is not None:
-            logger.info('error in %s - %s', self, argv.error)
-            return False
         repeat = repeat_match or self.repeat
         logging.debug('matching %s with %s%s',
                       self, argv, ', repeatedly' if repeat else '')
         func = (self.match_repeat if repeat else self.match_oneline)
 
         func(argv)
-        return argv.error is None
+        return True
 
     def __eq__(self, other):
         if not isinstance(other, Optional):
@@ -1292,9 +1282,6 @@ class OptionsShortcut(object):
 
     def match(self, argv, repeat_match):
         options = self.options
-        if argv.error is not None:
-            logger.info('error in %s - %s', self, argv.error)
-            return False
 
         hide = self._hide
         logger.debug('[options]/%s/%s try matching %s', options, hide, argv)
@@ -1304,12 +1291,11 @@ class OptionsShortcut(object):
             if not argv:
                 logger.info('argv run out before matching [options] %s(-%s)',
                             options, self._hide)
-                return argv.error is None
+                return True
             logger.debug('[options] try %s matching %s', each, argv)
             each.match(argv, repeat_match)
-            if argv.error is not None:
-                return False
-        return argv.error is None
+
+        return True
 
     def get_value(self, appeared_only, in_repeat):
         options = self.options

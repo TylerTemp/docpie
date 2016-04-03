@@ -4,8 +4,13 @@ import logging
 import sys
 import platform
 
-from docpie import docpie, Docpie, bashlog
-from docpie.error import DocpieExit, DocpieError
+from docpie import docpie, Docpie
+from docpie.error import DocpieExit, \
+                         UnknownOptionExit, \
+                         ExceptNoArgumentExit, \
+                         ExpectArgumentExit, \
+                         ExpectArgumentHitDoubleDashesExit, \
+                         AmbiguousPrefixExit
 import json
 
 try:
@@ -1229,22 +1234,23 @@ NOT PART OF SECTION'''
         self.eq(doc, {'--foo': True, '--bar': False, '--': False})
 
     def test_option_section_syntax(self):
-        # Not support in docpie
-        # r"""Usage: prog [options]
-        #
-        # global options: --foo
-        # local options: --baz
-        #                --bar
-        # other options:
-        #  --egg
-        #  --spam
-        # -not-an-option-
-        #
-        # """
-        # $ prog --baz --egg
-        # {"--foo": false, "--baz": true, "--bar": false,
-        # "--egg": true, "--spam": false}
-        pass
+        doc = """Usage: prog [options]
+
+        global options: --foo
+        local options: --baz
+                       --bar
+        other options:
+         --egg
+         --spam
+
+        -not-an-option-  # different from docopt here
+
+        """
+
+        sys.argv = ['prog', '--baz', '--egg']
+        expect = {"--foo": False, "--baz": True, "--bar": False,
+                  "--egg": True, "--spam": False, "--": False}
+        self.eq(doc, expect)
 
     def test_usage_section_of_docpie(self):
         doc = '''
@@ -2150,6 +2156,56 @@ Options:
         """
         self.eq(doc2, {'--': False, '--color': 'red', '-c': 'red'})
 
+    def test_wrong_unknow_option_note(self):
+        doc = '''Usage: prog --long'''
+        with StdoutRedirect() as f:
+            with self.assertRaises(SystemExit):
+                docpie(doc, ['--long', 's'])
+
+        self.assertNotIn('Unknown option:', f.read())
+
+    def test_cp_indent_not_work(self):
+        doc = """Example for docpie, linux cp-like command
+
+
+NAME
+     cp -- copy files
+
+USAGE:
+     cp [options] <source_file> ... <target_directory>
+
+OPTIONS:
+     -f    If the destination file cannot be opened, remove it and create a
+           new file, without prompting for confirmation regardless of its per-
+           missions.
+     -v, --verbose
+           Cause cp to be verbose, showing files as they are copied.
+     -X    Do not copy Extended Attributes (EAs) or resource forks.
+     -R    If source_file designates a directory, cp copies the directory and
+           the entire subtree connected at that point."""
+
+        sys.argv = ['prog', 'source', 'target']
+        self.eq(doc, {'--': False, '-f': False, '-v': False,
+                      '--verbose': False, '-X': False, '-R': False,
+                      '<source_file>': ['source'],
+                      '<target_directory>': 'target'})
+
+    def test_option_section_title(self):
+        doc = """
+        Usage: prog [options]
+
+        OpTiOnS:
+            -a
+        Another OpTiOnS:
+            -b
+        """
+
+        pie = Docpie(doc)
+        opt_sections = pie.option_sections
+
+        self.assertEqual(set(('', 'Another')), set(opt_sections))
+
+
 class APITest(unittest.TestCase):
 
     def eq(self, result, doc, argv=None, help=True, version=None,
@@ -2328,6 +2384,70 @@ class APITest(unittest.TestCase):
         self.eq(expect, doc, argv, optionsfirst=True)
 
 
+class NewErrorTest(unittest.TestCase):
+
+    def setUp(self):
+        self.doc = """
+        Usage:
+            prog [options] --prefix=<args>...
+
+        Options:
+            --prepare
+            -p, --prefix=<args>...
+        """
+
+    def with_raise(self, expection):
+        with self.assertRaises(expection) as cm:
+            docpie(self.doc)
+
+        return cm.exception
+
+    def test_unknown_long_option(self):
+        sys.argv = ['prog', '--not-exists']
+        error = self.with_raise(UnknownOptionExit)
+        self.assertEqual('--not-exists', error.option)
+        self.assertEqual('--not-exists', error.inside)
+
+    def test_unknown_short_option(self):
+        sys.argv = ['prog', '-not']
+        error = self.with_raise(UnknownOptionExit)
+        self.assertEqual('-n', error.option)
+        self.assertEqual('-not', error.inside)
+
+    def test_long_option_expect_args(self):
+        sys.argv = ['prog', '--prefix']
+        error = self.with_raise(ExpectArgumentExit)
+        self.assertIn('--prefix', error.option)
+
+
+    def test_short_option_expect_args(self):
+        sys.argv = ['prog', '-p']
+        error = self.with_raise(ExpectArgumentExit)
+        self.assertIn('-p', error.option)
+
+    def test_expect_no_args(self):
+        sys.argv = ['prog', '--prepare=arg']
+        error = self.with_raise(ExceptNoArgumentExit)
+        self.assertIn('--prepare', error.option)
+        self.assertEqual('arg', error.hit)
+
+    def test_long_option_hit_double_dashes(self):
+        sys.argv = ['prog', '--prefix', '--']
+        error = self.with_raise(ExpectArgumentHitDoubleDashesExit)
+        self.assertIn('--prefix', error.option)
+
+    def test_short_option_hit_double_dashes(self):
+        sys.argv = ['prog', '-p', '--']
+        error = self.with_raise(ExpectArgumentHitDoubleDashesExit)
+        self.assertIn('--prefix', error.option)
+
+    def test_ambiguous_prefix(self):
+        sys.argv = ['prog', '--pre']
+        error = self.with_raise(AmbiguousPrefixExit)
+        self.assertEqual('--pre', error.prefix)
+        self.assertEqual(set(('--prepare', '--prefix')), set(error.ambiguous))
+
+
 class Writer(StringIO):
 
     if sys.hexversion >= 0x03000000:
@@ -2358,9 +2478,12 @@ class StdoutRedirect(object):
 
 
 def case():
-    return (unittest.TestLoader().loadTestsFromTestCase(BasicTest),
-            unittest.TestLoader().loadTestsFromTestCase(RunDefaultTest),
-            unittest.TestLoader().loadTestsFromTestCase(APITest))
+    return (
+        unittest.TestLoader().loadTestsFromTestCase(BasicTest),
+        unittest.TestLoader().loadTestsFromTestCase(RunDefaultTest),
+        unittest.TestLoader().loadTestsFromTestCase(APITest),
+        unittest.TestLoader().loadTestsFromTestCase(NewErrorTest),
+    )
 
 
 def suite():
@@ -2374,3 +2497,4 @@ def main():
 if __name__ == '__main__':
     # bashlog.stdoutlogger(None, bashlog.DEBUG, True)
     unittest.main()
+    # main()

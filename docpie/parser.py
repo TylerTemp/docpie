@@ -423,7 +423,7 @@ class OptionParser(Parser):
                 split = [text]
 
         option_split_re = self.option_split_re
-        name = self.option_name
+        name = re.compile(re.escape(self.option_name), re.IGNORECASE)
         for text in filter(lambda x: x and x.strip(), split):
 
             # logger.warning('get options group:\n%r', text)
@@ -434,11 +434,10 @@ class OptionParser(Parser):
                 except ValueError:  # python >= 3.5
                     continue
 
-            # logger.error(split_options)
             split_options.pop(0)
 
             for title, section in zip(split_options[::2], split_options[1::2]):
-                prefix, _, end = title.partition(name)
+                prefix, end = name.split(title)
 
                 prefix = prefix.strip()
 
@@ -479,6 +478,8 @@ class OptionParser(Parser):
             if not text:
                 result[title] = []
                 continue
+
+            logger.debug('\n' + text)
 
             collect = []
             to_list = text.splitlines()
@@ -552,10 +553,12 @@ class OptionParser(Parser):
                      '%(description_str)r' % locals())
         if description_str.strip():
             indent = len(opt_str.expandtabs()) + len(separater.expandtabs())
+            logger.info('indent: %s', indent)
         else:
             indent = 2 + len(cls.indent_re.match(
                                  opt_str.expandtabs()
                             ).groupdict()['indent'])
+            logger.info('indent: %s', indent)
         return {'option': opt_str.strip(), 'indent': indent}
 
     @classmethod

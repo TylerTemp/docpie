@@ -161,7 +161,7 @@ class Argv(list):
     def current(self, offset=0):
         return self[offset] if len(self) > offset else None
 
-    def insert(self, index, object):
+    def insert(self, index, object, from_=None):
         if self.auto_dashes and '--' in self:
             dashes_index = self.index('--')
         else:
@@ -185,7 +185,10 @@ class Argv(list):
             return super(Argv, self).insert(index, object)
 
         logger.info('%s not in %s', flag, self.known)
-        self.error = 'Unknown option: %s.' % flag
+        # self.error = 'Unknown option: %s.' % flag
+        raise UnknownOptionExit('Unknown option: %s.' % flag,
+                                option=flag,
+                                inside=from_ or flag)
 
     def break_for_option(self, names):
         auto_dashes = self.auto_dashes
@@ -193,7 +196,7 @@ class Argv(list):
         attachvalue = self.attachvalue
         for index, option in enumerate(self):
             if option == '--' and auto_dashes:
-                return False, None, 0
+                return None, None, 0, option
             for name in names:
                 if option.startswith(name):
                     value = None
@@ -217,9 +220,9 @@ class Argv(list):
 
                     logger.debug('find %s, attached %s, index %s of %s',
                                  name, value, index, self)
-                    return True, value, index
+                    return name, value, index, option
 
-        return False, None, 0
+        return None, None, 0, None
 
     def next(self, offset=0):
         return self.pop(offset) if len(self) > offset else None

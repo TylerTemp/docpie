@@ -7,7 +7,7 @@ __pycache__/*
 /docpie.egg-info
 .DS_Store
 MANIFEST
-test.sh
+/pyenv_test.py
 note
 nohup.out
 .idea

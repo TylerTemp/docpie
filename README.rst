@@ -15,12 +15,11 @@ View on: `HomePage <http://docpie.comes.today>`__ /
 ChangeLog
 ---------
 
-version 0.3.1:
+version 0.3.2:
 
--   [new] ``namedoptions`` feature
+TODO: changelog for 0.3.2
 
-
-TODO: document this feature. Add test for this feature.
+TODO: Example for 0.3.2 new features
 
 `full changelog & TODOs <https://github.com/TylerTemp/docpie/blob/master/CHANGELOG.md>`__
 

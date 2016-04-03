@@ -15,13 +15,30 @@ class UnknownOptionExit(DocpieExit):
         self.inside = inside
 
 
-class ExpectArgumentExit(DocpieExit):
-    """Option expects argument but not found"""
+class ArgumentExit(DocpieExit):
+    # Meta
 
     def __init__(self, message, option=None, hit=None):
-        super(ExpectArgumentExit, self).__init__(message)
+        super(ArgumentExit, self).__init__(message)
         self.option = option
         self.hit = hit
+
+class ExceptNoArgumentExit(ArgumentExit):
+    """Option expcets no argument
+
+    e.g.
+
+    Usage: prog --opt
+
+    Options:
+        -o, --opt
+
+    argv: prog --opt=sth
+    """
+
+
+class ExpectArgumentExit(ArgumentExit):
+    """Option expects argument but not found"""
 
 
 class ExpectArgumentHitDoubleDashesExit(ExpectArgumentExit):
