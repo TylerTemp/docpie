@@ -2160,7 +2160,7 @@ Options:
         doc = '''Usage: prog --long'''
         with StdoutRedirect() as f:
             with self.assertRaises(SystemExit):
-                docpie(doc, ['--long', 's'])
+                docpie(doc, ['prog', '--long=s'])
 
         self.assertNotIn('Unknown option:', f.read())
 

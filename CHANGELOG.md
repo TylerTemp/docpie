@@ -4,6 +4,45 @@
 *   Add a bash auto-complete tool [#2](https://github.com/TylerTemp/docpie/issues/2)
 *   Document needs a better organization
 
+## 0.3.2
+
+*   [fix] options section titles were not set appropriate when options sections's
+    title was not started with `Options:`
+
+    ```python
+    """
+    Usage: prog [options]
+
+    OpTiOnS: -a
+    Another oPtIoNs: -b
+    """
+    from docpie import Docpie
+    pie = Docpie(__doc__)
+    print(list(pie.option_sections))  # ['', 'Another']
+    ```
+
+*   [fix] options parse did not parse indent correctly. `example/cp.py` did not work
+
+    ```python
+    """
+    USAGE:
+         cp [options]
+
+    OPTIONS:
+         -f    Descrpition
+               goes here
+    """
+    from docpie import docpie
+    print(docpie(__doc__))  # should not fail parsing
+    ```
+
+*   [fix] when argv has `--option=arg` but `--option` actually accepts no argument,
+    raise `ExceptNoArgumentExit` instead of complaining "Unknown option: -arg"
+*   [new] New `UnknownOptionExit`, `ExceptNoArgumentExit`, `ExpectArgumentExit`,
+    `ExpectArgumentHitDoubleDashesExit`, `AmbiguousPrefixExit`.
+    New exception handling way allowing you to customize any output.
+    See example/customize_output.py for details.
+
 ## 0.3.1
 
 *   [new] Add `namedoptions` feature
