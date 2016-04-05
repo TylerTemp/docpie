@@ -7,13 +7,21 @@ An easy and Pythonic command-line interface parser.
  * Copyright (c) 2015-2016 TylerTemp, tylertempdev@gmail.com
 """
 
-from docpie.error import DocpieException, DocpieExit, DocpieError
 from docpie.pie import Docpie
+from docpie.error import DocpieException, DocpieExit, DocpieError, \
+                         UnknownOptionExit, ExceptNoArgumentExit, \
+                         ExpectArgumentExit, \
+                         ExpectArgumentHitDoubleDashesExit, \
+                         AmbiguousPrefixExit
 from logging import getLogger
 import warnings
 
 __all__ = ['docpie', 'Docpie',
-           'DocpieException', 'DocpieExit', 'DocpieError', 'logger']
+           'DocpieException', 'DocpieExit', 'DocpieError',
+           'UnknownOptionExit', 'ExceptNoArgumentExit',
+           'ExpectArgumentExit', 'ExpectArgumentHitDoubleDashesExit',
+           'AmbiguousPrefixExit',
+           'logger']
 
 # it's not a good idea but it can avoid loop importing
 __version__ = Docpie._version

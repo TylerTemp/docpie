@@ -42,6 +42,19 @@
     `ExpectArgumentHitDoubleDashesExit`, `AmbiguousPrefixExit`.
     New exception handling way allowing you to customize any output.
     See example/customize_output.py for details.
+*   [fix] when two long options has the same prefix but the shorter one requires argument
+    but the longer one not, it will try to give a wrong value to it
+
+    ```python
+    """
+    Usage: prog --long=<opt>
+           prog --long-opt
+    """
+    from docopt import docopt
+    print(docopt(__doc__, ['prog', '--long-opt']))
+    # before 0.3.2: --long requires argument(s)
+    # now: {'--': False, '--long': None, '--long-opt': True}
+    ```
 
 ## 0.3.1
 

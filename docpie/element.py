@@ -249,7 +249,7 @@ class Option(Atom):
             logger.info('no argv left')
             return False
 
-        self_value = self.dump_value()
+        # self_value = self.dump_value()
         argv_value = argv.dump_value()
         # saver.save(self, argv)
 
@@ -1266,6 +1266,17 @@ class OptionsShortcut(object):
         self._hide = set()
         self.name = name
         self.options = options
+
+    def copy(self):
+        ins = OptionsShortcut(
+            self.name,
+            self.options
+        )
+        ins.set_hide(self._hide)
+        return ins
+
+    def matched(self):
+        return True
 
     def set_hide(self, names):
         self._hide.update(names)

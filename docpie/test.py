@@ -2205,6 +2205,26 @@ OPTIONS:
 
         self.assertEqual(set(('', 'Another')), set(opt_sections))
 
+    def test_long_option_with_same_prefix(self):
+        doc = """
+        Usage: prog --long
+               prog --long-opt
+        """
+        sys.argv = ['prog', '--long-opt']
+        self.eq(doc, {'--': False, '--long': False, '--long-opt': True})
+
+
+        doc = """
+        Usage: prog --long=<opt>
+               prog --long-opt
+        """
+        sys.argv = ['prog', '--long-opt']
+        self.eq(doc, {'--': False, '--long': None, '--long-opt': True})
+        sys.argv = ['prog', '--long', 'opt']
+        self.eq(doc, {'--': False, '--long': 'opt', '--long-opt': False})
+        sys.argv = ['prog', '--long=opt']
+        self.eq(doc, {'--': False, '--long': 'opt', '--long-opt': False})
+
 
 class APITest(unittest.TestCase):
 
@@ -2383,6 +2403,29 @@ class APITest(unittest.TestCase):
         argv = ['prog', '-wsth', 'arg']
         self.eq(expect, doc, argv, optionsfirst=True)
 
+    def test_extra_override_help(self):
+        # with StderrRedirect() as f:
+        sys.argv = ['prog', '-h']
+        with self.assertRaises(SystemExit) as cm:
+            docpie('Usage: prog [options]', help=True, extra={
+                '-h': lambda pie, flag: sys.exit('exit')
+            })
+
+        exception = cm.exception
+        self.assertEqual(exception.args[0], 'exit')
+
+
+    def test_extra_override_version(self):
+        # with StderrRedirect() as f:
+        sys.argv = ['prog', '-v']
+        with self.assertRaises(SystemExit) as cm:
+            docpie('Usage: prog [options]', version='0.0.1', extra={
+                '-v': lambda pie, flag: sys.exit('version~')
+            })
+
+        exception = cm.exception
+        self.assertEqual(exception.args[0], 'version~')
+
 
 class NewErrorTest(unittest.TestCase):
 
@@ -2474,6 +2517,22 @@ class StdoutRedirect(object):
     def __exit__(self, exc_type, exc_val, exc_tb):
         self.fake_out.seek(0)
         sys.stdout = self.real_out
+        return False
+
+
+class StderrRedirect(object):
+    fake_err = Writer()
+
+    def __enter__(self):
+        self.fake_err.seek(0)
+        self.fake_err.truncate()
+        self.real_err = sys.stderr
+        sys.stderr = self.fake_err
+        return self.fake_err
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.fake_err.seek(0)
+        sys.stderr = self.real_err
         return False
 
 

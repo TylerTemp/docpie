@@ -24,6 +24,8 @@ version 0.3.2:
 -   [new] New ``UnknownOptionExit``, ``ExceptNoArgumentExit``, ``ExpectArgumentExit``,
     ``ExpectArgumentHitDoubleDashesExit``, ``AmbiguousPrefixExit``.
     New exception handling way allowing you to customize any output.
+-   [fix] when two long options has the same prefix but the shorter one requires argument
+    but the longer one not, it will try to give a wrong value to it
 
 `full changelog & TODOs <https://github.com/TylerTemp/docpie/blob/master/CHANGELOG.md>`__
 

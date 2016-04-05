@@ -58,16 +58,19 @@ class Docpie(dict):
 
         if extra is None:
             extra = {}
+        else:
+            extra = self._formal_extra(extra)
 
         # set config first
         self.set_config(
             stdopt=stdopt, attachopt=attachopt, attachvalue=attachvalue,
             auto2dashes=auto2dashes, name=name, case_sensitive=case_sensitive,
             optionsfirst=optionsfirst, appearedonly=appearedonly,
-            namedoptions=namedoptions, extra=extra)
+            namedoptions=namedoptions)
 
         self.help = help
         self.version = version
+        self.extra = extra
 
         if doc is not None:
             self.doc = doc
@@ -110,7 +113,9 @@ class Docpie(dict):
             for each_option in options:
                 self.opt_names.append(each_option[0].names)
 
-        self.set_config(help=self.help, version=self.version)
+        self.set_config(help=self.help,
+                        version=self.version,
+                        extra=dict(self.extra))
 
     def docpie(self, argv=None):
         """match the argv for each usages, return dict.
@@ -126,22 +131,13 @@ class Docpie(dict):
         # so `-hwhatever` can trigger `-h` first
         self.check_flag_and_handler(token)
 
-        if self.option_sections:
-            help_msg = ('%s\n%s' %
-                        (self.usage_text,
-                         '\n'.join(self.option_sections.values())))
-        else:
-            help_msg = self.usage_text
-
         if token.error is not None:
             # raise DocpieExit('%s\n\n%s' % (token.error, help_msg))
             self.exception_handler(token.error)
 
-        # error = None
         try:
             result, dashed = self._match(token)
         except DocpieExit as e:
-            # error = e
             self.exception_handler(e)
 
         # if error is not None:
@@ -380,6 +376,8 @@ class Docpie(dict):
 
     def exception_handler(self, error):
         logger.debug('handling %r', error)
+        error = copy.copy(error)
+
         if self.option_sections:
             help_msg = ('%s\n%s' %
                         (self.usage_text,
@@ -388,13 +386,17 @@ class Docpie(dict):
             help_msg = self.usage_text
 
         args = list(error.args)
-        if args[0] is not None:
-            help_msg = '%s\n\n%s' % (args[0], help_msg)
+        message = args[0]
+        if message is not None:
+            help_msg = '%s\n\n%s' % (message, help_msg)
 
         args[0] = help_msg
         error.args = tuple(args)
+        error.usage_text = self.usage_text
+        error.option_sections = self.option_sections
+        error.msg = message
         logger.debug('re-raise %r', error)
-        raise copy.copy(error)
+        raise error
 
     @staticmethod
     def help_handler(docpie, flag):
@@ -574,7 +576,7 @@ class Docpie(dict):
             reinit = reinit or (namedoptions != self.namedoptions)
             self.namedoptions = namedoptions
         if 'extra' in config:
-            self.extra.update(config.pop('extra'))
+            self.extra.update(self._formal_extra(config.pop('extra')))
 
         if config:  # should be empty
             raise ValueError(
@@ -589,6 +591,16 @@ class Docpie(dict):
                            ' `Docpie` object. Create a new one instead')
             self._init()
 
+    def _formal_extra(self, extra):
+        result = {}
+        for keys, value in extra.items():
+            if isinstance(keys, StrType):
+                keys = [keys]
+
+            result.update((k, value) for k in keys)
+
+        return result
+
     def _set_or_remove_extra_handler(self, set_handler, find_order, handler):
         for flag in find_order:
             alias = self.find_flag_alias(flag)
@@ -596,11 +608,12 @@ class Docpie(dict):
                 alias.add(flag)
                 for each in alias:
                     if set_handler:
-                        logger.info('set %s hanlder', each)
+                        logger.info('set %s hanlder %s', each, handler)
                         self.extra[each] = handler
                     else:
                         logger.info('remove %s hanlder', each)
-                        self.extra.pop(each, None)
+                        _hdlr = self.extra.pop(each, None)
+                        logger.debug('%s handler %s removed', each, _hdlr)
                 break
         else:
             for flag in find_order:

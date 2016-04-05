@@ -211,10 +211,17 @@ class Argv(list):
                     # `--flag=sth` -> `--flag sth`
                     # `--flag=` -> `--flag ""`
                     # `-f` -> `-f None`
+                    # `--flag-ext` -> `--flag -ext` -> not matched
+                    # `--flag` -> `--flag None`
                     elif attachvalue:
                         _, _, value = option.partition(name)
-                        if name.startswith('--') and value.startswith('='):
-                            value = value[1:]
+                        if name.startswith('--'):
+                            if value.startswith('='):
+                                value = value[1:]
+                            elif value:
+                                return None, None, 0, None
+                            else:
+                                value = None
                         elif not value:
                             value = None
 
