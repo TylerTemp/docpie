@@ -14,18 +14,9 @@ View on: `GitHub <https://github.com/TylerTemp/docpie/>`__ /
 ChangeLog
 ---------
 
-version 0.3.2:
+version 0.3.3:
 
--   [fix] options section titles were not set appropriate when options sections's
-    title was not started with ``Options:``
--   [fix] options parser did not parse indent correctly. ``example/cp.py`` did not work
--   [fix] when argv has ``--option=arg`` but ``--option`` actually accepts no argument,
-    raise `ExceptNoArgumentExit` instead of complaining "Unknown option: -arg"
--   [new] New ``UnknownOptionExit``, ``ExceptNoArgumentExit``, ``ExpectArgumentExit``,
-    ``ExpectArgumentHitDoubleDashesExit``, ``AmbiguousPrefixExit``.
-    New exception handling way allowing you to customize any output.
--   [fix] when two long options has the same prefix but the shorter one requires argument
-    but the longer one not, it will try to give a wrong value to it
+-   [fix] a logging is not use `docpie` logger
 
 `full changelog & TODOs <https://github.com/TylerTemp/docpie/blob/master/CHANGELOG.md>`__
 

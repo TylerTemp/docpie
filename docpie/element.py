@@ -1235,7 +1235,7 @@ class Optional(Unit):
 
     def match(self, argv, repeat_match):
         repeat = repeat_match or self.repeat
-        logging.debug('matching %s with %s%s',
+        logger.debug('matching %s with %s%s',
                       self, argv, ', repeatedly' if repeat else '')
         func = (self.match_repeat if repeat else self.match_oneline)
 
