@@ -2,7 +2,6 @@ import sys
 import logging
 
 import warnings
-import copy
 from docpie.error import DocpieExit
 from docpie.parser import UsageParser, OptionParser
 from docpie.element import convert_2_object, convert_2_dict
@@ -376,7 +375,6 @@ class Docpie(dict):
 
     def exception_handler(self, error):
         logger.debug('handling %r', error)
-        error = copy.copy(error)
 
         if self.option_sections:
             help_msg = ('%s\n%s' %
@@ -391,6 +389,9 @@ class Docpie(dict):
             help_msg = '%s\n\n%s' % (message, help_msg)
 
         args[0] = help_msg
+        old_dic = error.__dict__
+        error = error.__class__(*args)
+        error.__dict__ = old_dic
         error.args = tuple(args)
         error.usage_text = self.usage_text
         error.option_sections = self.option_sections

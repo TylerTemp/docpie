@@ -17,6 +17,7 @@ ChangeLog
 version 0.3.3:
 
 -   [fix] a logging is not use `docpie` logger
+-   [fix] sometimes it does not print information when sys.argv is not correct
 
 `full changelog & TODOs <https://github.com/TylerTemp/docpie/blob/master/CHANGELOG.md>`__
 

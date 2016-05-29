@@ -1556,10 +1556,10 @@ Options: -a, --all=<here>
         # <arg> should not take `cmd`
         sys.argv = 'prog cmd --flag sth'.split()
         self.eq(doc, {'cmd': True, '--flag': True, '<arg>': 'sth',
-                       '--': False})
+                      '--': False})
         doc = 'Usage: prog [cmd --flag <arg>]'
         self.eq(doc, {'cmd': True, '--flag': True, '<arg>': 'sth',
-                       '--': False})
+                      '--': False})
 
     def test_either_in_repeat(self):
         doc = '''Usage: prog (a [this | that])...'''
@@ -1665,13 +1665,13 @@ Options: -a, --all=<here>
         self.eq(doc, {'<a>': 'a', '<b>': None, '<c>': None, '<d>': 'd',
                       '--': False})
         self.eq(doc2, {'<a>': 'a', '<b>': None, '<c>': None, '<d>': 'd',
-                      '--': False})
+                       '--': False})
 
         sys.argv = ['prog', 'b', 'c', 'd']
         self.eq(doc, {'<a>': None, '<b>': 'b', '<c>': 'c', '<d>': 'd',
                       '--': False})
         self.eq(doc2, {'<a>': None, '<b>': 'b', '<c>': 'c', '<d>': 'd',
-                      '--': False})
+                       '--': False})
 
     def test_issue_1(self):
         doc = '''Usage: prog [cmd1 cmd2]'''
@@ -1738,7 +1738,7 @@ Options: -a, --all=<here>
                       '--': False})
 
         sys.argv = ['prog', '--repeat=1', '--repeat=2', '--repeat=3'
-                    '--another-repeat=1', '--another-repeat=2']
+                                                        '--another-repeat=1', '--another-repeat=2']
         self.fail(doc)
 
         sys.argv = ['prog', '--repeat=1', '--repeat=2',
@@ -1904,7 +1904,7 @@ Options:
         args = e.exception.args
         if len(args) == 1:
             if (platform.python_implementation().lower() == 'pypy' and
-                    sys.version_info == (2, 7, 3, 'final', 42)):
+                        sys.version_info == (2, 7, 3, 'final', 42)):
                 # it will give args == (0,), why?
                 return
 
@@ -2224,6 +2224,17 @@ OPTIONS:
         self.eq(doc, {'--': False, '--long': 'opt', '--long-opt': False})
         sys.argv = ['prog', '--long=opt']
         self.eq(doc, {'--': False, '--long': 'opt', '--long-opt': False})
+
+    def test_raise_default_handler(self):
+        doc = "Usage: prog"
+        sys.argv = ['prog', 'extra']
+
+        try:
+            docpie(doc)
+        except BaseException as e:
+            self.assertEqual(str(e), doc)
+        else:
+            raise RuntimeError('Should raise here')
 
 
 class APITest(unittest.TestCase):
