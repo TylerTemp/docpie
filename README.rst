@@ -85,15 +85,14 @@ Install nightly/dev version:
 
 .. code:: bash
 
-    pip install git+git://github.com/TylerTemp/docpie.git
+    pip install git+https://github.com/TylerTemp/docpie.git@dev
 
 ``docpie`` has been tested with Python:
 
-2.6, 2.7
+-   2.6, 2.7, pypy-2.0, pypy-2.6
+-   3.2, 3.3, 3.4, 3.5, pypy3-2.4
 
-3.2, 3.3, 3.4, 3.5
-
-pypy-2.0, pypy-2.6, pypy3-2.4
+You can run test suit by ``python setup.py test``
 
 Get Start!
 ----------
