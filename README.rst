@@ -9,6 +9,9 @@ docpie
 View on: `GitHub <https://github.com/TylerTemp/docpie/>`__ /
 `PyPi <https://pypi.python.org/pypi/docpie>`__
 
+.. image:: https://travis-ci.org/TylerTemp/docpie.svg?branch=dev
+    :target: https://travis-ci.org/TylerTemp/docpie
+
 .. contents::
 
 ChangeLog

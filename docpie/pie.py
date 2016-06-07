@@ -389,15 +389,44 @@ class Docpie(dict):
             help_msg = '%s\n\n%s' % (message, help_msg)
 
         args[0] = help_msg
-        old_dic = error.__dict__
-        error = error.__class__(*args)
-        error.__dict__ = old_dic
-        error.args = tuple(args)
+        error = self.clone_exception(error, args)
         error.usage_text = self.usage_text
         error.option_sections = self.option_sections
         error.msg = message
         logger.debug('re-raise %r', error)
         raise error
+
+    @staticmethod
+    def clone_exception(error, args):
+        """
+        return a new cloned error
+
+        when do:
+
+        ```
+        try:
+            do_sth()
+        except BaseException as e:
+            handle(e)
+
+        def handle(error):
+            # do sth with error
+            raise e  # <- won't work!
+
+        This can generate a new cloned error of the same class
+
+        Parameters
+        ----------
+        error: the caught error
+        args: the new args to init the cloned error
+
+        Returns
+        -------
+        new error of the same class
+        """
+        new_error = error.__class__(*args)
+        new_error.__dict__ = error.__dict__
+        return new_error
 
     @staticmethod
     def help_handler(docpie, flag):
