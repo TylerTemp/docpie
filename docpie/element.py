@@ -246,7 +246,7 @@ class Option(Atom):
 
         current = argv.current()
         if current is None:
-            logger.info('no argv left')
+            logger.debug('no argv left')
             return False
 
         # self_value = self.dump_value()
@@ -298,7 +298,7 @@ class Option(Atom):
                 argv.current(index) == '--' and
                 argv.auto_dashes and
                 min(self.ref.arg_range()) > 0):
-            logger.info(
+            logger.debug(
                 '%s ref must fully match but failed because `--`', self)
             raise ExpectArgumentHitDoubleDashesExit(
                 ('/'.join(self.names) +
@@ -322,7 +322,7 @@ class Option(Atom):
         result = self.ref.match(to_match_ref_argv, repeat_match)
 
         if attached_value is not None and to_match_ref_argv:
-            logger.info('%s ref must fully match but failed for %s',
+            logger.debug('%s ref must fully match but failed for %s',
                         self, to_match_ref_argv)
             raise ExpectArgumentExit(
                 '%s requires argument(s).' % ('/'.join(self.names)),
@@ -544,7 +544,7 @@ class Argument(Atom):
     def match(self, argv, repeat_match):
 
         if not repeat_match and (self.value is not None and self.value != []):
-            logger.info('%s already has a value %s', self, self.value)
+            logger.debug('%s already has a value %s', self, self.value)
             return True
 
         if argv.option_only:
@@ -1288,7 +1288,7 @@ class OptionsShortcut(object):
         return self._hide.intersection(name)
 
     def arg_range(self):
-        logger.info('fixme: Unexpected call')
+        logger.debug('fixme: Unexpected call')
         return [0]
 
     def match(self, argv, repeat_match):
@@ -1300,7 +1300,7 @@ class OptionsShortcut(object):
                 lambda x: not hide.intersection(x[0].names), options):
 
             if not argv:
-                logger.info('argv run out before matching [options] %s(-%s)',
+                logger.debug('argv run out before matching [options] %s(-%s)',
                             options, self._hide)
                 return True
             logger.debug('[options] try %s matching %s', each, argv)

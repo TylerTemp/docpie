@@ -299,7 +299,7 @@ class Parser(object):
                     logger.debug('find %s for %s', exists_title, title)
                     return options
             else:
-                logger.info('%s options not found in %s',
+                logger.debug('%s options not found in %s',
                             title, title_opt_2_ins)
                 raise DocpieError('%s options not found' % title)
 
@@ -553,12 +553,12 @@ class OptionParser(Parser):
                      '%(description_str)r' % locals())
         if description_str.strip():
             indent = len(opt_str.expandtabs()) + len(separater.expandtabs())
-            logger.info('indent: %s', indent)
+            logger.debug('indent: %s', indent)
         else:
             indent = 2 + len(cls.indent_re.match(
                                  opt_str.expandtabs()
                             ).groupdict()['indent'])
-            logger.info('indent: %s', indent)
+            logger.debug('indent: %s', indent)
         return {'option': opt_str.strip(), 'indent': indent}
 
     @classmethod
@@ -684,7 +684,7 @@ class OptionParser(Parser):
                                   opt_ins, this_range, current_range))
 
         if len(current_range) > 1:
-            logger.info('too many possibilities: '
+            logger.debug('too many possibilities: '
                         'option %s expect %s arguments',
                         name, '/'.join(map(str, current_range)))
 

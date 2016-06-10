@@ -26,7 +26,7 @@ __all__ = ['docpie', 'Docpie',
 # it's not a good idea but it can avoid loop importing
 __version__ = Docpie._version
 
-__timestamp__ = 1465306004.753877  # last sumbit
+__timestamp__ = 1465577566.8933775  # last sumbit
 
 logger = getLogger('docpie')
 
