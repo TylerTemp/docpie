@@ -1,0 +1,151 @@
+_foo_get_index() {
+  local find_in index value i
+  index=-1
+  find_in=$1
+  value=$2
+
+  for i in "${!find_in[@]}"; do
+     if [[ "${find_in[$i]}" = "${value}" ]]; then
+         index=$i;
+         break
+     fi
+  done
+  echo "$i"
+}
+
+
+_foo() {
+  local cur prevs skip
+  cur=${COMP_WORDS[COMP_CWORD]}
+  if [[ $cur == --*=* ]]; then
+    cur=${hist#*=}
+    COMPREPLY=$(compgen -o filenames -A file -- "$cur")
+  else
+    COMPREPLY=($(_foo_usage_0) $(_foo_usage_1) $(_foo_usage_2))
+  fi
+}
+
+_foo_usage_0() {
+  local opt_name opt_max_arg opt_mix_arg opt_repeat cmd_name cmd_repeat arg_max
+  opt_name=('-a' '--about' '--sth' '-s' '--inf' '--force')
+  # opt_max_arg=(0 0 1 1 inf 1)
+  opt_arg=(0 0 1 1 1 1)
+  opt_repeat=(false false false false false false)
+
+  cmd_name=('cmd')
+  cmd_repeat=(false)
+
+  arg_max=inf
+
+  local cur prevs skip
+  cur=${COMP_WORDS[COMP_CWORD]}
+  prevs=${COMP_WORDS[@]::COMP_CWORD}
+
+  local hist is_ok result
+  is_ok=true
+  result=()
+  for hist in ${prevs[@]}; do
+    if [[ $skip -gt 0 ]]; then
+      ((skip--))
+      continue
+    if
+
+    case $hist in
+      --)
+        result=$(compgen -o filenames -A file -- "$cur")
+        break
+        ;;
+      --*)
+        if [[ $hist == --*=* ]]; then
+          hist=${hist#*=}
+          index=$(_foo_get_index opt_name $hist)
+          if [[ index == -1]]
+            is_ok=false
+            break
+          fi
+          if [[ ${opt_arg[$index]} -lt 1]]; then
+            is_ok=false
+            break
+          fi
+          opt_arg[$index]=((opt_arg[$index]-1))
+        else
+          index=$(_foo_get_index opt_name $hist)
+          if [[ index == -1 ]]; then
+            is_ok=false
+            break
+          else
+            skip=${opt_arg[$index]}
+            opt_arg[$index]=0
+          fi
+        fi
+
+        if [[ ${opt_repeat[$index]} == false ]]; then
+          opt_name=(${opt_name[@]::$index-1} ${opt_name[@]:$index})
+          opt_arg=(${opt_arg[@]::$index-1} ${opt_arg[@]:$index})
+          opt_repeat=(${opt_repeat[@]::$index-1} ${opt_repeat[@]:$index})
+        fi
+        ;;
+      -*)
+
+        ;;
+      *)
+        ;;
+    esac
+  done
+
+  if [[ is_ok == true ]]; then
+    echo $result
+  else
+    echo ""
+  fi
+}
+_foo_usage_1() {
+  local opt_name opt_max_arg opt_mix_arg opt_repeat cmd_name cmd_repeat arg_max
+  opt_name=('--else')
+  opt_max_arg=(0)
+  opt_min_arg=(0)
+  opt_repeat=(false)
+
+  cmd_name=()
+  cmd_repeat=()
+
+  arg_max=0
+
+  local cur prevs
+  cur=${COMP_WORDS[COMP_CWORD]}
+  prevs=${COMP_WORDS[@]::COMP_CWORD}
+
+  local history is_ok result
+  is_ok=true
+  result=()
+  for history in ${prevs[@]}; do
+    echo $history
+  done
+
+}
+_foo_usage_2() {
+  local opt_name opt_max_arg opt_mix_arg opt_repeat cmd_name cmd_repeat arg_max
+  opt_name=('--infinite')
+  opt_max_arg=(0)
+  opt_min_arg=(0)
+  opt_repeat=(false)
+
+  cmd_name=()
+  cmd_repeat=()
+
+  arg_max=0
+
+  local cur prevs
+  cur=${COMP_WORDS[COMP_CWORD]}
+  prevs=${COMP_WORDS[@]::COMP_CWORD}
+
+  local history is_ok result
+  is_ok=true
+  result=()
+  for history in ${prevs[@]}; do
+    echo $history
+  done
+
+}
+
+complete -F _foo foo
