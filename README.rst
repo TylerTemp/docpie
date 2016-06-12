@@ -9,7 +9,7 @@ docpie
 View on: `GitHub <https://github.com/TylerTemp/docpie/>`__ /
 `PyPi <https://pypi.python.org/pypi/docpie>`__
 
-.. image:: https://travis-ci.org/TylerTemp/docpie.svg?branch=dev
+.. image:: https://travis-ci.org/TylerTemp/docpie.svg?branch=master
     :target: https://travis-ci.org/TylerTemp/docpie
 
 .. contents::
@@ -17,10 +17,9 @@ View on: `GitHub <https://github.com/TylerTemp/docpie/>`__ /
 ChangeLog
 ---------
 
-version 0.3.3:
+version 0.3.4:
 
--   [fix] a logging is not use `docpie` logger
--   [fix] sometimes it does not print information when sys.argv is not correct
+-   [new] BASH tab-completion auto-generate script
 
 `full changelog & TODOs <https://github.com/TylerTemp/docpie/blob/master/CHANGELOG.md>`__
 
