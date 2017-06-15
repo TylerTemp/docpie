@@ -21,7 +21,7 @@ class Docpie(dict):
 
     # Docpie version
     # it's not a good idea but it can avoid loop importing
-    _version = '0.3.4'
+    _version = '0.3.5'
 
     option_name = 'Options:'
     usage_name = 'Usage:'
@@ -312,6 +312,7 @@ class Docpie(dict):
                 logger.debug('matching %s left %s, checking failed',
                             each, argv_clone)
 
+            each.reset()
             logger.debug('failed matching usage %s / %s', each, argv_clone)
 
         else:
