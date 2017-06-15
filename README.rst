@@ -17,9 +17,9 @@ View on: `GitHub <https://github.com/TylerTemp/docpie/>`__ /
 ChangeLog
 ---------
 
-version 0.3.4:
+version 0.3.5:
 
--   [new] BASH tab-completion auto-generate script
+-   [fix] `#5 Issue with optional this | or | that <https://github.com/TylerTemp/docpie/issues/5>`__
 
 `full changelog & TODOs <https://github.com/TylerTemp/docpie/blob/master/CHANGELOG.md>`__
 

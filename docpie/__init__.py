@@ -26,7 +26,7 @@ __all__ = ['docpie', 'Docpie',
 # it's not a good idea but it can avoid loop importing
 __version__ = Docpie._version
 
-__timestamp__ = 1465751214.668606  # last sumbit
+__timestamp__ = 1497537684.3899276  # last sumbit
 
 logger = getLogger('docpie')
 
@@ -70,7 +70,7 @@ def docpie(doc, argv=None, help=True, version=None,
         the "name" of your program. In each of your "usage" the "name" will be
         ignored. By default docpie will ignore the first element of your
         "usage".
-    case_sensitive: bool (default: False)
+    case_sensitive: bool (deprecated / default: False)
         specifies if it need case sensitive when matching
         "Usage:" and "Options:"
     optionsfirst: bool (default: False)

@@ -2502,6 +2502,21 @@ class NewErrorTest(unittest.TestCase):
         self.assertEqual(set(('--prepare', '--prefix')), set(error.ambiguous))
 
 
+class IssueTest(unittest.TestCase):
+
+    def test_issue_5(self):
+        """https://github.com/TylerTemp/docpie/issues/5"""
+        sys.argv = ['prog', '--bb', 'B', '--cc', 'C']
+        doc = '''Usage: pie.py [--aa=AA|--bb=BB] --cc=CC'''
+        pie = docpie(doc)
+        self.assertEqual(pie, {'--': False, '--aa': None, '--bb': 'B', '--cc': 'C'})
+
+        sys.argv = ['prog', '--aa', 'A', '--cc', 'C']
+        doc = '''Usage: pie.py [--aa=AA|--bb=BB] --cc=CC'''
+        pie = docpie(doc)
+        self.assertEqual(pie, {'--': False, '--aa': 'A', '--bb': None, '--cc': 'C'})
+
+
 class Writer(StringIO):
 
     if sys.hexversion >= 0x03000000:
@@ -2553,6 +2568,7 @@ def case():
         unittest.TestLoader().loadTestsFromTestCase(RunDefaultTest),
         unittest.TestLoader().loadTestsFromTestCase(APITest),
         unittest.TestLoader().loadTestsFromTestCase(NewErrorTest),
+        unittest.TestLoader().loadTestsFromTestCase(IssueTest),
     )
 
 
@@ -2566,5 +2582,5 @@ def main():
 
 if __name__ == '__main__':
     # bashlog.stdoutlogger(None, bashlog.DEBUG, True)
-    unittest.main()
-    # main()
+    # unittest.main()
+    main()

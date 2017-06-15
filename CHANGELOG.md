@@ -4,6 +4,27 @@
 *   Add a bash auto-complete tool [#2](https://github.com/TylerTemp/docpie/issues/2)
 *   Document needs a better organization
 
+## 0.3.5
+
+*   [fix] [#5](https://github.com/TylerTemp/docpie/issues/5):
+    for `this | or | that`, docpie will expand
+
+        Usage: (--a=<va> | --b=<vb>) --c=<vc>
+
+    as
+        Usage:
+            --a=<va> --c=<vc>
+            --b=<vv> --c=<vc>
+
+    which two c-s are the same object. if `--c` is matched in first situation but
+    `--a=<va> --c=<vc>` as a whole fails, `--c` should drop its value.
+
+    TODO: use a deep-copy when expand `|`
+
+## 0.3.4
+
+*   [new] BASH tab-completion auto-generate script
+
 ## 0.3.3
 
 *   [fix] a logging is not use `docpie` logger
