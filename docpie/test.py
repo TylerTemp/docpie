@@ -2516,7 +2516,7 @@ class IssueTest(unittest.TestCase):
         pie = docpie(doc)
         self.assertEqual(pie, {'--': False, '--aa': 'A', '--bb': None, '--cc': 'C'})
 
-    def test_issue_5(self):
+    def test_issue_6(self):
         """https://github.com/TylerTemp/docpie/issues/6"""
         doc = '''usage: pie.py [--aa=AA|[--bb=BB | --cc=CC]]'''
         sys.argv = ['prog']
