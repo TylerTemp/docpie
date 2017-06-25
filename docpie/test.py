@@ -2516,6 +2516,49 @@ class IssueTest(unittest.TestCase):
         pie = docpie(doc)
         self.assertEqual(pie, {'--': False, '--aa': 'A', '--bb': None, '--cc': 'C'})
 
+    def test_issue_5(self):
+        """https://github.com/TylerTemp/docpie/issues/6"""
+        doc = '''usage: pie.py [--aa=AA|[--bb=BB | --cc=CC]]'''
+        sys.argv = ['prog']
+        pie = docpie(doc)
+        self.assertEqual(pie, {'--': False, '--aa': None, '--bb': None, '--cc': None})
+
+        sys.argv = ['prog', '--aa', 'VA']
+        pie = docpie(doc)
+        self.assertEqual(pie, {'--': False, '--aa': 'VA', '--bb': None, '--cc': None})
+
+        sys.argv = ['prog', '--bb', 'VB']
+        pie = docpie(doc)
+        self.assertEqual(pie, {'--': False, '--aa': None, '--bb': 'VB', '--cc': None})
+
+
+        sys.argv = ['prog', '--cc=VC']
+        pie = docpie(doc)
+        self.assertEqual(pie, {'--': False, '--aa': None, '--bb': None, '--cc': 'VC'})
+
+        sys.argv = ['prog', '--aa=VA', '--bb', 'VB']
+        self.assertRaises(DocpieExit, docpie, doc)
+
+        sys.argv = ['prog', '--aa=VA', '--cc', 'VC']
+        self.assertRaises(DocpieExit, docpie, doc)
+
+        sys.argv = ['prog', '--bb=VB', '--cc', 'VC']
+        self.assertRaises(DocpieExit, docpie, doc)
+
+        doc = """Usage: prog [a | [b | [c | [d | e]]]]"""
+        sys.argv = ['prog']
+        pie = docpie(doc)
+        self.assertEqual(pie, {'--': False, 'a': False, 'b': False, 'c': False, 'd': False, 'e': False})
+
+        doc = """Usage: prog [a | [b | [c | [d | e]]]]"""
+        sys.argv = ['prog', 'd']
+        pie = docpie(doc)
+        self.assertEqual(pie, {'--': False, 'a': False, 'b': False, 'c': False, 'd': True, 'e': False})
+
+        doc = """Usage: prog [a | [b | [c | [d | e]]]]"""
+        sys.argv = ['prog', 'b', 'd']
+        self.assertRaises(DocpieExit, docpie, doc)
+
 
 class Writer(StringIO):
 
