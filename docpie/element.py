@@ -1120,15 +1120,83 @@ class Unit(list):
     def expand(self):
         cls = self.__class__
         repeat = self.repeat
+        logger.debug('expand %r', self)
         if len(self) == 1 and isinstance(self[0], Either):
-            return [cls(each, repeat=repeat) for each in self[0]]
+            coll = []
+            expanded = []
+            need_product = False
+            for each in self[0]:
+                # print(repr(each), isinstance(each, list) and not isinstance(each, Unit))
+                # if isinstance(each, list) and not isinstance(each, Unit):
+                #     coll.append(each)
+                #     continue
+                fixed_each = cls(each, repeat=self.repeat).fix()
+                exp = fixed_each.expand()
+                if len(exp) > 1:
+                    need_product = True
+                coll.append(fixed_each)
+                expanded.append(exp)
+
+            result = []
+            for each in expanded:
+                result.extend(each)
+            return result
+            #     # if len(exp) == 1:
+            #     #     coll.append(exp[0])
+            #     # else:
+            #     #     coll.append(exp)
+            #
+            # logger.debug('either 1 %r -> %r', self, coll)
+            # if need_product:
+            #     producted = []
+            #     for each in product(*expanded):
+            #         producted.append(list(each))
+            # else:
+            #     producted = coll
+            # logger.debug('either 2 %r -> %r', coll, producted)
+            # result = [cls(*x, repeat=self.repeat).fix() for x in producted]
+            #
+            # logger.debug('either 3 %r -> %r', producted, result)
+            # logger.info('done expand %r -> %r', self, result)
+            # return result
+            # coll = []
+            # for each in self[0]:
+            #     # if isinstance(each, list) and not isinstance(each, Unit):
+            #     #     coll.append(each)
+            #     #     continue
+            #     fixed_each = cls(each).fix()
+            #     if fixed_each is not None:
+            #         coll.append(fixed_each.expand())
+            #
+            # logger.debug('either first expand %r -> %r', self, coll)
+            #
+            # result = []
+            # logger.debug('either product %r', coll)
+            # for each in product(*coll):
+            #     logger.warning(each)
+            #     # elem = cls(*each).fix()
+            #     # if elem is not None:
+            #     #     result.append(elem)
+            # logger.debug('expand either %r -> %r', self, result)
+            # return result
+
+            # temp = [cls(each, repeat=repeat).fix().expand() for each in self[0]]
+            # logger.debug('temp=%r', temp)
+            # temp_coll = []
+            # for each in product(*temp):
+            #     logger.debug('product elem=%r', each)
+            #     temp_coll.append(list(each))
+            # result = temp_coll
+            # logger.debug('result=%r', result)
+            # logger.debug('expand %r -> %r', self, result)
+            # return result
 
         result = []
         for expanded in product(*(x.expand() for x in self)):
             # new = cls(*expanded, repeat=repeat)
             new = cls(*(e.copy() for e in expanded), repeat=repeat)
             result.append(new)
-
+        logger.debug('done expand %r -> %r', self, result)
         return result
 
     def matched(self):
@@ -1465,6 +1533,9 @@ class Either(list):
         for each in self:
             result.update(each.arg_range())
         return list(result)
+
+    def __repr__(self):
+        return 'Either(%s)' % (', '.join(repr(x) for x in self))
 
 
 def convert_2_dict(obj):

@@ -184,7 +184,7 @@ class Argv(list):
             logger.debug('insert %s into %s at %s', object, self, index)
             return super(Argv, self).insert(index, object)
 
-        logger.info('%s not in %s', flag, self.known)
+        logger.debug('%s not in %s', flag, self.known)
         # self.error = 'Unknown option: %s.' % flag
         raise UnknownOptionExit('Unknown option: %s.' % flag,
                                 option=flag,
