@@ -1120,7 +1120,7 @@ class Unit(list):
     def expand(self):
         cls = self.__class__
         repeat = self.repeat
-        logger.info('expand %r', self)
+        logger.debug('expand %r', self)
         if len(self) == 1 and isinstance(self[0], Either):
             coll = []
             expanded = []
@@ -1196,7 +1196,7 @@ class Unit(list):
             # new = cls(*expanded, repeat=repeat)
             new = cls(*(e.copy() for e in expanded), repeat=repeat)
             result.append(new)
-        logger.info('done expand %r -> %r', self, result)
+        logger.debug('done expand %r -> %r', self, result)
         return result
 
     def matched(self):
