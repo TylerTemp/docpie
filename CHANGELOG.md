@@ -4,9 +4,22 @@
 *   Add a bash auto-complete tool [#2](https://github.com/TylerTemp/docpie/issues/2)
 *   Document needs a better organization
 
+## 0.3.6
+
+*   [fix] [#6](https://github.com/TylerTemp/docpie/issues/6):
+
+    for `[a | [b | c] | d]`, docpie could not expand nested `|`. Now it will
+    be expanded as
+
+        a
+        b
+        c
+        d
+
 ## 0.3.5
 
 *   [fix] [#5](https://github.com/TylerTemp/docpie/issues/5):
+
     for `this | or | that`, docpie will expand
 
         Usage: (--a=<va> | --b=<vb>) --c=<vc>

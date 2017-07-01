@@ -17,9 +17,9 @@ View on: `GitHub <https://github.com/TylerTemp/docpie/>`__ /
 ChangeLog
 ---------
 
-version 0.3.5:
+version 0.3.6:
 
--   [fix] `#5 Issue with optional this | or | that <https://github.com/TylerTemp/docpie/issues/5>`__
+-   [fix] `#6 Either choice within an either choice <https://github.com/TylerTemp/docpie/issues/6>`__
 
 `full changelog & TODOs <https://github.com/TylerTemp/docpie/blob/master/CHANGELOG.md>`__
 
