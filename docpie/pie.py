@@ -2,6 +2,7 @@ import sys
 import logging
 
 import warnings
+import textwrap
 from docpie.error import DocpieExit
 from docpie.parser import UsageParser, OptionParser
 from docpie.element import convert_2_object, convert_2_dict
@@ -21,7 +22,7 @@ class Docpie(dict):
 
     # Docpie version
     # it's not a good idea but it can avoid loop importing
-    _version = '0.3.6'
+    _version = '0.3.7'
 
     option_name = 'Options:'
     usage_name = 'Usage:'
@@ -31,6 +32,7 @@ class Docpie(dict):
     auto2dashes = True
     name = None
     help = True
+    help_trim = 'python'
     version = None
     stdopt = True
     attachopt = True
@@ -43,7 +45,7 @@ class Docpie(dict):
     opt_names = []
     opt_names_required_max_args = {}
 
-    def __init__(self, doc=None, help=True, version=None,
+    def __init__(self, doc=None, help=True, version=None, help_trim='python',
                  stdopt=True, attachopt=True, attachvalue=True,
                  auto2dashes=True, name=None, case_sensitive=False,
                  optionsfirst=False, appearedonly=False, namedoptions=False,
@@ -68,6 +70,7 @@ class Docpie(dict):
             namedoptions=namedoptions)
 
         self.help = help
+        self.help_trim = help_trim
         self.version = version
         self.extra = extra
 
@@ -433,18 +436,76 @@ class Docpie(dict):
     def help_handler(docpie, flag):
         """Default help(`--help`, `-h`) handler. print help string and exit.
 
-        By default, flag startswith `--` will print the full `doc`,
-        otherwith, print "Usage" section and "Option" section.
+        when help = 'short_brief', flag startswith `--` will print the full `doc`,
+        `-` for "Usage" section and "Option" section only.
+        when help = 'short_brief_notice', flag startswith `--` will print the full `doc`,
+        `-` for "Usage" section and "Option" section only, with a message
+        "Use `--help` to see the full help messsage" in the end
+
+        otherwith(default), print the full `doc`
         """
-        if flag.startswith('--'):
-            print(docpie.doc)
+        help_type = docpie.help
+        help_trim = docpie.help_trim
+        if help_trim == 'python':
+            doc = Docpie.trim_python(docpie.doc)
+        elif help_trim == 'dedent':
+            doc = Docpie.trim_dedent(docpie.doc)
         else:
-            print(docpie.usage_text)
-            option_sections = docpie.option_sections
-            if option_sections:
+            doc = docpie.doc
+
+        if help_type == 'short_brief':
+            if flag.startswith('--'):
+                print(doc)
+            else:
+                print(docpie.usage_text.rstrip())
+                option_sections = docpie.option_sections
+                if option_sections:
+                    print('')
+                    print('\n'.join(option_sections.values()))
+        elif help_type == 'short_brief_notice':
+            if flag.startswith('--'):
+                print(doc)
+            else:
+                print(docpie.usage_text)
+                option_sections = docpie.option_sections
+                if option_sections:
+                    print('')
+                    print('\n'.join(option_sections.values()).rstrip())
                 print('')
-                print('\n'.join(option_sections.values()))
+                print('Use `--help` to see the full help messsage.')
+        else:
+            print(doc)
         sys.exit()
+
+    @staticmethod
+    def trim_python(docstring):
+        if not docstring:
+            return ''
+        # Convert tabs to spaces (following the normal Python rules)
+        # and split into a list of lines:
+        lines = docstring.expandtabs().splitlines()
+        # Determine minimum indentation (first line doesn't count):
+        # indent = sys.maxint
+        indent = None
+        for line in lines[1:]:
+            stripped = line.lstrip()
+            if stripped:
+                if indent is None:
+                    indent = len(line) - len(stripped)
+                else:
+                    indent = min(indent, len(line) - len(stripped))
+        # Remove indentation (first line is special):
+        trimmed = [lines[0].strip()]
+        # if indent < sys.maxint:
+        for line in lines[1:]:
+            trimmed.append(line[indent:].rstrip())
+        # Strip off trailing and leading blank lines:
+        while trimmed and not trimmed[-1]:
+            trimmed.pop()
+        while trimmed and not trimmed[0]:
+            trimmed.pop(0)
+        # Return a single string:
+        return '\n'.join(trimmed)
 
     @staticmethod
     def version_handler(docpie, flag):

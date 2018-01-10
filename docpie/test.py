@@ -1802,7 +1802,7 @@ Options: -a, --all=<here>
             else:
                 self.assertEqual(args, ())
 
-            self.assertEqual(f.read(), 'Usage: prog [-abc]\n')
+            self.assertEqual(f.read(), 'Usage: prog [-abc]')
 
     def test_option_disorder_match(self):
         doc = 'Usage: prog -b -a'
@@ -2437,6 +2437,27 @@ class APITest(unittest.TestCase):
         exception = cm.exception
         self.assertEqual(exception.args[0], 'version~')
 
+    def test_new_help_default(self):
+        """https://github.com/TylerTemp/docpie/issues/10"""
+        doc = """
+        Header
+            Usage: prog [options]
+
+            Options: -a
+                     -b
+
+            Some description
+"""
+        argv = ['prog', '-h']
+        with StdoutRedirect() as f:
+            with self.assertRaises(SystemExit) as cm:
+                docpie(doc, help=True, argv=argv)
+
+        stdout = f.read()
+        self.assertIn('Some description', stdout)
+        self.assertIn('Header', stdout)
+        self.assertEqual(doc, stdout)
+
 
 class NewErrorTest(unittest.TestCase):
 
@@ -2472,7 +2493,6 @@ class NewErrorTest(unittest.TestCase):
         sys.argv = ['prog', '--prefix']
         error = self.with_raise(ExpectArgumentExit)
         self.assertIn('--prefix', error.option)
-
 
     def test_short_option_expect_args(self):
         sys.argv = ['prog', '-p']

@@ -31,7 +31,7 @@ __timestamp__ = 1498888456.463992  # last sumbit
 logger = getLogger('docpie')
 
 
-def docpie(doc, argv=None, help=True, version=None,
+def docpie(doc, argv=None, help=True, version=None, help_trim='python',
            stdopt=True, attachopt=True, attachvalue=True,
            auto2dashes=True, name=None, case_sensitive=False,
            optionsfirst=False, appearedonly=False, namedoptions=False,
