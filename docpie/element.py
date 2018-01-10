@@ -497,6 +497,8 @@ class Command(Atom):
     def get_value(self, appeared_only, in_repeat):
         if in_repeat:
             value = int(self.value)
+            if appeared_only and value == 0:
+                value = -1
         else:
             value = self.value
 
@@ -619,8 +621,11 @@ class Argument(Atom):
         # Not work on py2.6
         # return {name: value for name in self.names}
         result = {}
-        for name in self.names:
-            result[name] = value
+        if appeared_only and self.value is None:
+            pass
+        else:
+            for name in self.names:
+                result[name] = value
         return result
 
     def get_sys_default_value(self, appeared_only, in_repeat):

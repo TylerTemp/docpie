@@ -17,9 +17,9 @@ View on: `GitHub <https://github.com/TylerTemp/docpie/>`__ /
 ChangeLog
 ---------
 
-version 0.3.6:
+version 0.3.7:
 
--   [fix] `#6 Either choice within an either choice <https://github.com/TylerTemp/docpie/issues/6>`__
+-   [fix] `#12 appearedonly not works for empty repeated Options <https://github.com/TylerTemp/docpie/issues/12>`__
 
 `full changelog & TODOs <https://github.com/TylerTemp/docpie/blob/master/CHANGELOG.md>`__
 

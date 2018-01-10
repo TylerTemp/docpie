@@ -2559,6 +2559,33 @@ class IssueTest(unittest.TestCase):
         sys.argv = ['prog', 'b', 'd']
         self.assertRaises(DocpieExit, docpie, doc)
 
+    def test_issue_12(self):
+        """https://github.com/TylerTemp/docpie/issues/12"""
+        doc = """Usage: prog [a]..."""
+        sys.argv = ['prog']
+        pie = docpie(doc, appearedonly=True)
+        self.assertEqual(pie, {'--': False})
+
+        doc = """Usage: prog [-a]..."""
+        sys.argv = ['prog']
+        pie = docpie(doc, appearedonly=True)
+        self.assertEqual(pie, {'--': False})
+
+        doc = """Usage: prog [<a>]..."""
+        sys.argv = ['prog']
+        pie = docpie(doc, appearedonly=True)
+        self.assertEqual(pie, {'--': False})
+
+        doc = """Usage: prog [<a>]..."""
+        sys.argv = ['prog']
+        pie = docpie(doc, appearedonly=False)
+        self.assertNotEqual(pie, {'--': False})
+
+        doc = """Usage: prog [[-a]...]"""
+        sys.argv = ['prog']
+        pie = docpie(doc, appearedonly=True)
+        self.assertEqual(pie, {'--': False})
+
 
 class Writer(StringIO):
 
