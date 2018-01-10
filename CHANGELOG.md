@@ -4,6 +4,11 @@
 *   Add a bash auto-complete tool [#2](https://github.com/TylerTemp/docpie/issues/2)
 *   Document needs a better organization
 
+## 0.3.8
+
+*   [fix] [#12](https://github.com/TylerTemp/docpie/issues/12), wrong way to
+    reset repeated Options
+
 ## 0.3.7
 
 *   [fix] [#12](https://github.com/TylerTemp/docpie/issues/12) `appearedonly`

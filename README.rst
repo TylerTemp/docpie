@@ -17,7 +17,7 @@ View on: `GitHub <https://github.com/TylerTemp/docpie/>`__ /
 ChangeLog
 ---------
 
-version 0.3.7:
+version 0.3.8:
 
 -   [fix] `#12 appearedonly not works for empty repeated Options <https://github.com/TylerTemp/docpie/issues/12>`__
 

@@ -158,6 +158,8 @@ class Option(Atom):
         # default = self.default
         names = self.names
         value = self.value
+        # if appeared_only and value is None:
+        #     return {}
         ref = self.ref
         logger.debug('%s in repeat: %s', self, in_repeat)
 
@@ -348,12 +350,13 @@ class Option(Atom):
         return True
 
     def reset(self):
-        value = self.value
-        if value is not None:
-            if value is True or value is False:
-                self.value = False
-            else:
-                self.value = 0
+        # value = self.value
+        # if value is not None:
+        #     if value is True or value is False:
+        #         self.value = False
+        #     else:
+        #         self.value = 0
+        self.value = None
 
         if self.ref is not None:
             self.ref.reset()
@@ -498,7 +501,7 @@ class Command(Atom):
         if in_repeat:
             value = int(self.value)
             if appeared_only and value == 0:
-                value = -1
+                return {}
         else:
             value = self.value
 

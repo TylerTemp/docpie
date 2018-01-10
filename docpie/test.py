@@ -2586,6 +2586,17 @@ class IssueTest(unittest.TestCase):
         pie = docpie(doc, appearedonly=True)
         self.assertEqual(pie, {'--': False})
 
+        doc = """Usage:
+            create [--vbf_version=VBFVERSION]
+                   [--description=DESCRIPTION]...
+                   [--parameter_settings=(PARAMETER PARAMETERVALUE)]
+                   [([--vbt_sort | --vbt_last] --sign=ADDRESS)]
+        """
+        sys.argv = ['prog', '--sign=0x00', '--vbt_last']
+        pie = docpie(doc, appearedonly=True)
+        self.assertEqual(pie, {'--': False,
+         '--sign': '0x00',
+         '--vbt_last': True})
 
 class Writer(StringIO):
 
