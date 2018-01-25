@@ -1794,7 +1794,7 @@ Options: -a, --all=<here>
             with StdoutRedirect() as f:
                 # help
                 with self.assertRaises(SystemExit) as e:
-                    docpie(doc)
+                    docpie(doc, help_style='raw')
 
             args = e.exception.args
             if len(args) == 1:
@@ -2456,8 +2456,83 @@ class APITest(unittest.TestCase):
         stdout = f.read()
         self.assertIn('Some description', stdout)
         self.assertIn('Header', stdout)
-        self.assertEqual(doc, stdout)
+        # self.assertEqual(doc, stdout)
+        default_doc_style = """\
+Header
+    Usage: prog [options]
 
+    Options: -a
+             -b
+
+    Some description
+"""
+        self.assertEqual(default_doc_style, stdout)
+        # assert False, repr(stdout)
+
+    def test_help_style_python(self):
+        doc = """
+        Header
+            Usage: prog [options]
+
+            Options: -a
+                     -b
+
+       Some description
+
+
+    """
+        argv = ['prog', '-h']
+        with StdoutRedirect() as f:
+            with self.assertRaises(SystemExit) as cm:
+                docpie(doc, help=True, help_style='python', argv=argv)
+
+        stdout = f.read()
+        self.assertIn('Some description', stdout)
+        self.assertIn('Header', stdout)
+        # self.assertEqual(doc, stdout)
+        python_style_doc = """\
+ Header
+     Usage: prog [options]
+
+     Options: -a
+              -b
+
+Some description
+"""
+        self.assertEqual(python_style_doc, stdout)
+        # assert False, repr(stdout)
+
+    def test_help_style_dedent(self):
+        doc = """
+        Header
+            Usage: prog [options]
+
+            Options: -a
+                     -b
+
+         Some description
+
+    """
+        argv = ['prog', '-h']
+        with StdoutRedirect() as f:
+            with self.assertRaises(SystemExit) as cm:
+                docpie(doc, help=True, help_style='dedent', argv=argv)
+
+        stdout = f.read()
+        self.assertIn('Some description', stdout)
+        self.assertIn('Header', stdout)
+        # self.assertEqual(doc, stdout)
+        python_style_doc = """
+Header
+    Usage: prog [options]
+
+    Options: -a
+             -b
+
+ Some description
+
+"""
+        self.assertEqual(python_style_doc, stdout)
 
 class NewErrorTest(unittest.TestCase):
 
@@ -2579,6 +2654,44 @@ class IssueTest(unittest.TestCase):
         sys.argv = ['prog', 'b', 'd']
         self.assertRaises(DocpieExit, docpie, doc)
 
+    def test_issue_12(self):
+        """https://github.com/TylerTemp/docpie/issues/12"""
+        doc = """Usage: prog [a]..."""
+        sys.argv = ['prog']
+        pie = docpie(doc, appearedonly=True)
+        self.assertEqual(pie, {'--': False})
+
+        doc = """Usage: prog [-a]..."""
+        sys.argv = ['prog']
+        pie = docpie(doc, appearedonly=True)
+        self.assertEqual(pie, {'--': False})
+
+        doc = """Usage: prog [<a>]..."""
+        sys.argv = ['prog']
+        pie = docpie(doc, appearedonly=True)
+        self.assertEqual(pie, {'--': False})
+
+        doc = """Usage: prog [<a>]..."""
+        sys.argv = ['prog']
+        pie = docpie(doc, appearedonly=False)
+        self.assertNotEqual(pie, {'--': False})
+
+        doc = """Usage: prog [[-a]...]"""
+        sys.argv = ['prog']
+        pie = docpie(doc, appearedonly=True)
+        self.assertEqual(pie, {'--': False})
+
+        doc = """Usage:
+            create [--vbf_version=VBFVERSION]
+                   [--description=DESCRIPTION]...
+                   [--parameter_settings=(PARAMETER PARAMETERVALUE)]
+                   [([--vbt_sort | --vbt_last] --sign=ADDRESS)]
+        """
+        sys.argv = ['prog', '--sign=0x00', '--vbt_last']
+        pie = docpie(doc, appearedonly=True)
+        self.assertEqual(pie, {'--': False,
+         '--sign': '0x00',
+         '--vbt_last': True})
 
 class Writer(StringIO):
 

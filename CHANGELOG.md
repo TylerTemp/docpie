@@ -4,6 +4,45 @@
 *   Add a bash auto-complete tool [#2](https://github.com/TylerTemp/docpie/issues/2)
 *   Document needs a better organization
 
+## 0.4.0
+
+*   [fix] [#10](https://github.com/TylerTemp/docpie/issues/10),
+    [#11](https://github.com/TylerTemp/docpie/issues/11) short help(`-h`) print
+    full doc
+*   [new] **breaking change**. [PEP-257](https://www.python.org/dev/peps/pep-0257/)
+    help message supported. add `help_style` for people how need to print
+    raw docsting as help message (the old way)
+
+    that means, when there is extra returning line, extra indent, they will be
+    trimly. This feature makes `docpie` work as most python doc tool.
+
+    This is very useful when your doc needs to be written as:
+
+
+        class Test(object):
+
+            def some_fun(self):
+                """
+                Usage: prog hello
+                """
+
+    and also in this way:
+
+        docpie.docpie("\n \n Usage: prog [-h]\n\n\n", ["prog", "-h"])
+        # will give `Usage: prog [-h]\n` instead of `\n \n Usage: prog [-h]\n\n\n\n`
+
+    supported value for `help_style`: `"python"`(default), `"dedent"`, `"raw"`
+
+## 0.3.8
+
+*   [fix] [#12](https://github.com/TylerTemp/docpie/issues/12), wrong way to
+    reset repeated Options
+
+## 0.3.7
+
+*   [fix] [#12](https://github.com/TylerTemp/docpie/issues/12) `appearedonly`
+    not works for empty repeated Options
+
 ## 0.3.6
 
 *   [fix] [#6](https://github.com/TylerTemp/docpie/issues/6):

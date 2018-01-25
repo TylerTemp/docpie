@@ -158,6 +158,8 @@ class Option(Atom):
         # default = self.default
         names = self.names
         value = self.value
+        # if appeared_only and value is None:
+        #     return {}
         ref = self.ref
         logger.debug('%s in repeat: %s', self, in_repeat)
 
@@ -348,12 +350,13 @@ class Option(Atom):
         return True
 
     def reset(self):
-        value = self.value
-        if value is not None:
-            if value is True or value is False:
-                self.value = False
-            else:
-                self.value = 0
+        # value = self.value
+        # if value is not None:
+        #     if value is True or value is False:
+        #         self.value = False
+        #     else:
+        #         self.value = 0
+        self.value = None
 
         if self.ref is not None:
             self.ref.reset()
@@ -497,6 +500,8 @@ class Command(Atom):
     def get_value(self, appeared_only, in_repeat):
         if in_repeat:
             value = int(self.value)
+            if appeared_only and value == 0:
+                return {}
         else:
             value = self.value
 
@@ -619,8 +624,11 @@ class Argument(Atom):
         # Not work on py2.6
         # return {name: value for name in self.names}
         result = {}
-        for name in self.names:
-            result[name] = value
+        if appeared_only and self.value is None:
+            pass
+        else:
+            for name in self.names:
+                result[name] = value
         return result
 
     def get_sys_default_value(self, appeared_only, in_repeat):

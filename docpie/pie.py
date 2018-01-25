@@ -22,7 +22,7 @@ class Docpie(dict):
 
     # Docpie version
     # it's not a good idea but it can avoid loop importing
-    _version = '0.3.7'
+    _version = '0.4.0'
 
     option_name = 'Options:'
     usage_name = 'Usage:'
@@ -32,7 +32,7 @@ class Docpie(dict):
     auto2dashes = True
     name = None
     help = True
-    help_trim = 'python'
+    help_style = 'python'
     version = None
     stdopt = True
     attachopt = True
@@ -45,7 +45,7 @@ class Docpie(dict):
     opt_names = []
     opt_names_required_max_args = {}
 
-    def __init__(self, doc=None, help=True, version=None, help_trim='python',
+    def __init__(self, doc=None, help=True, version=None, help_style='python',
                  stdopt=True, attachopt=True, attachvalue=True,
                  auto2dashes=True, name=None, case_sensitive=False,
                  optionsfirst=False, appearedonly=False, namedoptions=False,
@@ -70,7 +70,7 @@ class Docpie(dict):
             namedoptions=namedoptions)
 
         self.help = help
-        self.help_trim = help_trim
+        self.help_style = help_style
         self.version = version
         self.extra = extra
 
@@ -445,11 +445,13 @@ class Docpie(dict):
         otherwith(default), print the full `doc`
         """
         help_type = docpie.help
-        help_trim = docpie.help_trim
-        if help_trim == 'python':
-            doc = Docpie.trim_python(docpie.doc)
-        elif help_trim == 'dedent':
-            doc = Docpie.trim_dedent(docpie.doc)
+        help_style = docpie.help_style
+        if help_style == 'python':
+            doc = Docpie.help_style_python(docpie.doc)
+        elif help_style == 'dedent':
+            doc = Docpie.help_style_dedent(docpie.doc)
+        # elif help_style == 'raw':
+        #     doc = Docpie.help_style_raw(docpie.doc)
         else:
             doc = docpie.doc
 
@@ -464,7 +466,7 @@ class Docpie(dict):
                     print('\n'.join(option_sections.values()))
         elif help_type == 'short_brief_notice':
             if flag.startswith('--'):
-                print(doc)
+                sys.stdout.write(doc)
             else:
                 print(docpie.usage_text)
                 option_sections = docpie.option_sections
@@ -474,13 +476,13 @@ class Docpie(dict):
                 print('')
                 print('Use `--help` to see the full help messsage.')
         else:
-            print(doc)
+            sys.stdout.write(doc)
         sys.exit()
 
     @staticmethod
-    def trim_python(docstring):
+    def help_style_python(docstring):
         if not docstring:
-            return ''
+            return '\n'
         # Convert tabs to spaces (following the normal Python rules)
         # and split into a list of lines:
         lines = docstring.expandtabs().splitlines()
@@ -505,7 +507,11 @@ class Docpie(dict):
         while trimmed and not trimmed[0]:
             trimmed.pop(0)
         # Return a single string:
-        return '\n'.join(trimmed)
+        return '\n'.join(trimmed) + '\n'
+
+    @staticmethod
+    def help_style_dedent(docstring):
+        return textwrap.dedent(docstring)
 
     @staticmethod
     def version_handler(docpie, flag):
