@@ -26,13 +26,14 @@ __all__ = ['docpie', 'Docpie',
 # it's not a good idea but it can avoid loop importing
 __version__ = Docpie._version
 
-__timestamp__ = 1516875532.2475717  # last sumbit
+__timestamp__ = 1517166019.571253  # last sumbit
 
 logger = getLogger('docpie')
 
 
-def docpie(doc, argv=None, help=True, version=None, help_style='python',
+def docpie(doc, argv=None, help=True, version=None,
            stdopt=True, attachopt=True, attachvalue=True,
+           helpstyle='python',
            auto2dashes=True, name=None, case_sensitive=False,
            optionsfirst=False, appearedonly=False, namedoptions=False,
            extra=None):

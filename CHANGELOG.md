@@ -10,7 +10,7 @@
     [#11](https://github.com/TylerTemp/docpie/issues/11) short help(`-h`) print
     full doc
 *   [new] **breaking change**. [PEP-257](https://www.python.org/dev/peps/pep-0257/)
-    help message supported. add `help_style` for people how need to print
+    help message supported. add `helpstyle` for people how need to print
     raw docsting as help message (the old way)
 
     that means, when there is extra returning line, extra indent, they will be
@@ -31,7 +31,7 @@
         docpie.docpie("\n \n Usage: prog [-h]\n\n\n", ["prog", "-h"])
         # will give `Usage: prog [-h]\n` instead of `\n \n Usage: prog [-h]\n\n\n\n`
 
-    supported value for `help_style`: `"python"`(default), `"dedent"`, `"raw"`
+    supported value for `helpstyle`: `"python"`(default), `"dedent"`, `"raw"`
 
 ## 0.3.8
 

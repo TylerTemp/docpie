@@ -32,7 +32,7 @@ class Docpie(dict):
     auto2dashes = True
     name = None
     help = True
-    help_style = 'python'
+    helpstyle = 'python'
     version = None
     stdopt = True
     attachopt = True
@@ -45,8 +45,9 @@ class Docpie(dict):
     opt_names = []
     opt_names_required_max_args = {}
 
-    def __init__(self, doc=None, help=True, version=None, help_style='python',
+    def __init__(self, doc=None, help=True, version=None,
                  stdopt=True, attachopt=True, attachvalue=True,
+                 helpstyle='python',
                  auto2dashes=True, name=None, case_sensitive=False,
                  optionsfirst=False, appearedonly=False, namedoptions=False,
                  extra=None):
@@ -70,7 +71,7 @@ class Docpie(dict):
             namedoptions=namedoptions)
 
         self.help = help
-        self.help_style = help_style
+        self.helpstyle = helpstyle
         self.version = version
         self.extra = extra
 
@@ -387,12 +388,20 @@ class Docpie(dict):
         else:
             help_msg = self.usage_text
 
+        helpstyle = self.helpstyle
+        if helpstyle == 'python':
+            formated_help_msg = self.help_style_python(help_msg)
+        elif helpstyle == 'dedent':
+            formated_help_msg = self.help_style_dedent(help_msg)
+        else:
+            formated_help_msg = help_msg
+
         args = list(error.args)
         message = args[0]
         if message is not None:
-            help_msg = '%s\n\n%s' % (message, help_msg)
+            formated_help_msg = '%s\n\n%s' % (message, formated_help_msg)
 
-        args[0] = help_msg
+        args[0] = formated_help_msg
         error = self.clone_exception(error, args)
         error.usage_text = self.usage_text
         error.option_sections = self.option_sections
@@ -445,10 +454,10 @@ class Docpie(dict):
         otherwith(default), print the full `doc`
         """
         help_type = docpie.help
-        help_style = docpie.help_style
-        if help_style == 'python':
+        helpstyle = docpie.helpstyle
+        if helpstyle == 'python':
             doc = Docpie.help_style_python(docpie.doc)
-        elif help_style == 'dedent':
+        elif helpstyle == 'dedent':
             doc = Docpie.help_style_dedent(docpie.doc)
         # elif help_style == 'raw':
         #     doc = Docpie.help_style_raw(docpie.doc)

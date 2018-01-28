@@ -1794,7 +1794,7 @@ Options: -a, --all=<here>
             with StdoutRedirect() as f:
                 # help
                 with self.assertRaises(SystemExit) as e:
-                    docpie(doc, help_style='raw')
+                    docpie(doc, helpstyle='raw')
 
             args = e.exception.args
             if len(args) == 1:
@@ -2232,7 +2232,7 @@ OPTIONS:
         try:
             docpie(doc)
         except BaseException as e:
-            self.assertEqual(str(e), doc)
+            self.assertEqual(str(e), "Usage: prog\n")
         else:
             raise RuntimeError('Should raise here')
 
@@ -2484,7 +2484,7 @@ Header
         argv = ['prog', '-h']
         with StdoutRedirect() as f:
             with self.assertRaises(SystemExit) as cm:
-                docpie(doc, help=True, help_style='python', argv=argv)
+                docpie(doc, help=True, helpstyle='python', argv=argv)
 
         stdout = f.read()
         self.assertIn('Some description', stdout)
@@ -2516,7 +2516,7 @@ Some description
         argv = ['prog', '-h']
         with StdoutRedirect() as f:
             with self.assertRaises(SystemExit) as cm:
-                docpie(doc, help=True, help_style='dedent', argv=argv)
+                docpie(doc, help=True, helpstyle='dedent', argv=argv)
 
         stdout = f.read()
         self.assertIn('Some description', stdout)
