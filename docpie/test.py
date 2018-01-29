@@ -2232,7 +2232,7 @@ OPTIONS:
         try:
             docpie(doc)
         except BaseException as e:
-            self.assertEqual(str(e), "Usage: prog\n")
+            self.assertEqual(str(e), "Usage: prog")
         else:
             raise RuntimeError('Should raise here')
 
@@ -2692,6 +2692,34 @@ class IssueTest(unittest.TestCase):
         self.assertEqual(pie, {'--': False,
          '--sign': '0x00',
          '--vbt_last': True})
+
+    def test_issue_11(self):
+        """https://github.com/TylerTemp/docpie/issues/11"""
+        doc = """
+`SCRIPT` DESCRIPTION
+
+Usage:
+ SCRIPT [options]
+
+Options:
+ -h, --help   show help
+"""
+
+        expect = """\
+Unknown option: --no-such.
+
+Usage:
+ SCRIPT [options]
+
+Options:
+ -h, --help   show help"""  # note: no linebreaker
+
+        with self.assertRaises(UnknownOptionExit) as cm:
+            docpie(doc, argv=['prog', '--no-such'])
+
+        exception = cm.exception
+        self.assertEqual(exception.args[0], expect)
+
 
 class Writer(StringIO):
 

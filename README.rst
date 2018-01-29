@@ -17,37 +17,48 @@ View on: `GitHub <https://github.com/TylerTemp/docpie/>`__ /
 ChangeLog
 ---------
 
-version 0.4.0:
+version 0.4.1:
 
--   [fix] `#10 <https://github.com/TylerTemp/docpie/issues/10>`__,
-    `#11 <https://github.com/TylerTemp/docpie/issues/11>`__ short help(`-h`) print
-    full doc
--   [new] **breaking change**. `PEP-257 <https://www.python.org/dev/peps/pep-0257/>`__
-    help message supported. add ``helpstyle`` for people how need to print
-    raw docsting as help message (the old way)
-
-    that means, when there is extra returning line, extra indent, they will be
-    trimly. This feature makes ``docpie`` work as most python doc tool.
-
-    This is very useful when your doc needs to be written as:
+-   [fix] `#11 <https://github.com/TylerTemp/docpie/issues/11>`__ error handler.
+    Now ``docpie`` will print an extra `\n` when error occurs,
+    and leave two linebreakers between usage and option section
 
     .. code:: python
 
-        class Test(object):
+        """
+        `SCRIPT` DESCRIPTION
 
-            def some_fun(self):
-                """
-                Usage: prog hello
-                """
+        Usage:
+         SCRIPT [options]
 
-    and also in this way:
+        Options:
+         -h, --help   show help
 
-    .. code:: python
 
-        docpie.docpie("\n \n Usage: prog [-h]\n\n\n", ["prog", "-h"])
-        # will give `Usage: prog [-h]\n` instead of `\n \n Usage: prog [-h]\n\n\n\n`
+        """
 
-    supported value for ``helpstyle``: ``"python"`` (default), ``"dedent"``, ``"raw"``
+        import docpie
+
+        arguments = docpie.docpie(__doc__, argv=['prog', '--no-such'])
+        # // now
+        # Unknown option: --no-such.
+        #
+        # Usage:
+        #  SCRIPT [options]
+        # // always has one linebreaker here
+        # Options:
+        #  -h, --help   show help
+        # // only one linebreaker, as many programs do
+
+        # // before
+        # Unknown option: --no-such.
+        #
+        # Usage:
+        #  SCRIPT [options]
+        # Options:  // missing linebreaker
+        #  -h, --help   show help
+        #
+        # // more than one linebreakers
 
 `full changelog & TODOs <https://github.com/TylerTemp/docpie/blob/master/CHANGELOG.md>`__
 

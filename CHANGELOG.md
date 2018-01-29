@@ -4,6 +4,46 @@
 *   Add a bash auto-complete tool [#2](https://github.com/TylerTemp/docpie/issues/2)
 *   Document needs a better organization
 
+*   [fix] [#11](https://github.com/TylerTemp/docpie/issues/11) error handler.
+    Now ``docpie`` will print an extra `\n` when error occurs,
+    and leave two linebreakers between usage and option section
+
+    ```python
+    """
+    `SCRIPT` DESCRIPTION
+
+    Usage:
+     SCRIPT [options]
+
+    Options:
+     -h, --help   show help
+
+    """
+
+    import docpie
+
+    arguments = docpie.docpie(__doc__, argv=['prog', '--no-such'])
+    # // now
+    # Unknown option: --no-such.
+    #
+    # Usage:
+    #  SCRIPT [options]
+    # // always has one linebreaker here
+    # Options:
+    #  -h, --help   show help
+    # // only one linebreaker, as many programs do
+
+    # // before
+    # Unknown option: --no-such.
+    #
+    # Usage:
+    #  SCRIPT [options]
+    # Options:  // missing linebreaker
+    #  -h, --help   show help
+    #
+    # // more than one linebreakers
+    ```
+
 ## 0.4.0
 
 *   [fix] [#10](https://github.com/TylerTemp/docpie/issues/10),

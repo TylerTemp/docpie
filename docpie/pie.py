@@ -22,7 +22,7 @@ class Docpie(dict):
 
     # Docpie version
     # it's not a good idea but it can avoid loop importing
-    _version = '0.4.0'
+    _version = '0.4.1'
 
     option_name = 'Options:'
     usage_name = 'Usage:'
@@ -382,8 +382,8 @@ class Docpie(dict):
         logger.debug('handling %r', error)
 
         if self.option_sections:
-            help_msg = ('%s\n%s' %
-                        (self.usage_text,
+            help_msg = ('%s\n\n%s' %
+                        (self.usage_text.rstrip(),
                          '\n'.join(self.option_sections.values())))
         else:
             help_msg = self.usage_text
@@ -401,7 +401,7 @@ class Docpie(dict):
         if message is not None:
             formated_help_msg = '%s\n\n%s' % (message, formated_help_msg)
 
-        args[0] = formated_help_msg
+        args[0] = formated_help_msg.rstrip()  # remove `\n` because `raise` will auto add
         error = self.clone_exception(error, args)
         error.usage_text = self.usage_text
         error.option_sections = self.option_sections
