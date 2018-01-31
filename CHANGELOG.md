@@ -4,6 +4,8 @@
 *   Add a bash auto-complete tool [#2](https://github.com/TylerTemp/docpie/issues/2)
 *   Document needs a better organization
 
+## 0.4.1
+
 *   [fix] [#11](https://github.com/TylerTemp/docpie/issues/11) error handler.
     Now ``docpie`` will print an extra `\n` when error occurs,
     and leave two linebreakers between usage and option section
