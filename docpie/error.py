@@ -3,7 +3,7 @@ class DocpieException(BaseException):
 
 
 class DocpieExit(SystemExit, DocpieException):
-    """Exit in case user invoked progrm with aincorrect arguments."""
+    """Exit in case user invoked program with incorrect arguments."""
 
 
 class UnknownOptionExit(DocpieExit):
