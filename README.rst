@@ -111,7 +111,7 @@ Now run it
 
 Write a ``__doc__``, pass it to a function, DONE! Isn't it simple?
 
-`try it \>\> <http://docpie.comes.today/try?example=ship>`__
+`try it \>\> <http://docpie.notexists.top/try/?rexample=ship>`__
 
 Installation
 ------------
@@ -141,7 +141,7 @@ Get Start!
 Interested? Visit `Wiki <https://github.com/TylerTemp/docpie/wiki>`__
 and get start!
 
-Or you can `try it in your browser <http://docpie.comes.today/try/>`__
+Or you can `try it in your browser <http://docpie.notexists.top/try/>`__
 
 Why docpie?
 -----------
