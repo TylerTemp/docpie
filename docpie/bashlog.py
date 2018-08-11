@@ -166,7 +166,9 @@ def streamlogger(stream, logger=None, level=None, color=True):
     hdlr = logging.StreamHandler(stream)
     return _getlogger(hdlr, logger, level, color)
 
+
 getlogger = stdoutlogger
+
 
 if __name__ == '__main__':
     logger = getlogger('test1', DEBUG)

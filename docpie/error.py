@@ -23,6 +23,7 @@ class ArgumentExit(DocpieExit):
         self.option = option
         self.hit = hit
 
+
 class ExceptNoArgumentExit(ArgumentExit):
     """Option expects no argument
 

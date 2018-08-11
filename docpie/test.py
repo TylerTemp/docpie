@@ -10,7 +10,8 @@ from docpie.error import DocpieExit, \
                          ExceptNoArgumentExit, \
                          ExpectArgumentExit, \
                          ExpectArgumentHitDoubleDashesExit, \
-                         AmbiguousPrefixExit
+                         AmbiguousPrefixExit, \
+                         DocpieError
 import json
 
 try:
@@ -1618,8 +1619,8 @@ Options: -a, --all=<here>
 
         doc = 'Usage: prog [--prefix --prefer --prepare] [<args>...]'
 
-        sys.argv = \
-            'prog --prepare --prefer --prefix -- --prefi --prefe --prep'.split()
+        sys.argv = ['prog', '--prepare', '--prefer', '--prefix',
+                    '--', '--prefi', '--prefe', '--prep']
         self.eq(doc, {'--prefix': True, '--prefer': True, '--prepare': True,
                       '--': True, '<args>': ['--prefi', '--prefe', '--prep']})
 
@@ -1656,7 +1657,7 @@ Options: -a, --all=<here>
         self.fail(doc)
 
         sys.argv = ['prog', '-vv', '--', '-v']
-        self.eq(doc, {'-v': 2, '<arg>':'-v' ,'--': True})
+        self.eq(doc, {'-v': 2, '<arg>': '-v', '--': True})
 
         doc = '''Usage: prog (<a> | <b> <c>) <d>'''
         doc2 = '''Usage: prog (<b> <c> | <a>) <d>'''
@@ -1693,10 +1694,12 @@ Options: -a, --all=<here>
             serialization preview
 
         Options:
-            -p, --path=<path>           save or load path or filename[default: ./]
+            -p, --path=<path>           save or load path or \
+filename[default: ./]
             -f, --format=<format>...    save format, "json" or "pickle"
                                         [default: json pickle]
-            -n, --name=<name>           save or dump filename without extension,
+            -n, --name=<name>           save or dump filename without
+                                        extension,
                                         default is the same as this file
             -h, -?                      print usage
             --help                      print this message
@@ -1733,12 +1736,15 @@ Options: -a, --all=<here>
 
         sys.argv = ['prog', '--repeat=1', '--repeat=2',
                     '--another-repeat=1', '--another-repeat=2']
-        self.eq(doc, {'--repeat': ['1', '2'], '--another-repeat': ['1', '2'],
+        self.eq(doc, {'--repeat': ['1', '2'],
+                      '--another-repeat': ['1', '2'],
                       'cmd': 0, '<arg>': [],
                       '--': False})
 
-        sys.argv = ['prog', '--repeat=1', '--repeat=2', '--repeat=3'
-                                                        '--another-repeat=1', '--another-repeat=2']
+        sys.argv = [
+            'prog', '--repeat=1', '--repeat=2', '--repeat=3'
+            '--another-repeat=1', '--another-repeat=2'
+        ]
         self.fail(doc)
 
         sys.argv = ['prog', '--repeat=1', '--repeat=2',
@@ -1904,7 +1910,7 @@ Options:
         args = e.exception.args
         if len(args) == 1:
             if (platform.python_implementation().lower() == 'pypy' and
-                        sys.version_info == (2, 7, 3, 'final', 42)):
+                    sys.version_info == (2, 7, 3, 'final', 42)):
                 # it will give args == (0,), why?
                 return
 
@@ -2213,7 +2219,6 @@ OPTIONS:
         sys.argv = ['prog', '--long-opt']
         self.eq(doc, {'--': False, '--long': False, '--long-opt': True})
 
-
         doc = """
         Usage: prog --long=<opt>
                prog --long-opt
@@ -2297,7 +2302,8 @@ class APITest(unittest.TestCase):
 
         Usage:
           options_shortcut_example.py --help | --version
-          options_shortcut_example.py [options] (do --after=<float> [--grace])... <port>...
+          options_shortcut_example.py [options] \
+(do --after=<float> [--grace])... <port>...
 
         Arguments:
           <port>                   give port
@@ -2317,7 +2323,14 @@ class APITest(unittest.TestCase):
           --after=<float>          do smth after <float> time
           --grace                  do smth with grace
         """
-        argv = ['options_shortcut_example.py', '-n', '6', 'do', '--after=4', 'a.txt']
+        argv = [
+            'options_shortcut_example.py',
+            '-n',
+            '6',
+            'do',
+            '--after=4',
+            'a.txt'
+        ]
         expect = {
             '--': False,
             '--after': ['4'],
@@ -2341,7 +2354,8 @@ class APITest(unittest.TestCase):
 
         Usage:
           options_shortcut_example.py --help | --version
-          options_shortcut_example.py [options] (do [--after=<float>] [--grace])... <port>...
+          options_shortcut_example.py [options] (do [--after=<float>] \
+[--grace])... <port>...
 
         Arguments:
           <port>                   give port
@@ -2424,7 +2438,6 @@ class APITest(unittest.TestCase):
 
         exception = cm.exception
         self.assertEqual(exception.args[0], 'exit')
-
 
     def test_extra_override_version(self):
         # with StderrRedirect() as f:
@@ -2534,6 +2547,7 @@ Header
 """
         self.assertEqual(python_style_doc, stdout)
 
+
 class NewErrorTest(unittest.TestCase):
 
     def setUp(self):
@@ -2604,32 +2618,49 @@ class IssueTest(unittest.TestCase):
         sys.argv = ['prog', '--bb', 'B', '--cc', 'C']
         doc = '''Usage: pie.py [--aa=AA|--bb=BB] --cc=CC'''
         pie = docpie(doc)
-        self.assertEqual(pie, {'--': False, '--aa': None, '--bb': 'B', '--cc': 'C'})
+        self.assertEqual(
+            pie,
+            {'--': False, '--aa': None, '--bb': 'B', '--cc': 'C'}
+        )
 
         sys.argv = ['prog', '--aa', 'A', '--cc', 'C']
         doc = '''Usage: pie.py [--aa=AA|--bb=BB] --cc=CC'''
         pie = docpie(doc)
-        self.assertEqual(pie, {'--': False, '--aa': 'A', '--bb': None, '--cc': 'C'})
+        self.assertEqual(
+            pie,
+            {'--': False, '--aa': 'A', '--bb': None, '--cc': 'C'}
+        )
 
     def test_issue_6(self):
         """https://github.com/TylerTemp/docpie/issues/6"""
         doc = '''usage: pie.py [--aa=AA|[--bb=BB | --cc=CC]]'''
         sys.argv = ['prog']
         pie = docpie(doc)
-        self.assertEqual(pie, {'--': False, '--aa': None, '--bb': None, '--cc': None})
+        self.assertEqual(
+            pie,
+            {'--': False, '--aa': None, '--bb': None, '--cc': None}
+        )
 
         sys.argv = ['prog', '--aa', 'VA']
         pie = docpie(doc)
-        self.assertEqual(pie, {'--': False, '--aa': 'VA', '--bb': None, '--cc': None})
+        self.assertEqual(
+            pie,
+            {'--': False, '--aa': 'VA', '--bb': None, '--cc': None}
+        )
 
         sys.argv = ['prog', '--bb', 'VB']
         pie = docpie(doc)
-        self.assertEqual(pie, {'--': False, '--aa': None, '--bb': 'VB', '--cc': None})
-
+        self.assertEqual(
+            pie,
+            {'--': False, '--aa': None, '--bb': 'VB', '--cc': None}
+        )
 
         sys.argv = ['prog', '--cc=VC']
         pie = docpie(doc)
-        self.assertEqual(pie, {'--': False, '--aa': None, '--bb': None, '--cc': 'VC'})
+        self.assertEqual(
+            pie,
+            {'--': False, '--aa': None, '--bb': None, '--cc': 'VC'}
+        )
 
         sys.argv = ['prog', '--aa=VA', '--bb', 'VB']
         self.assertRaises(DocpieExit, docpie, doc)
@@ -2643,12 +2674,32 @@ class IssueTest(unittest.TestCase):
         doc = """Usage: prog [a | [b | [c | [d | e]]]]"""
         sys.argv = ['prog']
         pie = docpie(doc)
-        self.assertEqual(pie, {'--': False, 'a': False, 'b': False, 'c': False, 'd': False, 'e': False})
+        self.assertEqual(
+            pie,
+            {
+                '--': False,
+                'a': False,
+                'b': False,
+                'c': False,
+                'd': False,
+                'e': False
+            }
+        )
 
         doc = """Usage: prog [a | [b | [c | [d | e]]]]"""
         sys.argv = ['prog', 'd']
         pie = docpie(doc)
-        self.assertEqual(pie, {'--': False, 'a': False, 'b': False, 'c': False, 'd': True, 'e': False})
+        self.assertEqual(
+            pie,
+            {
+                '--': False,
+                'a': False,
+                'b': False,
+                'c': False,
+                'd': True,
+                'e': False
+            }
+        )
 
         doc = """Usage: prog [a | [b | [c | [d | e]]]]"""
         sys.argv = ['prog', 'b', 'd']
@@ -2689,9 +2740,10 @@ class IssueTest(unittest.TestCase):
         """
         sys.argv = ['prog', '--sign=0x00', '--vbt_last']
         pie = docpie(doc, appearedonly=True)
-        self.assertEqual(pie, {'--': False,
-         '--sign': '0x00',
-         '--vbt_last': True})
+        self.assertEqual(pie, {
+            '--': False,
+            '--sign': '0x00',
+            '--vbt_last': True})
 
     def test_issue_11(self):
         """https://github.com/TylerTemp/docpie/issues/11"""
@@ -2719,6 +2771,26 @@ Options:
 
         exception = cm.exception
         self.assertEqual(exception.args[0], expect)
+
+    def test_issue_9_error_handler(self):
+        """
+        https://github.com/TylerTemp/docpie/issues/9#issuecomment-354543053
+        """
+        doc = "Usage: prog whatever"
+
+        class Pie(Docpie):
+
+            usage_name = 'nosuch'
+
+        with self.assertRaises(DocpieError) as cm:
+            pie = Pie(doc, name='nosuch')
+            pie.docpie(argv=['prog', 'whatever'])
+
+        exception = cm.exception
+        exception_msg = exception.args[0]
+        self.assertIn('usage title', exception_msg)
+        self.assertIn('not found', exception_msg)
+        self.assertIn('nosuch', exception_msg)
 
 
 class Writer(StringIO):

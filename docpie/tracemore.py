@@ -51,7 +51,7 @@ def print_exc_plus(stream=sys.stdout):
         write(u('\t%20s = ' % key))
         try:
             write(u('%s\n' % value))
-        except:
+        except BaseException:
             write(u('<ERROR WHILE PRINTING VALUE>\n'))
     flush()
 

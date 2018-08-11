@@ -52,7 +52,7 @@ class Parser(object):
         assert atom is not None
 
         if atom in ('-', '--'):
-            return self.parse_dash(atom , token)
+            return self.parse_dash(atom, token)
 
         if atom.startswith('-'):
             result = self.parse_option_with_arg(atom, token)
@@ -250,8 +250,12 @@ class Parser(object):
                         ref_token = Token()
                         if ref_current in '([':
                             ref_token.append(ref_current)
-                            ref_token.extend(token.till_end_bracket(ref_current))
-                            ref_token.append(')' if ref_current == '(' else ']')
+                            ref_token.extend(
+                                token.till_end_bracket(ref_current)
+                            )
+                            ref_token.append(
+                                ')' if ref_current == '(' else ']'
+                            )
                         else:
                             ref_token.extend(('(', ref_current, ')'))
 
@@ -262,12 +266,14 @@ class Parser(object):
 
                         if len(ref_ins) != 1:
                             raise DocpieError(
-                                '%s announced difference in Options(%s) and Usage(%s)' %
+                                ('%s announced difference in '
+                                 'Options(%s) and Usage(%s)') %
                                 (current, ins_in_opt, ref_ins))
 
                         if ins_in_opt.ref != ref_ins[0]:
                             raise DocpieError(
-                                '%s announced difference in Options(%s) and Usage(%s)' %
+                                ('%s announced difference in '
+                                 'Options(%s) and Usage(%s)') %
                                 (current, ins_in_opt, ref_ins))
 
                         ins = atom_class(*args, **{'ref': ins_in_opt.ref})
@@ -300,12 +306,12 @@ class Parser(object):
                     return options
             else:
                 logger.debug('%s options not found in %s',
-                            title, title_opt_2_ins)
+                             title, title_opt_2_ins)
                 raise DocpieError('%s options not found' % title)
 
         return sum(title_opt_2_ins.values(), [])
 
-    formal_title_re = re.compile('[\-_]')
+    formal_title_re = re.compile(r'[\-_]')
 
     def formal_title(self, title):
         return self.formal_title_re.sub(' ', title.lower()).strip()
@@ -384,7 +390,7 @@ class OptionParser(Parser):
         self.option_name = option_name
         self.option_split_re = re.compile(
             self.option_split_re_str.format(option_name),
-            flags= re.DOTALL if case_sensitive else (re.DOTALL | re.IGNORECASE)
+            flags=re.DOTALL if case_sensitive else (re.DOTALL | re.IGNORECASE)
         )
 
         self.raw_content = {}
@@ -685,8 +691,8 @@ class OptionParser(Parser):
 
         if len(current_range) > 1:
             logger.debug('too many possibilities: '
-                        'option %s expect %s arguments',
-                        name, '/'.join(map(str, current_range)))
+                         'option %s expect %s arguments',
+                         name, '/'.join(map(str, current_range)))
 
         # TODO: check if current_ins contain Command(not allowed in fact)
         opt_ins.ref = current_ins
@@ -703,7 +709,9 @@ class OptionParser(Parser):
 class UsageParser(Parser):
 
     angle_bracket_re = re.compile(r'(<.*?>)')
-    wrap_symbol_re = re.compile(r'(\[[^\]\s]*?options\]|\.\.\.|\||\[|\]|\(|\))')
+    wrap_symbol_re = re.compile(
+        r'(\[[^\]\s]*?options\]|\.\.\.|\||\[|\]|\(|\))'
+    )
     split_re = re.compile(r'(\[[^\]\s]*?options\]|\S*<.*?>\S*)|\s+')
     # will match '-', '--', and
     # flag ::= "-" [ "-" ] chars "=<" chars ">"
@@ -783,7 +791,7 @@ class UsageParser(Parser):
 
         reallen = len(dic['name'])
         replace = ''.ljust(reallen)
-        drop_name = match.expand('%s\g<sep>\g<section>' % replace)
+        drop_name = match.expand('%s\\g<sep>\\g<section>' % replace)
         self.formal_content = self.drop_started_empty_lines(drop_name).rstrip()
 
     def parse_2_instance(self, name):
@@ -906,7 +914,6 @@ class UsageParser(Parser):
 
             outside_opts, opt_shortcuts = \
                 self.find_optionshortcut_and_outside_option_names(ins)
-
 
             logger.debug(outside_opts)
 

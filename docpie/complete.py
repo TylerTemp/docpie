@@ -49,6 +49,7 @@ def write_header(title, stream):
                   '# author: TylerTemp <tylertempdev@gmail.com>\n\n') %
                  __version__)
 
+
 def write_get_index(title, stream):
     stream.write((
         '_%s_get_index() {\n'
@@ -166,7 +167,8 @@ def write_usage_method(title, index, usage, stream):
         '        if [[ ${opt_repeat[$index]} == false ]]; then\n'
         '          opt_name=(${opt_name[@]::$index} ${opt_name[@]:$index+1})\n'
         '          opt_arg=(${opt_arg[@]::$index} ${opt_arg[@]:$index+1})\n'
-        '          opt_repeat=(${opt_repeat[@]::$index} ${opt_repeat[@]:$index+1})\n'
+        '          opt_repeat=(${opt_repeat[@]::$index} '
+        '${opt_repeat[@]:$index+1})\n'
         '        fi\n'
         '        ;;\n'
         '      -*)\n'
@@ -174,9 +176,11 @@ def write_usage_method(title, index, usage, stream):
         '        if [[ index != -1 ]]; then\n'
         '          hist_index=$(expr $hist_index + ${opt_arg[$index]} + 1)\n'
         '          if [[ ${opt_repeat[$index]} != true ]]; then\n'
-        '            opt_name=(${opt_name[@]::$index} ${opt_name[@]:$index+1})\n'
+        '            opt_name=(${opt_name[@]::$index} ${opt_name[@]:$index+1})'
+        '\n'
         '            opt_arg=(${opt_arg[@]::$index} ${opt_arg[@]:$index+1})\n'
-        '            opt_repeat=(${opt_repeat[@]::$index} ${opt_repeat[@]:$index+1})\n'
+        '            opt_repeat=(${opt_repeat[@]::$index} '
+        '${opt_repeat[@]:$index+1})\n'
         '          fi\n'
         '        else\n'
         '          hist_index=$(expr $hist_index + 1)\n'
@@ -186,8 +190,10 @@ def write_usage_method(title, index, usage, stream):
         '        index=$(_%(title)s_get_index $hist ${cmd_name[@]})\n'
         '        if [[ index != -1 ]]; then\n'
         '          if [[ ${cmd_repeat[$index]} != true ]]; then\n'
-        '            cmd_name=(${cmd_name[@]::$index} ${cmd_name[@]:$index+1})\n'
-        '            cmd_repeat=(${cmd_repeat[@]::$index} ${cmd_repeat[@]:$index+1})\n'
+        '            cmd_name=(${cmd_name[@]::$index} ${cmd_name[@]:$index+1})'
+        '\n'
+        '            cmd_repeat=(${cmd_repeat[@]::$index} '
+        '${cmd_repeat[@]:$index+1})\n'
         '          fi\n'
         '        else\n'
         '          arg_max=$(expr $arg_max - 1)\n'
@@ -205,7 +211,8 @@ def write_usage_method(title, index, usage, stream):
         '  fi\n\n'
 
         '  if [[ $arg_max == inf || $arg_max -ge 0 ]]; then\n'
-        '    result=($(compgen -W "${opt_name[*]} ${cmd_name[*]}" -- "$cur") $(compgen -o filenames -A file -- "$cur"))\n'
+        '    result=($(compgen -W "${opt_name[*]} ${cmd_name[*]}" -- "$cur") '
+        '$(compgen -o filenames -A file -- "$cur"))\n'
         '    echo "${result[@]}"\n'
         '  elif [[ $arg_max -eq 0 ]]; then\n'
         '    compgen -W "${opt_name[*]} ${cmd_name[*]}" -- "$cur"\n'

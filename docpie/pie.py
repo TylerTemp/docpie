@@ -3,7 +3,7 @@ import logging
 
 import warnings
 import textwrap
-from docpie.error import DocpieExit
+from docpie.error import DocpieExit, DocpieError
 from docpie.parser import UsageParser, OptionParser
 from docpie.element import convert_2_object, convert_2_dict
 from docpie.tokens import Argv
@@ -22,7 +22,7 @@ class Docpie(dict):
 
     # Docpie version
     # it's not a good idea but it can avoid loop importing
-    _version = '0.4.1'
+    _version = '0.4.2'
 
     option_name = 'Options:'
     usage_name = 'Usage:'
@@ -88,9 +88,14 @@ class Docpie(dict):
             self.stdopt, self.attachopt, self.attachvalue, self.namedoptions)
 
         uparser.parse_content(self.doc)
-        self.usage_text = uparser.raw_content
+        self.usage_text = usage_text = uparser.raw_content
         # avoid usage contains "Options:" word
-        prefix, _, suffix = self.doc.partition(self.usage_text)
+        if usage_text is None:
+            assert self.usage_name.lower() not in self.doc.lower()
+            raise DocpieError(
+                'usage title %r not found in doc' % (self.usage_name,)
+            )
+        prefix, _, suffix = self.doc.partition(usage_text)
 
         oparser.parse(prefix + suffix)
         self.option_sections = oparser.raw_content
@@ -225,7 +230,8 @@ class Docpie(dict):
                         final_value = value_in_usage
                     if option.ref is None and each.repeat:
                         final_value = int(final_value or 0)
-                # just add this key-value. Note all option here never been matched
+                # just add this key-value.
+                # Note all option here never been matched
                 elif self.appeared_only:
                     continue
                 else:
@@ -314,7 +320,7 @@ class Docpie(dict):
                     return each, argv_clone.dashes
 
                 logger.debug('matching %s left %s, checking failed',
-                            each, argv_clone)
+                             each, argv_clone)
 
             each.reset()
             logger.debug('failed matching usage %s / %s', each, argv_clone)
@@ -358,7 +364,9 @@ class Docpie(dict):
                             if not attachopt and index > 0:
                                 break
 
-                            logger.debug('check %s for %s', attached_name, auto)
+                            logger.debug(
+                                'check %s for %s', attached_name, auto
+                            )
 
                             stacked_name = '-' + attached_name
                             if stacked_name == auto:
@@ -401,7 +409,8 @@ class Docpie(dict):
         if message is not None:
             formated_help_msg = '%s\n\n%s' % (message, formated_help_msg)
 
-        args[0] = formated_help_msg.rstrip()  # remove `\n` because `raise` will auto add
+        # remove `\n` because `raise` will auto add
+        args[0] = formated_help_msg.rstrip()
         error = self.clone_exception(error, args)
         error.usage_text = self.usage_text
         error.option_sections = self.option_sections
@@ -445,10 +454,11 @@ class Docpie(dict):
     def help_handler(docpie, flag):
         """Default help(`--help`, `-h`) handler. print help string and exit.
 
-        when help = 'short_brief', flag startswith `--` will print the full `doc`,
-        `-` for "Usage" section and "Option" section only.
-        when help = 'short_brief_notice', flag startswith `--` will print the full `doc`,
-        `-` for "Usage" section and "Option" section only, with a message
+        when help = 'short_brief', flag startswith `--` will print
+        the full `doc`, `-` for "Usage" section and "Option" section only.
+        when help = 'short_brief_notice', flag startswith `--` will print
+        the full `doc`, `-` for "Usage" section and "Option" section only,
+        with a message.
         "Use `--help` to see the full help messsage" in the end
 
         otherwith(default), print the full `doc`
@@ -694,8 +704,10 @@ class Docpie(dict):
                 ))
 
         if self.doc is not None and reinit:
-            logger.warning('You changed the config that requires re-initialized'
-                           ' `Docpie` object. Create a new one instead')
+            logger.warning(
+                'You changed the config that requires re-initialized'
+                ' `Docpie` object. Create a new one instead'
+            )
             self._init()
 
     def _formal_extra(self, extra):

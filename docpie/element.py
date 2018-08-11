@@ -36,7 +36,7 @@ class Atom(object):
     flag_or_upper_re = re.compile(r'^(?P<hyphen>-{0,2})'
                                   r'($|[\da-zA-Z_][\da-zA-Z_\-]*$)')
     angular_bracket_re = re.compile(r'^<.*?>$')
-    options_re = re.compile('\[(?P<title>[^\s\]]*)options\]', re.IGNORECASE)
+    options_re = re.compile(r'\[(?P<title>[^\s\]]*)options\]', re.IGNORECASE)
 
     def __init__(self, *names, **kwargs):
         self.names = set(names)
@@ -274,7 +274,9 @@ class Option(Atom):
 
         if self.ref is None:
             if attached_value is not None:
-                if argv.stdopt and argv.attachopt and not find_it.startswith('--'):
+                if (argv.stdopt
+                        and argv.attachopt
+                        and not find_it.startswith('--')):
                     logger.debug("%s put -%s pack to argv %s",
                                  self, attached_value, argv)
                     argv.insert(index, '-' + attached_value, _from)
@@ -325,7 +327,7 @@ class Option(Atom):
 
         if attached_value is not None and to_match_ref_argv:
             logger.debug('%s ref must fully match but failed for %s',
-                        self, to_match_ref_argv)
+                         self, to_match_ref_argv)
             raise ExpectArgumentExit(
                 '%s requires argument(s).' % ('/'.join(self.names)),
                 option=self.names,
@@ -935,9 +937,13 @@ class Unit(list):
                 if rest_args is None:
                     return False
                 if isinstance(element, Required):
-                    return self.balance_required_value(ellipsis_args, rest_args)
+                    return self.balance_required_value(
+                        ellipsis_args, rest_args
+                    )
                 else:
-                    return self.balance_optional_value(ellipsis_args, rest_args)
+                    return self.balance_optional_value(
+                        ellipsis_args, rest_args
+                    )
         return False
 
     def can_lend_value(self, element):
@@ -1134,7 +1140,8 @@ class Unit(list):
             expanded = []
             need_product = False
             for each in self[0]:
-                # print(repr(each), isinstance(each, list) and not isinstance(each, Unit))
+                # print(repr(each), isinstance(each, list) and
+                #       not isinstance(each, Unit))
                 # if isinstance(each, list) and not isinstance(each, Unit):
                 #     coll.append(each)
                 #     continue
@@ -1188,7 +1195,8 @@ class Unit(list):
             # logger.debug('expand either %r -> %r', self, result)
             # return result
 
-            # temp = [cls(each, repeat=repeat).fix().expand() for each in self[0]]
+            # temp = [cls(each, repeat=repeat).fix().expand()
+            #         for each in self[0]]
             # logger.debug('temp=%r', temp)
             # temp_coll = []
             # for each in product(*temp):
@@ -1312,7 +1320,7 @@ class Optional(Unit):
     def match(self, argv, repeat_match):
         repeat = repeat_match or self.repeat
         logger.debug('matching %s with %s%s',
-                      self, argv, ', repeatedly' if repeat else '')
+                     self, argv, ', repeatedly' if repeat else '')
         func = (self.match_repeat if repeat else self.match_oneline)
 
         func(argv)
@@ -1377,7 +1385,7 @@ class OptionsShortcut(object):
 
             if not argv:
                 logger.debug('argv run out before matching [options] %s(-%s)',
-                            options, self._hide)
+                             options, self._hide)
                 return True
             logger.debug('[options] try %s matching %s', each, argv)
             each.match(argv, repeat_match)
@@ -1449,7 +1457,7 @@ class OptionsShortcut(object):
             'hide': tuple(obj._hide),
         }
 
-    formal_title_re = re.compile('[\-_]')
+    formal_title_re = re.compile('[\\-_]')
 
     @classmethod
     def convert_2_object(cls, dic, options, namedoptions):
@@ -1550,7 +1558,7 @@ def convert_2_dict(obj):
     return obj.convert_2_dict(obj)
 
 
-formal_title_re = re.compile('[\-_]')
+formal_title_re = re.compile('[\\-_]')
 
 
 def convert_2_object(dic, options, namedoptions):
