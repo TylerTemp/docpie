@@ -4,6 +4,35 @@
 *   Add a bash auto-complete tool [#2](https://github.com/TylerTemp/docpie/issues/2)
 *   Document needs a better organization
 
+## 0.4.2
+
+*   [fix] when no `options` section presented, fix the bug that `python` style
+    can not print properly when no match for `argv`:
+
+    e.g. for doc string:
+
+    ```
+    Usage:
+      test v1
+      test v2
+    ```
+
+    with no argument given, before 0.4.2 gives:
+
+    ```
+    Usage:
+    test v1
+    test v2
+    ```
+
+    afer this fix, it will give correctly:
+
+    ```
+    Usage:
+      test v1
+      test v2
+    ```
+
 ## 0.4.1
 
 *   [fix] [#11](https://github.com/TylerTemp/docpie/issues/11) error handler.

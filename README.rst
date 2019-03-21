@@ -17,48 +17,34 @@ View on: `GitHub <https://github.com/TylerTemp/docpie/>`__ /
 ChangeLog
 ---------
 
-version 0.4.1:
+version 0.4.2:
 
--   [fix] `#11 <https://github.com/TylerTemp/docpie/issues/11>`__ error handler.
-    Now ``docpie`` will print an extra `\n` when error occurs,
-    and leave two linebreakers between usage and option section
+-   [fix] when no ``options`` section presented, fix the bug that ``python`` style
+    can not print properly when no match for ``argv``:
 
-    .. code:: python
+    e.g. for doc string:
 
-        """
-        `SCRIPT` DESCRIPTION
+    .. code:: bash
 
         Usage:
-         SCRIPT [options]
+          test v1
+          test v2
 
-        Options:
-         -h, --help   show help
+    with no argument given, before 0.4.2 gives:
 
+    .. code:: bash
 
-        """
+        Usage:
+        test v1
+        test v2
 
-        import docpie
+    afer this fix, it will give correctly:
 
-        arguments = docpie.docpie(__doc__, argv=['prog', '--no-such'])
-        # // now
-        # Unknown option: --no-such.
-        #
-        # Usage:
-        #  SCRIPT [options]
-        # // always has one linebreaker here
-        # Options:
-        #  -h, --help   show help
-        # // only one linebreaker, as many programs do
+    .. code:: bash
 
-        # // before
-        # Unknown option: --no-such.
-        #
-        # Usage:
-        #  SCRIPT [options]
-        # Options:  // missing linebreaker
-        #  -h, --help   show help
-        #
-        # // more than one linebreakers
+        Usage:
+          test v1
+          test v2
 
 `full changelog & TODOs <https://github.com/TylerTemp/docpie/blob/master/CHANGELOG.md>`__
 

@@ -242,6 +242,70 @@ class BasicTest(unittest.TestCase):
         true(args['-a'])
         true(args['-b'])
 
+    def test_no_match_no_option(self):
+        doc = """
+Usage:
+    trydocpie web [<port>]
+    trydocpie gen <folder>
+        """
+        expected = """\
+Usage:
+    trydocpie web [<port>]
+    trydocpie gen <folder>
+"""
+        argv = [__file__]
+        errout = None
+        try:
+            docpie(doc, argv)
+        except DocpieExit as e:
+            errout = str(e)
+        # let raise handle enter
+        self.assertEqual(errout + '\n', expected)
+
+    def test_no_match_no_option_dedent_correct(self):
+        doc = """
+    Usage:
+        trydocpie web [<port>]
+        trydocpie gen <folder>
+        """
+        expected = """\
+Usage:
+    trydocpie web [<port>]
+    trydocpie gen <folder>
+"""
+        argv = [__file__]
+        errout = None
+        try:
+            docpie(doc, argv)
+        except DocpieExit as e:
+            errout = str(e)
+        # let raise handle enter
+        self.assertEqual(errout + '\n', expected)
+
+    def test_no_match_no_option_with_description_dedent_correct(self):
+        doc = """
+whatever I said here.
+Doesn't matter.
+
+    Usage:
+        trydocpie web [<port>]
+        trydocpie gen <folder>
+
+Doesn't matter either.
+        """
+        expected = """\
+Usage:
+    trydocpie web [<port>]
+    trydocpie gen <folder>
+"""
+        argv = [__file__]
+        errout = None
+        try:
+            docpie(doc, argv)
+        except DocpieExit as e:
+            errout = str(e)
+        # let raise handle enter
+        self.assertEqual(errout + '\n', expected)
 
 class RunDefaultTest(unittest.TestCase):
 

@@ -22,7 +22,7 @@ class Docpie(dict):
 
     # Docpie version
     # it's not a good idea but it can avoid loop importing
-    _version = '0.4.2'
+    _version = '0.4.3'
 
     option_name = 'Options:'
     usage_name = 'Usage:'
@@ -398,7 +398,10 @@ class Docpie(dict):
 
         helpstyle = self.helpstyle
         if helpstyle == 'python':
-            formated_help_msg = self.help_style_python(help_msg)
+            if self.option_sections:  # option section will help dedent
+                formated_help_msg = self.help_style_python(help_msg)
+            else:  # only need to dedent it
+                formated_help_msg = self.help_style_dedent(help_msg)
         elif helpstyle == 'dedent':
             formated_help_msg = self.help_style_dedent(help_msg)
         else:
