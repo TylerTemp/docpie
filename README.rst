@@ -7,7 +7,7 @@ docpie
 `An easy and Pythonic way to create your POSIX command line`
 
 View on: `GitHub <https://github.com/TylerTemp/docpie/>`__ /
-`PyPi <https://pypi.python.org/pypi/docpie>`__
+`PyPi <https://pypi.org/project/docpie/>`__
 
 .. image:: https://travis-ci.org/TylerTemp/docpie.svg?branch=master
     :target: https://travis-ci.org/TylerTemp/docpie
