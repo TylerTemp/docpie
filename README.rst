@@ -66,7 +66,7 @@ Life is short, man! You can simply do it this way:
 
    Usage:
      cp.py [options] <source_file> <target_file>
-     cp.py [options] <source_file>... <target_directory> <log_file>
+     cp.py [options] <source_file>... <target_directory>
 
    Options:
      -h -? --help    print this screen
@@ -82,7 +82,7 @@ Now run it
 
 .. code:: bash
 
-   $ python cp.py a.txt b.txt c.txt /tmp cp.log
+   $ python cp.py a.txt b.txt c.txt /tmp
    {'--': False,
     '--help': False,
     '--verbose': False,
@@ -90,7 +90,6 @@ Now run it
     '-?': False,
     '-h': False,
     '-v': False,
-    '<log_file>': 'cp.log',
     '<source_file>': ['a.txt', 'b.txt', 'c.txt'],
     '<target_directory>': '/tmp',
     '<target_file>': None}
