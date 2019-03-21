@@ -25,7 +25,7 @@
     test v2
     ```
 
-    afer this fix, it will give correctly:
+    after this fix, it will give correctly:
 
     ```
     Usage:

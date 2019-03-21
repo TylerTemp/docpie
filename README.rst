@@ -38,7 +38,7 @@ version 0.4.2:
         test v1
         test v2
 
-    afer this fix, it will give correctly:
+    after this fix, it will give correctly:
 
     .. code:: bash
 
