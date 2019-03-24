@@ -96,7 +96,7 @@ Now run it
 
 Write a ``__doc__``, pass it to a function, DONE! Isn't it simple?
 
-`try it \>\> <http://docpie.comes.today/try?example=ship>`__
+`try it \>\> <http://docpie.comes.today/try?argvnofilestr=a.txt%20b.txt%20c.txt%20%2Ftmp&doc=My%20copy%20script%5Cn%5CnUsage%3A%5Cn%20%20cp.py%20%5Boptions%5D%20%3Csource_file%3E%20%3Ctarget_file%3E%5Cn%20%20cp.py%20%5Boptions%5D%20%3Csource_file%3E...%20%3Ctarget_directory%3E%5Cn%5CnOptions%3A%5Cn%20%20-h%20-%3F%20--help%20%20%20%20print%20this%20screen%5Cn%20%20--version%20%20%20%20%20%20%20print%20the%20version%20of%20this%20script%5Cn%20%20-v%20--verbose%20%20%20%20print%20more%20information%20while%20%20running&replace=on>`__
 
 Installation
 ------------
