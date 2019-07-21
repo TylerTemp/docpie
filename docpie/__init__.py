@@ -26,7 +26,7 @@ __all__ = ['docpie', 'Docpie',
 # it's not a good idea but it can avoid loop importing
 __version__ = Docpie._version
 
-__timestamp__ = 1553178291.793742  # last sumbit
+__timestamp__ = 1563716272.669418  # last sumbit
 
 logger = getLogger('docpie')
 
@@ -126,9 +126,14 @@ def docpie(doc, argv=None, help=True, version=None,
         warnings.warn('`case_sensitive` is deprecated, `docpie` is always '
                       'case insensitive')
 
-    kwargs = locals()
-    argv = kwargs.pop('argv')
-    pie = Docpie(**kwargs)
+    # kwargs = locals()
+    # argv = kwargs.pop('argv')
+    pie = Docpie(doc, help, version,
+                 stdopt, attachopt, attachvalue,
+                 helpstyle,
+                 auto2dashes, name, case_sensitive,
+                 optionsfirst, appearedonly, namedoptions,
+                 extra)
     pie.docpie(argv)
     return pie
 
