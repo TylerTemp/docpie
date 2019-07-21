@@ -17,34 +17,9 @@ View on: `GitHub <https://github.com/TylerTemp/docpie/>`__ /
 ChangeLog
 ---------
 
-version 0.4.2:
+version 0.4.3:
 
--   [fix] when no ``options`` section presented, fix the bug that ``python`` style
-    can not print properly when no match for ``argv``:
-
-    e.g. for doc string:
-
-    .. code:: bash
-
-        Usage:
-          test v1
-          test v2
-
-    with no argument given, before 0.4.2 gives:
-
-    .. code:: bash
-
-        Usage:
-        test v1
-        test v2
-
-    after this fix, it will give correctly:
-
-    .. code:: bash
-
-        Usage:
-          test v1
-          test v2
+-   [change] no more ``locals`` under ``docpie`` function as it may lead to unexpected behavior
 
 `full changelog & TODOs <https://github.com/TylerTemp/docpie/blob/master/CHANGELOG.md>`__
 

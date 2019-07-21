@@ -4,6 +4,10 @@
 *   Add a bash auto-complete tool [#2](https://github.com/TylerTemp/docpie/issues/2)
 *   Document needs a better organization
 
+## 0.4.3
+
+*   [change] no more `locals` under `docpie` function as it may lead to unexpected behavior
+
 ## 0.4.2
 
 *   [fix] when no `options` section presented, fix the bug that `python` style
