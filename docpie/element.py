@@ -1285,7 +1285,7 @@ class Required(Unit):
             return True
         logger.debug('%s matching failed %s / %s', self, matched_status, argv)
         if self.balance_value_for_ellipsis_args():
-            logger.debug('%s balace value succeed', self)
+            logger.debug('%s balance value succeed', self)
             return True
 
         self.load_value(self_value)

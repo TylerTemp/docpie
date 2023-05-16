@@ -1,5 +1,6 @@
 '''A simple wrapper of logging that support color prompt on Linux'''
 import sys
+import subprocess
 import logging
 from logging import DEBUG, INFO, WARNING, ERROR, CRITICAL
 
@@ -27,7 +28,16 @@ _TO_UNICODE_TYPES = (unicode_type, type(None))
 
 def _stderr_supports_color():
     if sys.platform.startswith('win32'):
-        return False
+        # return 'CYGWIN' in platform.system().lower()
+        try:
+            p = subprocess.Popen(['uname', '-a'], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        except FileNotFoundError:
+            return False
+        p_out, p_err = p.communicate()
+        if p.returncode != 0:
+            return False
+        p_content = p_out.decode('utf-8')
+        return 'cygwin' in p_content.lower()
     if hasattr(sys.stderr, 'isatty') and sys.stderr.isatty():
         return True
     return False

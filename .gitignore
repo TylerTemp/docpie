@@ -11,3 +11,5 @@ MANIFEST
 note
 nohup.out
 .idea
+/Pipfile
+/Pipfile.lock
