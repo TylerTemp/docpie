@@ -911,18 +911,23 @@ class Unit(list):
         # <arg>... <arg2> cmd
         # <arg>... (cmd <arg2>) <arg3>
         # see: https://github.com/TylerTemp/docpie/blob/master/CHANGELOG.md#026
+        logger.debug("try balance %s", self)
 
         ele_num = len(self)
         for index_1, element in enumerate(self, 1):
             if index_1 == ele_num:    # the last one
+                logger.debug("already last one: %s", self)
                 return False
 
             if isinstance(element, OptionsShortcut):
+                logger.debug("skip OptionsShortcut: %s", self)
                 continue
 
             if not element.matched():
                 logger.debug('%r not matched at all', element)
-                return False
+                if isinstance(element, Required):
+                    return False
+                continue
 
             # 1, 0, list
             ellipsis_args = self.can_lend_value(element)
@@ -1287,6 +1292,8 @@ class Required(Unit):
         if self.balance_value_for_ellipsis_args():
             logger.debug('%s balance value succeed', self)
             return True
+        else:
+            logger.debug('%s balance value failed', self)
 
         self.load_value(self_value)
         argv.load_value(argv_value)

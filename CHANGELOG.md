@@ -4,6 +4,18 @@
 *   Add a bash auto-complete tool [#2](https://github.com/TylerTemp/docpie/issues/2)
 *   Document needs a better organization
 
+## 0.4.4
+
+*   [fix] change auto balance function, fix the issue that won't work for this case:
+    
+        """
+        Usage: 
+            cp [options] <source>... <target>
+        
+        Options:
+            -R
+        """
+
 ## 0.4.3
 
 *   [change] no more `locals` under `docpie` function as it may lead to unexpected behavior

@@ -17,12 +17,19 @@ View on: `GitHub <https://github.com/TylerTemp/docpie/>`__ /
 ChangeLog
 ---------
 
-version 0.4.3:
+version 0.4.4:
 
--   [change] no more ``locals`` under ``docpie`` function as it may lead to unexpected behavior
+change auto balance function, fix the issue that won't work for this case
 
-`full changelog & TODOs <https://github.com/TylerTemp/docpie/blob/master/CHANGELOG.md>`__
+.. code-block:: python
 
+    """
+    Usage:
+        cp [options] <source>... <target>
+
+    Options:
+        -R
+    """
 
 Summary
 -------

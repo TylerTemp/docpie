@@ -2285,6 +2285,17 @@ OPTIONS:
                       '--verbose': False, '-X': False, '-R': True,
                       '<source_file>': ['source'],
                       '<target_directory>': 'target'})
+        sys.argv = ['prog', 'source1', 'source2', 'target', '-R']
+        self.eq(doc, {'--': False, '-f': False, '-v': False,
+                      '--verbose': False, '-X': False, '-R': True,
+                      '<source_file>': ['source1', 'source2'],
+                      '<target_directory>': 'target'})
+
+        sys.argv = ['prog', 'source1', '-R', 'source2', 'target']
+        self.eq(doc, {'--': False, '-f': False, '-v': False,
+                      '--verbose': False, '-X': False, '-R': True,
+                      '<source_file>': ['source1', 'source2'],
+                      '<target_directory>': 'target'})
 
     def test_option_section_title(self):
         doc = """

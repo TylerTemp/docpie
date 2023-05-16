@@ -21,8 +21,8 @@ logger = logging.getLogger('docpie')
 class Docpie(dict):
 
     # Docpie version
-    # it's not a good idea but it can avoid loop importing
-    _version = '0.4.3'
+    # it's not a good idea, but it can avoid loop importing
+    _version = '0.4.4'
 
     option_name = 'Options:'
     usage_name = 'Usage:'
