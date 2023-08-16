@@ -6,12 +6,12 @@ import platform
 
 from docpie import docpie, Docpie
 from docpie.error import DocpieExit, \
-                         UnknownOptionExit, \
-                         ExceptNoArgumentExit, \
-                         ExpectArgumentExit, \
-                         ExpectArgumentHitDoubleDashesExit, \
-                         AmbiguousPrefixExit, \
-                         DocpieError
+    UnknownOptionExit, \
+    ExceptNoArgumentExit, \
+    ExpectArgumentExit, \
+    ExpectArgumentHitDoubleDashesExit, \
+    AmbiguousPrefixExit, \
+    DocpieError
 import json
 
 try:
@@ -307,22 +307,23 @@ Usage:
         # let raise handle enter
         self.assertEqual(errout + '\n', expected)
 
+
 class RunDefaultTest(unittest.TestCase):
 
-    def eq(self, doc, result, argv=None):
+    def will_equal(self, doc, result, argv=None):
         self.assertEqual(docpie(doc, argv), result)
 
-    def fail(self, doc, argv=None, exception=DocpieExit):
+    def will_fail(self, doc, argv=None, exception=DocpieExit):
         self.assertRaises(exception, docpie, doc, argv)
 
     def test_empty(self):
         doc = '''Usage: prog'''
 
         sys.argv = ['prog']
-        self.eq(doc, {'--': False})
+        self.will_equal(doc, {'--': False})
 
         sys.argv = ['prog', '-xxx']
-        self.fail(doc)
+        self.will_fail(doc)
 
     def test_one_option_short(self):
         doc = '''Usage: prog [options]
@@ -331,13 +332,13 @@ Options: -a  All.
 '''
 
         sys.argv = ['prog']
-        self.eq(doc, {'-a': False, '--': False})
+        self.will_equal(doc, {'-a': False, '--': False})
 
         sys.argv = ['prog', '-a']
-        self.eq(doc, {'-a': True, '--': False})
+        self.will_equal(doc, {'-a': True, '--': False})
 
         sys.argv = ['prog', '-x']
-        self.fail(doc)
+        self.will_fail(doc)
 
     def test_one_option_long(self):
         doc = '''Usage: prog [options]
@@ -346,13 +347,13 @@ Options: --all  All.
 
 '''
         sys.argv = ['prog']
-        self.eq(doc, {'--all': False, '--': False})
+        self.will_equal(doc, {'--all': False, '--': False})
 
         sys.argv = ['prog', '--all']
-        self.eq(doc, {'--all': True, '--': False})
+        self.will_equal(doc, {'--all': True, '--': False})
 
         sys.argv = ['prog', '--xxx']
-        self.fail(doc)
+        self.will_fail(doc)
 
     def test_one_option_alias(self):
         doc = '''Usage: prog [options]
@@ -360,11 +361,11 @@ Options: --all  All.
         Options: -v, --verbose  Verbose.
         '''
         sys.argv = ['prog', '--verbose']
-        self.eq(doc, {'-v': True, '--verbose': True, '--': False})
+        self.will_equal(doc, {'-v': True, '--verbose': True, '--': False})
 
         # Support since 0.0.7
         sys.argv = ['prog', '--ver']
-        self.eq(doc, {'-v': True, '--verbose': True, '--': False})
+        self.will_equal(doc, {'-v': True, '--verbose': True, '--': False})
 
         doc = '''Usage: prog [options]
 
@@ -380,8 +381,8 @@ Options: --all  All.
 Options: -v, --ver, --verbose  Verbose.
 '''
         sys.argv = ['prog', '--ver']
-        self.eq(doc, {'-v': True, '--ver': True, '--verbose': True,
-                      '--': False})
+        self.will_equal(doc, {'-v': True, '--ver': True, '--verbose': True,
+                              '--': False})
 
     def test_attached_value_short_opt(self):
         doc = '''Usage: prog [options]
@@ -390,13 +391,13 @@ Options: -p PATH
 '''
 
         sys.argv = ['prog', '-p', 'home/']
-        self.eq(doc, {'-p': 'home/', '--': False})
+        self.will_equal(doc, {'-p': 'home/', '--': False})
 
         sys.argv = ['prog', '-phome/']
-        self.eq(doc, {'-p': 'home/', '--': False})
+        self.will_equal(doc, {'-p': 'home/', '--': False})
 
         sys.argv = ['prog', '-p']
-        self.fail(doc)
+        self.will_fail(doc)
 
     def test_equal_value_long_opt(self):
         doc = '''Usage: prog [options]
@@ -405,21 +406,21 @@ Options: --path <path>
 '''
 
         sys.argv = ['prog', '--path', 'home/']
-        self.eq(doc, {'--path': 'home/', '--': False})
+        self.will_equal(doc, {'--path': 'home/', '--': False})
 
         sys.argv = ['prog', '--path=home/']
-        self.eq(doc, {'--path': 'home/', '--': False})
+        self.will_equal(doc, {'--path': 'home/', '--': False})
 
         # Note: same from docopt since 0.0.7
         sys.argv = ['prog', '--pa=home/']
-        self.eq(doc, {'--path': 'home/', '--': False})
+        self.will_equal(doc, {'--path': 'home/', '--': False})
 
         # Note: same from docopt since 0.0.7
         sys.argv = ['prog', '--pa', 'home/']
-        self.eq(doc, {'--path': 'home/', '--': False})
+        self.will_equal(doc, {'--path': 'home/', '--': False})
 
         sys.argv = ['prog', '--path']
-        self.fail(doc)
+        self.will_fail(doc)
 
     def test_value_for_short_long_opt(self):
         expected = {'-p': 'root', '--path': 'root', '--': False}
@@ -429,7 +430,7 @@ Options: -p PATH, --path=<path>  Path to files.
 '''
 
         sys.argv = ['prog', '-proot']
-        self.eq(doc, expected)
+        self.will_equal(doc, expected)
 
         doc = '''Usage: prog [options]
 
@@ -437,10 +438,10 @@ Options: -p --path PATH  Path to files.
 '''
 
         sys.argv = ['prog', '-p', 'root']
-        self.eq(doc, expected)
+        self.will_equal(doc, expected)
 
         sys.argv = ['prog', '--path', 'root']
-        self.eq(doc, expected)
+        self.will_equal(doc, expected)
 
     def test_opt_default(self):
         doc = '''Usage: prog [options]
@@ -449,10 +450,10 @@ Options:
  -p PATH  Path to files [default: ./]
 '''
         sys.argv = ['prog']
-        self.eq(doc, {'-p': './', '--': False})
+        self.will_equal(doc, {'-p': './', '--': False})
 
         sys.argv = ['prog', '-phome']
-        self.eq(doc, {'-p': 'home', '--': False})
+        self.will_equal(doc, {'-p': 'home', '--': False})
 
         # Note: a little different from docpie
         doc = '''UsAgE: prog [options]
@@ -462,10 +463,10 @@ OpTiOnS: --path=<files>  Path to files
 '''
 
         sys.argv = ['prog']
-        self.eq(doc, {'--path': '/root', '--': False})
+        self.will_equal(doc, {'--path': '/root', '--': False})
 
         sys.argv = ['prog', '--path=home']
-        self.eq(doc, {'--path': 'home', '--': False})
+        self.will_equal(doc, {'--path': 'home', '--': False})
 
     def test_more_short_opt(self):
         doc = '''usage: prog [options]
@@ -477,18 +478,18 @@ options:
 '''
 
         sys.argv = ['prog', '-a', '-r', '-m', 'hello']
-        self.eq(doc, {'-a': True, '-r': True, '-m': 'hello',
-                      '--': False})
+        self.will_equal(doc, {'-a': True, '-r': True, '-m': 'hello',
+                              '--': False})
 
         sys.argv = ['prog', '-ramsth']
-        self.eq(doc, {'-a': True, '-r': True, '-m': 'sth',
-                      '--': False})
+        self.will_equal(doc, {'-a': True, '-r': True, '-m': 'sth',
+                              '--': False})
 
         sys.argv = ['prog', '-a', '-r']
-        self.eq(doc, {'-a': True, '-r': True, '-m': None,
-                      '--': False})
+        self.will_equal(doc, {'-a': True, '-r': True, '-m': None,
+                              '--': False})
 
-    def test_furture_not_support_now(self):
+    def test_future_not_support_now(self):
         doc = '''Usage: prog [options]
 
 Options: --version
@@ -496,20 +497,20 @@ Options: --version
 '''
 
         sys.argv = ['prog', '--version']
-        self.eq(doc, {'--version': True, '--verbose': False,
-                      '--': False})
+        self.will_equal(doc, {'--version': True, '--verbose': False,
+                              '--': False})
 
         sys.argv = ['prog', '--verbose']
-        self.eq(doc, {'--version': False, '--verbose': True,
-                      '--': False})
+        self.will_equal(doc, {'--version': False, '--verbose': True,
+                              '--': False})
 
         sys.argv = ['prog', '--ver']
-        self.fail(doc)
+        self.will_fail(doc)
 
         # support since 0.0.7
         sys.argv = ['prog', '--verb']
-        self.eq(doc, {'--version': False, '--verbose': True,
-                      '--': False})
+        self.will_equal(doc, {'--version': False, '--verbose': True,
+                              '--': False})
 
     def test_opt_format(self):
         doc = '''usage: prog [-a -r -m <msg>]
@@ -521,8 +522,7 @@ options:
 '''
 
         sys.argv = ['prog', '-rammed']
-        self.eq(doc, {'-a': True, '-r': True, '-m': 'med',
-                      '--': False})
+        self.will_equal(doc, {'-a': True, '-r': True, '-m': 'med', '--': False})
 
         # New in 0.1.1
         doc = '''usage: prog [-armMSG]
@@ -531,7 +531,7 @@ options: -a        Add
          -r        Remote
          -m <msg>  Message
 '''
-        self.eq(doc, {'--': False, '-a': True, '-m': 'med', '-r': True})
+        self.will_equal(doc, {'--': False, '-a': True, '-m': 'med', '-r': True})
 
         doc = '''usage: prog [-arm MEG]
 
@@ -540,8 +540,7 @@ options: -a        Add
          -m <msg>  Message
 '''
         sys.argv = sys.argv = ['prog', '-r', '-a', '-m', 'Hello']
-        self.eq(doc, {'-a': True, '-r': True, '-m': 'Hello',
-                      '--': False})
+        self.will_equal(doc, {'-a': True, '-r': True, '-m': 'Hello', '--': False})
 
     def test_opt_no_shortcut(self):
         doc = '''usage: prog -a -b
@@ -552,18 +551,16 @@ options:
  '''
 
         sys.argv = ['prog', '-a', '-b']
-        self.eq(doc, {'-a': True, '-b': True,
-                      '--': False})
+        self.will_equal(doc, {'-a': True, '-b': True, '--': False})
 
         sys.argv = ['prog', '-b', '-a']
-        self.eq(doc, {'-a': True, '-b': True,
-                      '--': False})
+        self.will_equal(doc, {'-a': True, '-b': True, '--': False})
 
         sys.argv = ['prog', '-a']
-        self.fail(doc)
+        self.will_fail(doc)
 
         sys.argv = ['prog']
-        self.fail(doc)
+        self.will_fail(doc)
 
     def test_required_opt_unit(self):
         doc = '''usage: prog (-a -b)
@@ -573,18 +570,18 @@ options: -a
 '''
 
         sys.argv = ['prog', '-a', '-b']
-        self.eq(doc, {'-a': True, '-b': True,
-                      '--': False})
+        self.will_equal(doc, {'-a': True, '-b': True,
+                              '--': False})
 
         sys.argv = ['prog', '-b', '-a']
-        self.eq(doc, {'-a': True, '-b': True,
-                      '--': False})
+        self.will_equal(doc, {'-a': True, '-b': True,
+                              '--': False})
 
         sys.argv = ['prog', '-a']
-        self.fail(doc)
+        self.will_fail(doc)
 
         sys.argv = ['prog']
-        self.fail(doc)
+        self.will_fail(doc)
 
     def test_optional_opt_in_usage(self):
         doc = '''usage: prog [-a] -b
@@ -594,22 +591,22 @@ options: -a
  '''
 
         sys.argv = ['prog', '-a', '-b']
-        self.eq(doc, {'-a': True, '-b': True,
-                      '--': False})
+        self.will_equal(doc, {'-a': True, '-b': True,
+                              '--': False})
 
         sys.argv = ['prog', '-b', '-a']
-        self.eq(doc, {'-a': True, '-b': True,
-                      '--': False})
+        self.will_equal(doc, {'-a': True, '-b': True,
+                              '--': False})
 
         sys.argv = ['prog', '-b']
-        self.eq(doc, {'-a': False, '-b': True,
-                      '--': False})
+        self.will_equal(doc, {'-a': False, '-b': True,
+                              '--': False})
 
         sys.argv = ['prog', '-a']
-        self.fail(doc)
+        self.will_fail(doc)
 
         sys.argv = ['prog']
-        self.fail(doc)
+        self.will_fail(doc)
 
     def test_required_unit_opt(self):
         doc = '''usage: prog [(-a -b)]
@@ -619,22 +616,22 @@ options: -a
 '''
 
         sys.argv = ['prog', '-a', '-b']
-        self.eq(doc, {'-a': True, '-b': True,
-                      '--': False})
+        self.will_equal(doc, {'-a': True, '-b': True,
+                              '--': False})
 
         sys.argv = ['prog', '-b', '-a']
-        self.eq(doc, {'-a': True, '-b': True,
-                      '--': False})
+        self.will_equal(doc, {'-a': True, '-b': True,
+                              '--': False})
 
         sys.argv = ['prog', '-b']
-        self.fail(doc)
+        self.will_fail(doc)
 
         sys.argv = ['prog', '-a']
-        self.fail(doc)
+        self.will_fail(doc)
 
         sys.argv = ['prog']
-        self.eq(doc, {'-a': False, '-b': False,
-                      '--': False})
+        self.will_equal(doc, {'-a': False, '-b': False,
+                              '--': False})
 
     def test_required_either_opt(self):
         doc = '''usage: prog (-a|-b)
@@ -643,18 +640,18 @@ options: -a
          -b
 '''
         sys.argv = ['prog', '-a', '-b']
-        self.fail(doc)
+        self.will_fail(doc)
 
         sys.argv = ['prog']
-        self.fail(doc)
+        self.will_fail(doc)
 
         sys.argv = ['prog', '-b']
-        self.eq(doc, {'-a': False, '-b': True,
-                      '--': False})
+        self.will_equal(doc, {'-a': False, '-b': True,
+                              '--': False})
 
         sys.argv = ['prog', '-a']
-        self.eq(doc, {'-a': True, '-b': False,
-                      '--': False})
+        self.will_equal(doc, {'-a': True, '-b': False,
+                              '--': False})
 
     def test_optional_either_opt(self):
         doc = '''usage: prog [ -a | -b ]
@@ -664,107 +661,107 @@ options: -a
 '''
 
         sys.argv = ['prog', '-a', '-b']
-        self.fail(doc)
+        self.will_fail(doc)
 
         sys.argv = ['prog']
-        self.eq(doc, {'-a': False, '-b': False,
-                      '--': False})
+        self.will_equal(doc, {'-a': False, '-b': False,
+                              '--': False})
 
         sys.argv = ['prog', '-a']
-        self.eq(doc, {'-a': True, '-b': False,
-                      '--': False})
+        self.will_equal(doc, {'-a': True, '-b': False,
+                              '--': False})
 
         sys.argv = ['prog', '-b']
-        self.eq(doc, {'-a': False, '-b': True,
-                      '--': False})
+        self.will_equal(doc, {'-a': False, '-b': True,
+                              '--': False})
 
     def test_one_arg(self):
         doc = '''usage: prog <arg>'''
 
         sys.argv = ['prog', '10']
-        self.eq(doc, {'<arg>': '10', '--': False})
+        self.will_equal(doc, {'<arg>': '10', '--': False})
 
         sys.argv = ['prog', '10', '20']
-        self.fail(doc)
+        self.will_fail(doc)
 
         sys.argv = ['prog']
-        self.fail(doc)
+        self.will_fail(doc)
 
     def test_one_optional_arg(self):
         doc = '''usage: prog [<arg>]'''
 
         sys.argv = ['prog', '10']
-        self.eq(doc, {'<arg>': '10', '--': False})
+        self.will_equal(doc, {'<arg>': '10', '--': False})
 
         sys.argv = ['prog', '10', '20']
-        self.fail(doc)
+        self.will_fail(doc)
 
         sys.argv = ['prog']
-        self.eq(doc, {'<arg>': None, '--': False})
+        self.will_equal(doc, {'<arg>': None, '--': False})
 
     def test_more_arg(self):
         doc = '''usage: prog <kind> <name> <type>'''
 
         sys.argv = ['prog', '10', '20', '40']
-        self.eq(doc, {'<kind>': '10', '<name>': '20', '<type>': '40',
-                      '--': False})
+        self.will_equal(doc, {'<kind>': '10', '<name>': '20', '<type>': '40',
+                              '--': False})
 
         sys.argv = ['prog', '10', '20']
-        self.fail(doc)
+        self.will_fail(doc)
 
         sys.argv = ['prog']
-        self.fail(doc)
+        self.will_fail(doc)
 
     def test_optional_group_arg(self):
         doc = '''usage: prog <kind> [<name> <type>]'''
 
         sys.argv = ['prog', '10', '20', '40']
-        self.eq(doc, {'<kind>': '10', '<name>': '20', '<type>': '40',
-                      '--': False})
+        self.will_equal(doc, {'<kind>': '10', '<name>': '20', '<type>': '40',
+                              '--': False})
 
         sys.argv = ['prog', '10', '20']
-        self.eq(doc, {'<kind>': '10', '<name>': '20', '<type>': None,
-                      '--': False})
+        self.will_equal(doc, {'<kind>': '10', '<name>': '20', '<type>': None,
+                              '--': False})
 
         sys.argv = ['prog', '10']
-        self.eq(doc, {'<kind>': '10', '<name>': None, '<type>': None,
-                      '--': False})
+        self.will_equal(doc, {'<kind>': '10', '<name>': None, '<type>': None,
+                              '--': False})
 
         sys.argv = ['prog']
-        self.fail(doc)
+        self.will_fail(doc)
 
     def test_arg_in_branch_alias(self):
         doc = '''usage: prog [<name>|<pattern>]'''
 
         sys.argv = ['prog', 'docpie']
-        self.eq(doc, {'<name>': 'docpie', '<pattern>': 'docpie',
-                      '--': False})
+        self.will_equal(doc, {'<name>': 'docpie', '<pattern>': 'docpie',
+                              '--': False})
 
     def test_arg_branch_unbalanced(self):
         doc = '''usage: prog [<kind> | <name> <type>]'''
 
         sys.argv = ['prog', '10', '20', '40']
-        self.fail(doc)
+        self.will_fail(doc)
 
         # fixed in 0.0.9
         sys.argv = ['prog', '10', '20']
-        self.eq(doc, {'<kind>': None, '<name>': '10', '<type>': '20',
-                      '--': False})
+        self.will_equal(doc, {'<kind>': None, '<name>': '10', '<type>': '20',
+                              '--': False})
 
         sys.argv = ['prog', '10']
-        self.eq(doc, {'<kind>': '10', '<name>': None, '<type>': None,
-                      '--': False})
+        self.will_equal(doc, {'<kind>': '10', '<name>': None, '<type>': None,
+                              '--': False})
 
         # But this works
         doc = '''usage: prog [<name> <type> | <kind>]'''
         sys.argv = ['prog', '10', '20']
-        self.eq(doc, {'<kind>': None, '<name>': '10', '<type>': '20',
-                      '--': False})
+        self.will_equal(doc, {'<kind>': None, '<name>': '10', '<type>': '20',
+                              '--': False})
 
         # This also works
         sys.argv = ['prog', '10']
-        self.eq(doc, {'<kind>': '10', '<name>': None, '<type>': None,
-                      '--': False})
+        self.will_equal(doc, {'<kind>': '10', '<name>': None, '<type>': None,
+                              '--': False})
 
     def test_unit_arg_opt_combo(self):
         doc = '''usage: prog (<kind> --all | <name>)
@@ -773,92 +770,92 @@ options:
  --all'''
 
         sys.argv = ['prog', '10', '--all']
-        self.eq(doc, {'<kind>': '10', '<name>': None, '--all': True,
-                      '--': False})
+        self.will_equal(doc, {'<kind>': '10', '<name>': None, '--all': True,
+                              '--': False})
 
         sys.argv = ['prog', '10']
-        self.eq(doc, {'<kind>': None, '<name>': '10', '--all': False,
-                      '--': False})
+        self.will_equal(doc, {'<kind>': None, '<name>': '10', '--all': False,
+                              '--': False})
 
         sys.argv = ['prog']
-        self.fail(doc)
+        self.will_fail(doc)
 
     def test_multi_arg(self):
         doc = '''usage: prog [<name> <name>]'''
 
         sys.argv = ['prog', '10', '20']
-        self.eq(doc, {'<name>': ['10', '20'], '--': False})
+        self.will_equal(doc, {'<name>': ['10', '20'], '--': False})
 
         sys.argv = ['prog', '10']
-        self.eq(doc, {'<name>': ['10'], '--': False})
+        self.will_equal(doc, {'<name>': ['10'], '--': False})
 
         sys.argv = ['prog']
-        self.eq(doc, {'<name>': [], '--': False})
+        self.will_equal(doc, {'<name>': [], '--': False})
 
         # equal to
         doc = '''usage: prog [<name>] [<name>]'''
         sys.argv = ['prog', '10']
-        self.eq(doc, {'<name>': ['10'], '--': False})
+        self.will_equal(doc, {'<name>': ['10'], '--': False})
 
     def test_optinal_required_unit_arg(self):
         doc = '''usage: prog [(<name> <name>)]'''
 
         sys.argv = ['prog', '10', '20']
-        self.eq(doc, {'<name>': ['10', '20'], '--': False})
+        self.will_equal(doc, {'<name>': ['10', '20'], '--': False})
 
         sys.argv = ['prog', '10']
-        self.fail(doc)
+        self.will_fail(doc)
 
         sys.argv = ['prog']
-        self.eq(doc, {'<name>': [], '--': False})
+        self.will_equal(doc, {'<name>': [], '--': False})
 
     def test_repeat_required_arg(self):
         doc = '''usage: prog NAME...'''
 
         sys.argv = ['prog', '10', '20']
-        self.eq(doc, {'NAME': ['10', '20'], '--': False})
+        self.will_equal(doc, {'NAME': ['10', '20'], '--': False})
 
         sys.argv = ['prog', '10']
-        self.eq(doc, {'NAME': ['10'], '--': False})
+        self.will_equal(doc, {'NAME': ['10'], '--': False})
 
         sys.argv = ['prog']
-        self.fail(doc)
+        self.will_fail(doc)
 
     def test_repeat_optional_arg(self):
         doc = '''usage: prog [NAME]...'''
 
         sys.argv = ['prog', '10', '20']
-        self.eq(doc, {'NAME': ['10', '20'], '--': False})
+        self.will_equal(doc, {'NAME': ['10', '20'], '--': False})
 
         sys.argv = ['prog', '10']
-        self.eq(doc, {'NAME': ['10'], '--': False})
+        self.will_equal(doc, {'NAME': ['10'], '--': False})
 
         sys.argv = ['prog']
-        self.eq(doc, {'NAME': [], '--': False})
+        self.will_equal(doc, {'NAME': [], '--': False})
 
     def test_repeat_optional_arg_another_format(self):
         doc = '''usage: prog [NAME...]'''
 
         sys.argv = ['prog', '10', '20']
-        self.eq(doc, {'NAME': ['10', '20'], '--': False})
+        self.will_equal(doc, {'NAME': ['10', '20'], '--': False})
 
         sys.argv = ['prog', '10']
-        self.eq(doc, {'NAME': ['10'], '--': False})
+        self.will_equal(doc, {'NAME': ['10'], '--': False})
 
         sys.argv = ['prog']
-        self.eq(doc, {'NAME': [], '--': False})
+        self.will_equal(doc, {'NAME': [], '--': False})
 
     def test_repeat_optional_arg_nested(self):
         doc = '''usage: prog [NAME [NAME ...]]'''
 
         sys.argv = ['prog', '10', '20']
-        self.eq(doc, {'NAME': ['10', '20'], '--': False})
+        self.will_equal(doc, {'NAME': ['10', '20'], '--': False})
 
         sys.argv = ['prog', '10']
-        self.eq(doc, {'NAME': ['10'], '--': False})
+        self.will_equal(doc, {'NAME': ['10'], '--': False})
 
         sys.argv = ['prog']
-        self.eq(doc, {'NAME': [], '--': False})
+        self.will_equal(doc, {'NAME': [], '--': False})
 
     def test_branch_same_arg_dif_partner(self):
         doc = '''usage: prog (NAME | --foo NAME)
@@ -867,13 +864,13 @@ options: --foo
 '''
 
         sys.argv = ['prog', '10']
-        self.eq(doc, {'NAME': '10', '--foo': False, '--': False})
+        self.will_equal(doc, {'NAME': '10', '--foo': False, '--': False})
 
         sys.argv = ['prog', '--foo', '10']
-        self.eq(doc, {'NAME': '10', '--foo': True, '--': False})
+        self.will_equal(doc, {'NAME': '10', '--foo': True, '--': False})
 
         sys.argv = ['prog', '--foo=10']
-        self.fail(doc)
+        self.will_fail(doc)
 
     def test_optional_and_required_unit(self):
         doc = '''usage: prog (NAME | --foo) [--bar | NAME]
@@ -882,16 +879,16 @@ options: --foo
          --bar'''
 
         sys.argv = ['prog', '10']
-        self.eq(doc, {'NAME': ['10'], '--foo': False, '--bar': False,
-                      '--': False})
+        self.will_equal(doc, {'NAME': ['10'], '--foo': False, '--bar': False,
+                              '--': False})
 
         sys.argv = ['prog', '10', '20']
-        self.eq(doc, {'NAME': ['10', '20'], '--foo': False, '--bar': False,
-                      '--': False})
+        self.will_equal(doc, {'NAME': ['10', '20'], '--foo': False, '--bar': False,
+                              '--': False})
 
         sys.argv = ['prog', '--foo', '--bar']
-        self.eq(doc, {'NAME': [], '--foo': True, '--bar': True,
-                      '--': False})
+        self.will_equal(doc, {'NAME': [], '--foo': True, '--bar': True,
+                              '--': False})
 
     def test_example(self):
         doc = '''Naval Fate.
@@ -914,29 +911,29 @@ Options:
 
         sys.argv = ['prog', 'ship', 'Guardian', 'move',
                     '150', '300', '--speed=20']
-        self.eq(doc, {'--drifting': False,
-                      '--help': False,
-                      '-h': False,
-                      '--moored': False,
-                      '--speed': '20',
-                      '--version': False,
-                      '--': False,
-                      '<name>': ['Guardian'],
-                      '<x>': '150',
-                      '<y>': '300',
-                      'mine': False,
-                      'move': True,
-                      'new': False,
-                      'remove': False,
-                      'set': False,
-                      'ship': True,
-                      'shoot': False})
+        self.will_equal(doc, {'--drifting': False,
+                              '--help': False,
+                              '-h': False,
+                              '--moored': False,
+                              '--speed': '20',
+                              '--version': False,
+                              '--': False,
+                              '<name>': ['Guardian'],
+                              '<x>': '150',
+                              '<y>': '300',
+                              'mine': False,
+                              'move': True,
+                              'new': False,
+                              'remove': False,
+                              'set': False,
+                              'ship': True,
+                              'shoot': False})
 
     def test_one_long_opt_value(self):
         doc = '''usage: prog --hello'''
 
         sys.argv = ['prog', '--hello']
-        self.eq(doc, {'--hello': True, '--': False})
+        self.will_equal(doc, {'--hello': True, '--': False})
 
         # Note: different form docopt:
         # You must tell docpie that `--hello` expects a value in `options:`
@@ -947,93 +944,93 @@ Options:
     --hello=<world>'''
 
         sys.argv = ['prog']
-        self.eq(doc, {'--hello': None, '--': False})
+        self.will_equal(doc, {'--hello': None, '--': False})
 
     def test_optional_opt(self):
         doc = '''usage: prog [-o]'''
 
         sys.argv = ['prog', '-o']
-        self.eq(doc, {'-o': True, '--': False})
+        self.will_equal(doc, {'-o': True, '--': False})
 
         sys.argv = ['prog']
-        self.eq(doc, {'-o': False, '--': False})
+        self.will_equal(doc, {'-o': False, '--': False})
 
     def test_one_optional_short_opt(self):
         doc = '''Usage: prog [-o]'''
 
         sys.argv = ['prog', '-o']
-        self.eq(doc, {'-o': True, '--': False})
+        self.will_equal(doc, {'-o': True, '--': False})
 
     # Note: docpie does not have this future
     def test_either_option(self):
         doc = '''usage: prog --aabb | --aa'''
 
         sys.argv = ['prog', '--aa']
-        self.eq(doc, {'--aabb': False, '--aa': True, '--': False})
+        self.will_equal(doc, {'--aabb': False, '--aa': True, '--': False})
 
         sys.argv = ['prog', '--a']
-        self.fail(doc)
+        self.will_fail(doc)
 
     def test_count_option(self):
         doc = '''usage: prog -v'''
         sys.argv = ['prog', '-v']
-        self.eq(doc, {'-v': True, '--': False})
+        self.will_equal(doc, {'-v': True, '--': False})
 
         doc = '''usage: prog [-v -v]'''
         sys.argv = ['prog']
-        self.eq(doc, {'-v': 0, '--': False})
+        self.will_equal(doc, {'-v': 0, '--': False})
         sys.argv = ['prog', '-v']
-        self.eq(doc, {'-v': 1, '--': False})
+        self.will_equal(doc, {'-v': 1, '--': False})
         sys.argv = ['prog', '-vv']
-        self.eq(doc, {'-v': 2, '--': False})
+        self.will_equal(doc, {'-v': 2, '--': False})
 
         doc = '''usage: prog [(-v -v)]'''
         sys.argv = ['prog']
-        self.eq(doc, {'-v': 0, '--': False})
+        self.will_equal(doc, {'-v': 0, '--': False})
         sys.argv = ['prog', '-v']
-        self.fail(doc)
+        self.will_fail(doc)
         sys.argv = ['prog', '-vv']
-        self.eq(doc, {'-v': 2, '--': False})
+        self.will_equal(doc, {'-v': 2, '--': False})
 
         doc = '''usage: prog -v...'''
         sys.argv = ['prog']
-        self.fail(doc)
+        self.will_fail(doc)
         sys.argv = ['prog', '-v']
-        self.eq(doc, {'-v': 1, '--': False})
+        self.will_equal(doc, {'-v': 1, '--': False})
 
         sys.argv = ['prog', '-vv']
-        self.eq(doc, {'-v': 2, '--': False})
+        self.will_equal(doc, {'-v': 2, '--': False})
 
         sys.argv = ['prog', '-vvvvvv']
-        self.eq(doc, {'-v': 6, '--': False})
+        self.will_equal(doc, {'-v': 6, '--': False})
 
         # Note: different from docopt
         doc = '''usage: prog [-vvv | -vv | -v]'''
         sys.argv = ['prog']
-        self.eq(doc, {'-v': 0, '--': False})
+        self.will_equal(doc, {'-v': 0, '--': False})
         sys.argv = ['prog', '-v']
-        self.eq(doc, {'-v': 1, '--': False})
+        self.will_equal(doc, {'-v': 1, '--': False})
         sys.argv = ['prog', '-vv']
-        self.eq(doc, {'-v': 2, '--': False})
+        self.will_equal(doc, {'-v': 2, '--': False})
         sys.argv = ['prog', '-vvvv']
-        self.fail(doc)
+        self.will_fail(doc)
 
     def test_count_command(self):
         doc = '''usage: prog [go]'''
         sys.argv = ['prog', 'go']
-        self.eq(doc, {'go': True, '--': False})
+        self.will_equal(doc, {'go': True, '--': False})
 
         doc = '''usage: prog [go go]'''
         sys.argv = ['prog']
-        self.eq(doc, {'go': 0, '--': False})
+        self.will_equal(doc, {'go': 0, '--': False})
         sys.argv = ['prog', 'go', 'go']
-        self.eq(doc, {'go': 2, '--': False})
+        self.will_equal(doc, {'go': 2, '--': False})
         sys.argv = ['prog', 'go', 'go', 'go']
-        self.fail(doc)
+        self.will_fail(doc)
 
         doc = '''usage: prog go...'''
         sys.argv = ['prog', 'go', 'go', 'go', 'go', 'go']
-        self.eq(doc, {'go': 5, '--': False})
+        self.will_equal(doc, {'go': 5, '--': False})
 
     def test_option_not_include(self):
         doc = '''usage: prog [options] [-a]
@@ -1041,9 +1038,9 @@ Options:
 options: -a
          -b'''
         sys.argv = ['prog', '-a']
-        self.eq(doc, {'-a': True, '-b': False, '--': False})
+        self.will_equal(doc, {'-a': True, '-b': False, '--': False})
         sys.argv = ['prog', '-aa']
-        self.fail(doc)
+        self.will_fail(doc)
 
     def test_option_shortcut(self):
         doc = '''Usage: prog [options] A
@@ -1052,25 +1049,25 @@ Options:
     -q  Be quiet
     -v  Be verbose.'''
         sys.argv = ['prog', 'arg']
-        self.eq(doc, {'A': 'arg', '-q': False, '-v': False,
-                      '--': False})
+        self.will_equal(doc, {'A': 'arg', '-q': False, '-v': False,
+                              '--': False})
 
         sys.argv = ['prog', '-v', 'arg']
-        self.eq(doc, {'A': 'arg', '-q': False, '-v': True,
-                      '--': False})
+        self.will_equal(doc, {'A': 'arg', '-q': False, '-v': True,
+                              '--': False})
 
         sys.argv = ['prog', '-q', 'arg']
-        self.eq(doc, {'A': 'arg', '-q': True, '-v': False,
-                      '--': False})
+        self.will_equal(doc, {'A': 'arg', '-q': True, '-v': False,
+                              '--': False})
 
     def test_value_always_list(self):
         doc = '''usage: prog [NAME [NAME ...]]'''
 
         sys.argv = ['prog', 'a', 'b']
-        self.eq(doc, {'NAME': ['a', 'b'], '--': False})
+        self.will_equal(doc, {'NAME': ['a', 'b'], '--': False})
 
         sys.argv = ['prog']
-        self.eq(doc, {'NAME': [], '--': False})
+        self.will_equal(doc, {'NAME': [], '--': False})
 
     def test_ommit_default_opt_value(self):
         doc = '''usage: prog [options]
@@ -1082,44 +1079,44 @@ options:
 '''
 
         sys.argv = ['prog']
-        self.eq(doc, {'-a': False, '-m': None, '-c': [],
-                      '--': False})
+        self.will_equal(doc, {'-a': False, '-m': None, '-c': [],
+                              '--': False})
 
         sys.argv = ['prog', '-a']
-        self.eq(doc, {'-a': True, '-m': None, '-c': [],
-                      '--': False})
+        self.will_equal(doc, {'-a': True, '-m': None, '-c': [],
+                              '--': False})
 
     def test_fake_git(self):
         doc = '''usage: git [-v | --verbose]'''
         sys.argv = ['git', '-v']
-        self.eq(doc, {'-v': True, '--verbose': False,
-                      '--': False})
+        self.will_equal(doc, {'-v': True, '--verbose': False,
+                              '--': False})
 
         doc = '''usage: git remote [-v | --verbose]'''
         sys.argv = ['git', 'remote', '-v']
-        self.eq(doc, {'-v': True, '--verbose': False, 'remote': True,
-                      '--': False})
+        self.will_equal(doc, {'-v': True, '--verbose': False, 'remote': True,
+                              '--': False})
 
     def test_empty_usage(self):
         doc = '''usage: prog'''
         sys.argv = ['prog']
-        self.eq(doc, {'--': False})
+        self.will_equal(doc, {'--': False})
 
         doc = '''
         usage: prog
                prog <a> <b>'''
         sys.argv = ['prog', '1', '2']
-        self.eq(doc, {'<a>': '1', '<b>': '2', '--': False})
+        self.will_equal(doc, {'<a>': '1', '<b>': '2', '--': False})
         sys.argv = ['prog']
-        self.eq(doc, {'<a>': None, '<b>': None, '--': False})
+        self.will_equal(doc, {'<a>': None, '<b>': None, '--': False})
 
         doc = '''
         usage: prog <a> <b>
                prog'''
         sys.argv = ['prog', '1', '2']
-        self.eq(doc, {'<a>': '1', '<b>': '2', '--': False})
+        self.will_equal(doc, {'<a>': '1', '<b>': '2', '--': False})
         sys.argv = ['prog']
-        self.eq(doc, {'<a>': None, '<b>': None, '--': False})
+        self.will_equal(doc, {'<a>': None, '<b>': None, '--': False})
 
     # This does not support so far
     # r"""usage: prog [--file=<f>]"""
@@ -1132,7 +1129,7 @@ options:
 options: --file <a>
 '''
         sys.argv = ['prog']
-        self.eq(doc, {'--file': None, '--': False})
+        self.will_equal(doc, {'--file': None, '--': False})
 
     def test_unusual_arg_name(self):
         doc = '''Usage: prog [-a <host:port>]
@@ -1140,8 +1137,8 @@ options: --file <a>
 Options: -a, --address <host:port>  TCP address[default: localhost:6283]
 '''
         sys.argv = ['prog']
-        self.eq(doc, {'--address': 'localhost:6283', '-a': 'localhost:6283',
-                      '--': False})
+        self.will_equal(doc, {'--address': 'localhost:6283', '-a': 'localhost:6283',
+                              '--': False})
 
     def test_usage_without_option_section_matching_options(self):
         # This now support even without "Option" section
@@ -1150,30 +1147,30 @@ Options: -a, --address <host:port>  TCP address[default: localhost:6283]
         doc2 = '''usage: prog --long=(<arg> ...)'''
 
         sys.argv = ['prog', '--long', 'one']
-        self.eq(doc, {'--long': ['one'], '--': False})
-        self.eq(doc2, {'--long': ['one'], '--': False})
+        self.will_equal(doc, {'--long': ['one'], '--': False})
+        self.will_equal(doc2, {'--long': ['one'], '--': False})
 
         sys.argv = ['prog', '--long', 'one', 'two', 'three']
-        self.eq(doc, {'--long': ['one', 'two', 'three'], '--': False})
-        self.eq(doc2, {'--long': ['one', 'two', 'three'], '--': False})
+        self.will_equal(doc, {'--long': ['one', 'two', 'three'], '--': False})
+        self.will_equal(doc2, {'--long': ['one', 'two', 'three'], '--': False})
 
         doc = '''usage: prog (--long=<arg>) ...'''
         sys.argv = ['prog', '--long', 'one']
-        self.eq(doc, {'--long': ['one'], '--': False})
+        self.will_equal(doc, {'--long': ['one'], '--': False})
 
         sys.argv = ['prog', '--long', 'one', '--long=two', '--long=three']
-        self.eq(doc, {'--long': ['one', 'two', 'three'], '--': False})
+        self.will_equal(doc, {'--long': ['one', 'two', 'three'], '--': False})
 
     def test_multiple_ele_repeat(self):
         doc = '''usage: prog (go <direction> --speed=<km/h>)...
 
 Options:
   --speed=<km/h>'''
-        sys.argv = ['prog',  'go', 'left',
-                    '--speed=5',  'go', 'right', '--speed=9']
-        self.eq(doc,
-                {"go": 2, "<direction>": ["left", "right"],
-                 "--speed": ["5", "9"], '--': False})
+        sys.argv = ['prog', 'go', 'left',
+                    '--speed=5', 'go', 'right', '--speed=9']
+        self.will_equal(doc,
+                        {"go": 2, "<direction>": ["left", "right"],
+                         "--speed": ["5", "9"], '--': False})
 
     def test_option_sct_with_option(self):
         doc = '''usage: prog [options] -a
@@ -1181,7 +1178,7 @@ Options:
 options: -a
 '''
         sys.argv = ['prog', '-a']
-        self.eq(doc, {'-a': True, '--': False})
+        self.will_equal(doc, {'-a': True, '--': False})
 
     def test_option_default_split(self):
         doc = '''usage: prog [-o <o>]...
@@ -1189,10 +1186,10 @@ options: -a
 options: -o <o>  [default: x]
 '''
         sys.argv = ['prog', '-o', 'this', '-o', 'that']
-        self.eq(doc, {'-o': ['this', 'that'], '--': False})
+        self.will_equal(doc, {'-o': ['this', 'that'], '--': False})
 
         sys.argv = ['prog']
-        self.eq(doc, {'-o': ['x'], '--': False})
+        self.will_equal(doc, {'-o': ['x'], '--': False})
 
     def test_option_default_split_with_repeat(self):
         doc = '''usage: prog [-o <o>]...
@@ -1201,10 +1198,10 @@ options: -o <o>  [default: x y]
 '''
 
         sys.argv = ['prog', '-o', 'this']
-        self.eq(doc, {'-o': ['this'], '--': False})
+        self.will_equal(doc, {'-o': ['this'], '--': False})
 
         sys.argv = ['prog']
-        self.eq(doc, {'-o': ['x', 'y'], '--': False})
+        self.will_equal(doc, {'-o': ['x', 'y'], '--': False})
 
         doc = '''usage: prog [-o [<o>]...]
 
@@ -1212,10 +1209,10 @@ options: -o [<o>]...  [default: x y]
 '''
 
         sys.argv = ['prog', '-o', 'this']
-        self.eq(doc, {'-o': ['this'], '--': False})
+        self.will_equal(doc, {'-o': ['this'], '--': False})
 
         sys.argv = ['prog']
-        self.eq(doc, {'-o': ['x', 'y'], '--': False})
+        self.will_equal(doc, {'-o': ['x', 'y'], '--': False})
 
     # Different from docopt
     def test_docopt_issue_56(self):
@@ -1225,16 +1222,16 @@ Options:
   --xx=<x>
   --yy=<y>'''
         sys.argv = ['prog', '--xx=1', '--xx=2']
-        self.eq(doc, {'--xx': ['1', '2'], '--yy': [], '--': False})
+        self.will_equal(doc, {'--xx': ['1', '2'], '--yy': [], '--': False})
 
         sys.argv = ['prog', '--xx=1', '--yy=2']
-        self.fail(doc)
+        self.will_fail(doc)
 
     def test_posixly_correct_tokenization(self):
         doc = '''usage: prog [<input file>]'''
 
         sys.argv = ['prog', 'f.txt']
-        self.eq(doc, {'<input file>': 'f.txt', '--': False})
+        self.will_equal(doc, {'<input file>': 'f.txt', '--': False})
 
         # Note: different from docopt: need `options:`
         doc = '''usage: prog [--input=<file name>]...
@@ -1243,7 +1240,7 @@ Options:
           --input=<file name>'''
 
         sys.argv = ['prog', '--input', 'a.txt', '--input=b.txt']
-        self.eq(doc, {'--input': ['a.txt', 'b.txt'], '--': False})
+        self.will_equal(doc, {'--input': ['a.txt', 'b.txt'], '--': False})
 
         doc = '''usage: prog [--input=<file name>]...
 
@@ -1251,7 +1248,7 @@ Options:
           --input=<file name>'''
 
         sys.argv = ['prog', '--input', 'a.txt', '--input=b.txt']
-        self.eq(doc, {'--input': ['a.txt', 'b.txt'], '--': False})
+        self.will_equal(doc, {'--input': ['a.txt', 'b.txt'], '--': False})
 
     def test_docopt_issue_85_with_subcommands(self):
         doc = '''
@@ -1261,14 +1258,14 @@ Options:
         options: --loglevel=N'''
 
         sys.argv = ['prog', 'fail', '--loglevel', '5']
-        self.eq(doc, {'good': False, 'fail': True, '--loglevel': '5',
-                      '--': False})
+        self.will_equal(doc, {'good': False, 'fail': True, '--loglevel': '5',
+                              '--': False})
 
     def test_usage_section_syntax(self):
         doc = '''usage:prog --foo'''
 
         sys.argv = ['prog', '--foo']
-        self.eq(doc, {'--foo': True, '--': False})
+        self.will_equal(doc, {'--foo': True, '--': False})
 
         # Not support in docpie
         #
@@ -1296,7 +1293,7 @@ Options:
 NOT PART OF SECTION'''
 
         sys.argv = ['prog', '--foo']
-        self.eq(doc, {'--foo': True, '--bar': False, '--': False})
+        self.will_equal(doc, {'--foo': True, '--bar': False, '--': False})
 
     def test_option_section_syntax(self):
         doc = """Usage: prog [options]
@@ -1315,7 +1312,7 @@ NOT PART OF SECTION'''
         sys.argv = ['prog', '--baz', '--egg']
         expect = {"--foo": False, "--baz": True, "--bar": False,
                   "--egg": True, "--spam": False, "--": False}
-        self.eq(doc, expect)
+        self.will_equal(doc, expect)
 
     def test_usage_section_of_docpie(self):
         doc = '''
@@ -1323,7 +1320,7 @@ Usage: prog <a>
        prog <b>'''
 
         sys.argv = ['prog', 'go!']
-        self.eq(doc, {'<a>': 'go!', '<b>': None, '--': False})
+        self.will_equal(doc, {'<a>': 'go!', '<b>': None, '--': False})
 
         doc = '''
 Usage:
@@ -1331,8 +1328,8 @@ Usage:
   prog c d'''
 
         sys.argv = ['prog', 'c', 'd']
-        self.eq(doc, {'a': False, 'b': False, 'c': True, 'd': True,
-                      '--': False})
+        self.will_equal(doc, {'a': False, 'b': False, 'c': True, 'd': True,
+                              '--': False})
 
         doc = '''
 Usage:
@@ -1342,8 +1339,8 @@ Usage:
          e f'''
 
         sys.argv = ['prog', 'a', 'b', 'e', 'f']
-        self.eq(doc, {'a': True, 'b': True, 'c': False, 'd': False, 'e': True,
-                      'f': True, '--': False})
+        self.will_equal(doc, {'a': True, 'b': True, 'c': False, 'd': False, 'e': True,
+                              'f': True, '--': False})
 
     def test_option_secion_of_docpie(self):
         doc = '''Usage: prog [options]
@@ -1355,8 +1352,8 @@ Options:
 -c
 '''
         sys.argv = ['prog']
-        self.eq(doc, {'-a': False, '-b': False, '-c': False,
-                      '--': False})
+        self.will_equal(doc, {'-a': False, '-b': False, '-c': False,
+                              '--': False})
 
         doc = '''
 Usage: prog [options]
@@ -1394,14 +1391,14 @@ Options: -a, --all=<here>
             seperated by white space(space, tab, ect.)[default: Calvary Brey]
         '''
         sys.argv = ['prog', '--all=all', '-b', 'brillant']
-        self.eq(doc, {'-a': 'all', '--all': 'all',
-                      '-b': 'brillant', '--brillant': 'brillant',
-                      '-c': '', '--clever': '',
-                      '-d': ' ', '--default': ' ',
-                      '-e': None, '--escape': None,
-                      '-t': ['Calvary', 'Brey'],
-                      '--thanks': ['Calvary', 'Brey'],
-                      '--': False})
+        self.will_equal(doc, {'-a': 'all', '--all': 'all',
+                              '-b': 'brillant', '--brillant': 'brillant',
+                              '-c': '', '--clever': '',
+                              '-d': ' ', '--default': ' ',
+                              '-e': None, '--escape': None,
+                              '-t': ['Calvary', 'Brey'],
+                              '--thanks': ['Calvary', 'Brey'],
+                              '--': False})
 
     def test_option_abnormal_usage(self):
         doc = '''
@@ -1440,7 +1437,7 @@ Options: -a, --all=<here>
         Options: --path=<path>...     the path you need'''
 
         sys.argv = ['program.py', '--path', './here', './there']
-        self.eq(doc, {'--path': ['./here', './there'], '--': False})
+        self.will_equal(doc, {'--path': ['./here', './there'], '--': False})
 
         doc = '''
         Usage: program.py (--path=<path>)...
@@ -1448,7 +1445,7 @@ Options: -a, --all=<here>
         Options: --path=<path>     the path you need'''
 
         sys.argv = ['program.py', '--path=./here', '--path', './there']
-        self.eq(doc, {'--path': ['./here', './there'], '--': False})
+        self.will_equal(doc, {'--path': ['./here', './there'], '--': False})
 
     def test_name(self):
         doc = '''Usage:
@@ -1475,32 +1472,32 @@ Options: -a, --all=<here>
         doc = '''Usage: prog <a>... <b> <c>'''
 
         sys.argv = ['prog', '1', '2', '3', '4']
-        self.eq(doc, {'<a>': ['1', '2'], '<b>': '3', '<c>': '4', '--': False})
+        self.will_equal(doc, {'<a>': ['1', '2'], '<b>': '3', '<c>': '4', '--': False})
 
         sys.argv = ['prog', '1', '2', '3']
-        self.eq(doc, {'<a>': ['1'], '<b>': '2', '<c>': '3', '--': False})
+        self.will_equal(doc, {'<a>': ['1'], '<b>': '2', '<c>': '3', '--': False})
 
         sys.argv = ['prog', '1', '2']
-        self.fail(doc)
+        self.will_fail(doc)
 
     def test_easy_balance_optional(self):
         doc = '''Usage: prog [<a>]... <b> <c>'''
 
         sys.argv = ['prog', '1', '2', '3', '4']
-        self.eq(doc, {'<a>': ['1', '2'], '<b>': '3', '<c>': '4', '--': False})
+        self.will_equal(doc, {'<a>': ['1', '2'], '<b>': '3', '<c>': '4', '--': False})
 
         sys.argv = ['prog', '1', '2', '3']
-        self.eq(doc, {'<a>': ['1'], '<b>': '2', '<c>': '3', '--': False})
+        self.will_equal(doc, {'<a>': ['1'], '<b>': '2', '<c>': '3', '--': False})
 
         # change in 0.2.6
         # When borrowing value, the lender will at least keep one value
         # for itself
         sys.argv = ['prog', '1', '2']
         # self.eq(doc, {'<a>': [], '<b>': '1', '<c>': '2', '--': False})
-        self.fail(doc)
+        self.will_fail(doc)
 
         sys.argv = ['prog', '1']
-        self.fail(doc)
+        self.will_fail(doc)
 
     def test_option_order(self):
         doc = '''
@@ -1513,11 +1510,11 @@ Options: -a, --all=<here>
             -c <c>'''
 
         sys.argv = 'prog -c c -b b -a a'.split()
-        self.eq(doc, {'-a': 'a', '-b': 'b', '-c': 'c', '--': False})
+        self.will_equal(doc, {'-a': 'a', '-b': 'b', '-c': 'c', '--': False})
         sys.argv = 'prog -c c -aa -bb'.split()
-        self.eq(doc, {'-a': 'a', '-b': 'b', '-c': 'c', '--': False})
+        self.will_equal(doc, {'-a': 'a', '-b': 'b', '-c': 'c', '--': False})
         sys.argv = 'prog -bb -aa -cc'.split()
-        self.eq(doc, {'-a': 'a', '-b': 'b', '-c': 'c', '--': False})
+        self.will_equal(doc, {'-a': 'a', '-b': 'b', '-c': 'c', '--': False})
 
     def test_order(self):
         doc = '''
@@ -1526,25 +1523,25 @@ Options: -a, --all=<here>
         '''
 
         sys.argv = 'prog -a cmd1 -b cmd2 -c cmd3'.split()
-        self.eq(doc, {'-a': True, '-b': True, '-c': True,
-                      'cmd1': True, 'cmd2': True, 'cmd3': True,
-                      '--': False})
+        self.will_equal(doc, {'-a': True, '-b': True, '-c': True,
+                              'cmd1': True, 'cmd2': True, 'cmd3': True,
+                              '--': False})
 
         sys.argv = 'prog -c cmd1 -b cmd2 -a cmd3'.split()
-        self.eq(doc, {'-a': True, '-b': True, '-c': True,
-                      'cmd1': True, 'cmd2': True, 'cmd3': True,
-                      '--': False})
+        self.will_equal(doc, {'-a': True, '-b': True, '-c': True,
+                              'cmd1': True, 'cmd2': True, 'cmd3': True,
+                              '--': False})
 
         sys.argv = 'prog -c cmd1 cmd2 -a -b cmd3'.split()
-        self.eq(doc, {'-a': True, '-b': True, '-c': True,
-                      'cmd1': True, 'cmd2': True, 'cmd3': True,
-                      '--': False})
+        self.will_equal(doc, {'-a': True, '-b': True, '-c': True,
+                              'cmd1': True, 'cmd2': True, 'cmd3': True,
+                              '--': False})
 
         sys.argv = 'prog -a cmd2 cmd1 -b -c cmd3'.split()
-        self.fail(doc)
+        self.will_fail(doc)
 
         sys.argv = 'prog -a -b -c cmd3 cmd2 cmd1'.split()
-        self.fail(doc)
+        self.will_fail(doc)
 
     def test_balace_value_bug(self):
         doc = '''
@@ -1553,7 +1550,7 @@ Options: -a, --all=<here>
         '''
 
         sys.argv = 'prog c c c'.split()
-        self.fail(doc)
+        self.will_fail(doc)
 
     def test_double_dashes_when_has_element(self):
         doc = '''
@@ -1561,97 +1558,97 @@ Options: -a, --all=<here>
             prog [cmd] [--option] [<arg>]...'''
 
         sys.argv = 'prog cmd --option arg -- -- - arg -arg --arg'.split()
-        self.eq(doc, {'--': True,
-                      '--option': True,
-                      '<arg>': ['arg', '--', '-', 'arg', '-arg', '--arg'],
-                      'cmd': True})
+        self.will_equal(doc, {'--': True,
+                              '--option': True,
+                              '<arg>': ['arg', '--', '-', 'arg', '-arg', '--arg'],
+                              'cmd': True})
 
         sys.argv = 'prog cmd arg -- - -- -arg --arg'.split()
-        self.eq(doc, {'--': True,
-                      '--option': False,
-                      '<arg>': ['arg', '-', '--', '-arg', '--arg'],
-                      'cmd': True})
+        self.will_equal(doc, {'--': True,
+                              '--option': False,
+                              '<arg>': ['arg', '-', '--', '-arg', '--arg'],
+                              'cmd': True})
 
         doc = '''Usage: pie.py [-v] [<file>...]'''
         sys.argv = 'pie.py -- -v --help'.split()
-        self.eq(doc, {'-v': False, '<file>': ['-v', '--help'], '--': True})
+        self.will_equal(doc, {'-v': False, '<file>': ['-v', '--help'], '--': True})
 
     def test_new_bracket_meaning(self):
         doc = '''Usage: prog [cmd --opt <arg>]'''
 
         sys.argv = 'prog arg --opt cmd'.split()
-        self.fail(doc)
+        self.will_fail(doc)
 
         sys.argv = 'prog arg cmd --opt'.split()
-        self.fail(doc)
+        self.will_fail(doc)
 
         sys.argv = 'prog --opt arg cmd'.split()
-        self.fail(doc)
+        self.will_fail(doc)
 
         sys.argv = 'prog --opt cmd arg'.split()
-        self.eq(doc, {'--opt': True, '<arg>': 'arg', 'cmd': True, '--': False})
+        self.will_equal(doc, {'--opt': True, '<arg>': 'arg', 'cmd': True, '--': False})
 
         sys.argv = 'prog cmd --opt arg'.split()
-        self.eq(doc, {'--opt': True, '<arg>': 'arg', 'cmd': True, '--': False})
+        self.will_equal(doc, {'--opt': True, '<arg>': 'arg', 'cmd': True, '--': False})
 
         sys.argv = 'prog cmd arg --opt'.split()
-        self.eq(doc, {'--opt': True, '<arg>': 'arg', 'cmd': True, '--': False})
+        self.will_equal(doc, {'--opt': True, '<arg>': 'arg', 'cmd': True, '--': False})
 
     def test_new_bracket_meaning_in_opt(self):
         doc = 'Usage: prog [-dir]'
         pa_doc = 'Usage: prog (-dir)'
         sys.argv = 'prog -rid'.split()
-        self.eq(doc, {'-r': True, '-i': True, '-d': True, '--': False})
-        self.eq(pa_doc, {'-r': True, '-i': True, '-d': True, '--': False})
+        self.will_equal(doc, {'-r': True, '-i': True, '-d': True, '--': False})
+        self.will_equal(pa_doc, {'-r': True, '-i': True, '-d': True, '--': False})
 
         sys.argv = 'prog -id'.split()
-        self.eq(doc, {'-r': False, '-i': True, '-d': True, '--': False})
-        self.fail(pa_doc)
+        self.will_equal(doc, {'-r': False, '-i': True, '-d': True, '--': False})
+        self.will_fail(pa_doc)
 
         sys.argv = 'prog -i'.split()
-        self.eq(doc, {'-r': False, '-i': True, '-d': False, '--': False})
-        self.fail(pa_doc)
+        self.will_equal(doc, {'-r': False, '-i': True, '-d': False, '--': False})
+        self.will_fail(pa_doc)
 
         sys.argv = 'prog'.split()
-        self.eq(doc, {'-r': False, '-i': False, '-d': False, '--': False})
-        self.fail(pa_doc)
+        self.will_equal(doc, {'-r': False, '-i': False, '-d': False, '--': False})
+        self.will_fail(pa_doc)
 
     def test_arg_shadow_cmd(self):
         doc = 'Usage: prog cmd --flag <arg>'
         # <arg> should not take `cmd`
         sys.argv = 'prog cmd --flag sth'.split()
-        self.eq(doc, {'cmd': True, '--flag': True, '<arg>': 'sth',
-                      '--': False})
+        self.will_equal(doc, {'cmd': True, '--flag': True, '<arg>': 'sth',
+                              '--': False})
         doc = 'Usage: prog [cmd --flag <arg>]'
-        self.eq(doc, {'cmd': True, '--flag': True, '<arg>': 'sth',
-                      '--': False})
+        self.will_equal(doc, {'cmd': True, '--flag': True, '<arg>': 'sth',
+                              '--': False})
 
     def test_either_in_repeat(self):
         doc = '''Usage: prog (a [this | that])...'''
 
         sys.argv = 'prog a'.split()
-        self.eq(doc, {'--': False, 'a': 1, 'that': 0, 'this': 0})
+        self.will_equal(doc, {'--': False, 'a': 1, 'that': 0, 'this': 0})
 
         sys.argv = 'prog a this a this a this a'.split()
-        self.eq(doc, {'--': False, 'a': 4, 'that': 0, 'this': 3})
+        self.will_equal(doc, {'--': False, 'a': 4, 'that': 0, 'this': 3})
 
         sys.argv = 'prog a this a this a that a'.split()
-        self.fail(doc)
+        self.will_fail(doc)
 
     def test_option_unit_stack(self):
         doc = '''Usage: pie.py [command] [--option] [<argument>]'''
 
         sys.argv = 'prog --option command arg'.split()
-        self.eq(doc, {'--option': True, 'command': True, '<argument>': 'arg',
-                      '--': False})
+        self.will_equal(doc, {'--option': True, 'command': True, '<argument>': 'arg',
+                              '--': False})
 
         sys.argv = 'prog --option command -- arg'.split()
-        self.eq(doc, {'--option': True, 'command': True, '<argument>': 'arg',
-                      '--': True})
+        self.will_equal(doc, {'--option': True, 'command': True, '<argument>': 'arg',
+                              '--': True})
 
         sys.argv = 'prog --option -- command arg'.split()
-        self.eq(doc, {'--option': True, 'command': True, '<argument>': 'arg',
-                      '--': True})
+        self.will_equal(doc, {'--option': True, 'command': True, '<argument>': 'arg',
+                              '--': True})
 
     def test_long_option_short(self):
         doc = '''Usage: prog [options]
@@ -1663,30 +1660,30 @@ Options: -a, --all=<here>
         '''
 
         sys.argv = 'prog --prefi'.split()
-        self.eq(doc, {'--prefix': True, '--prefer': False, '--prepare': False,
-                      '--': False})
+        self.will_equal(doc, {'--prefix': True, '--prefer': False, '--prepare': False,
+                              '--': False})
 
         sys.argv = 'prog --prefe'.split()
-        self.eq(doc, {'--prefix': False, '--prefer': True, '--prepare': False,
-                      '--': False})
+        self.will_equal(doc, {'--prefix': False, '--prefer': True, '--prepare': False,
+                              '--': False})
 
         sys.argv = 'prog --prep'.split()
-        self.eq(doc, {'--prefix': False, '--prefer': False, '--prepare': True,
-                      '--': False})
+        self.will_equal(doc, {'--prefix': False, '--prefer': False, '--prepare': True,
+                              '--': False})
 
     def test_auto_expand(self):
         doc = 'Usage: prog [--prefix --prefer --prepare] [<args>...]'
 
         sys.argv = 'prog -- --prefi --prefe --prep'.split()
-        self.eq(doc, {'--prefix': False, '--prefer': False, '--prepare': False,
-                      '--': True, '<args>': ['--prefi', '--prefe', '--prep']})
+        self.will_equal(doc, {'--prefix': False, '--prefer': False, '--prepare': False,
+                              '--': True, '<args>': ['--prefi', '--prefe', '--prep']})
 
         doc = 'Usage: prog [--prefix --prefer --prepare] [<args>...]'
 
         sys.argv = ['prog', '--prepare', '--prefer', '--prefix',
                     '--', '--prefi', '--prefe', '--prep']
-        self.eq(doc, {'--prefix': True, '--prefer': True, '--prepare': True,
-                      '--': True, '<args>': ['--prefi', '--prefe', '--prep']})
+        self.will_equal(doc, {'--prefix': True, '--prefer': True, '--prepare': True,
+                              '--': True, '<args>': ['--prefi', '--prefe', '--prep']})
 
     def test_auto_expand_raise(self):
         if hasattr(self, 'assertRaisesRegex'):
@@ -1706,48 +1703,48 @@ Options: -a, --all=<here>
         doc = '''Usage: prog [-v | -vv | -vvv] [<arg>]'''
 
         sys.argv = ['prog']
-        self.eq(doc, {'-v': 0, '<arg>': None, '--': False})
+        self.will_equal(doc, {'-v': 0, '<arg>': None, '--': False})
 
         sys.argv = ['prog', '-v']
-        self.eq(doc, {'-v': 1, '<arg>': None, '--': False})
+        self.will_equal(doc, {'-v': 1, '<arg>': None, '--': False})
 
         sys.argv = ['prog', '-vv']
-        self.eq(doc, {'-v': 2, '<arg>': None, '--': False})
+        self.will_equal(doc, {'-v': 2, '<arg>': None, '--': False})
 
         sys.argv = ['prog', '-vvv']
-        self.eq(doc, {'-v': 3, '<arg>': None, '--': False})
+        self.will_equal(doc, {'-v': 3, '<arg>': None, '--': False})
 
         sys.argv = ['prog', '-vvvv']
-        self.fail(doc)
+        self.will_fail(doc)
 
         sys.argv = ['prog', '-vv', '--', '-v']
-        self.eq(doc, {'-v': 2, '<arg>': '-v', '--': True})
+        self.will_equal(doc, {'-v': 2, '<arg>': '-v', '--': True})
 
         doc = '''Usage: prog (<a> | <b> <c>) <d>'''
         doc2 = '''Usage: prog (<b> <c> | <a>) <d>'''
 
         sys.argv = ['prog', 'a', 'd']
-        self.eq(doc, {'<a>': 'a', '<b>': None, '<c>': None, '<d>': 'd',
-                      '--': False})
-        self.eq(doc2, {'<a>': 'a', '<b>': None, '<c>': None, '<d>': 'd',
-                       '--': False})
+        self.will_equal(doc, {'<a>': 'a', '<b>': None, '<c>': None, '<d>': 'd',
+                              '--': False})
+        self.will_equal(doc2, {'<a>': 'a', '<b>': None, '<c>': None, '<d>': 'd',
+                               '--': False})
 
         sys.argv = ['prog', 'b', 'c', 'd']
-        self.eq(doc, {'<a>': None, '<b>': 'b', '<c>': 'c', '<d>': 'd',
-                      '--': False})
-        self.eq(doc2, {'<a>': None, '<b>': 'b', '<c>': 'c', '<d>': 'd',
-                       '--': False})
+        self.will_equal(doc, {'<a>': None, '<b>': 'b', '<c>': 'c', '<d>': 'd',
+                              '--': False})
+        self.will_equal(doc2, {'<a>': None, '<b>': 'b', '<c>': 'c', '<d>': 'd',
+                               '--': False})
 
     def test_issue_1(self):
         doc = '''Usage: prog [cmd1 cmd2]'''
         sys.argv = ['prog', 'cmd2', 'cmd1']
-        self.fail(doc)
+        self.will_fail(doc)
 
         sys.argv = ['prog', 'cmd1', 'cmd2']
-        self.eq(doc, {'cmd1': True, 'cmd2': True, '--': False})
+        self.will_equal(doc, {'cmd1': True, 'cmd2': True, '--': False})
 
         sys.argv = ['prog', 'cmd1', '--', 'cmd2']
-        self.eq(doc, {'cmd1': True, 'cmd2': True, '--': True})
+        self.will_equal(doc, {'cmd1': True, 'cmd2': True, '--': True})
 
     def test_jsonlize(self):
         doc = """
@@ -1794,27 +1791,27 @@ filename[default: ./]
         '''
 
         sys.argv = ['prog']
-        self.eq(doc, {'--repeat': ['here', 'there'], '--another-repeat': [],
-                      'cmd': 0, '<arg>': [],
-                      '--': False})
+        self.will_equal(doc, {'--repeat': ['here', 'there'], '--another-repeat': [],
+                              'cmd': 0, '<arg>': [],
+                              '--': False})
 
         sys.argv = ['prog', '--repeat=1', '--repeat=2',
                     '--another-repeat=1', '--another-repeat=2']
-        self.eq(doc, {'--repeat': ['1', '2'],
-                      '--another-repeat': ['1', '2'],
-                      'cmd': 0, '<arg>': [],
-                      '--': False})
+        self.will_equal(doc, {'--repeat': ['1', '2'],
+                              '--another-repeat': ['1', '2'],
+                              'cmd': 0, '<arg>': [],
+                              '--': False})
 
         sys.argv = [
             'prog', '--repeat=1', '--repeat=2', '--repeat=3'
-            '--another-repeat=1', '--another-repeat=2'
+                                                '--another-repeat=1', '--another-repeat=2'
         ]
-        self.fail(doc)
+        self.will_fail(doc)
 
         sys.argv = ['prog', '--repeat=1', '--repeat=2',
                     '--another-repeat=1', '--another-repeat=2',
                     '--another-repeat=3']
-        self.fail(doc)
+        self.will_fail(doc)
 
     def test_stack_value_in_usage_with_upper(self):
         # Don't do this!
@@ -1824,7 +1821,7 @@ filename[default: ./]
         Options: -o FILE    output file'''
 
         sys.argv = ['prog', '-o', '/dev/null']
-        self.eq(doc, {'-o': '/dev/null', '--': False})
+        self.will_equal(doc, {'-o': '/dev/null', '--': False})
 
     def test_auto_expand_raise_short_option(self):
         if hasattr(self, 'assertRaisesRegex'):
@@ -1877,18 +1874,18 @@ filename[default: ./]
     def test_option_disorder_match(self):
         doc = 'Usage: prog -b -a'
         sys.argv = 'prog -ab'.split()
-        self.eq(doc, {'-a': True, '-b': True, '--': False})
+        self.will_equal(doc, {'-a': True, '-b': True, '--': False})
 
     def test_option_stack_in_usage(self):
         doc = 'Usage: prog -b<sth> -a'
         sys.argv = 'prog -abb'.split()
-        self.eq(doc, {'-a': True, '-b': 'b', '--': False})
+        self.will_equal(doc, {'-a': True, '-b': 'b', '--': False})
 
     def test_auto_handler(self):
         doc = 'Usage: prog -a<sth>'
 
         sys.argv = 'prog -ah'.split()
-        self.eq(doc, {'-a': 'h', '--': False})
+        self.will_equal(doc, {'-a': 'h', '--': False})
 
         if hasattr(self, 'assertRaises'):
             if sys.version_info[:2] == (2, 6):
@@ -1929,18 +1926,18 @@ filename[default: ./]
                           -d'''
 
         sys.argv = 'prog -a -c'.split()
-        self.eq(doc, {'-a': True, '-b': False, '-c': True, '-d': False,
-                      '--': False})
+        self.will_equal(doc, {'-a': True, '-b': False, '-c': True, '-d': False,
+                              '--': False})
 
-    def test_inside_angle_brancket(self):
+    def test_inside_angle_bracket(self):
         # "<+|-|*|/>" should not be interpreted as "<+ | - | * | />"
         doc = '''Usage:
         prog <value> (<+|-|*|/> <value>)...'''
 
         sys.argv = 'prog 1 + 2 - 3 * 4 / 5'.split()
-        self.eq(doc, {'<+|-|*|/>': ['+', '-', '*', '/'],
-                      '<value>': ['1', '2', '3', '4', '5'],
-                      '--': False})
+        self.will_equal(doc, {'<+|-|*|/>': ['+', '-', '*', '/'],
+                              '<value>': ['1', '2', '3', '4', '5'],
+                              '--': False})
 
     def test_fix_init_bug(self):
         doc = '''
@@ -1985,7 +1982,7 @@ Options:
     def test_stack_value_with_short_option(self):
         doc = "Usage: prog -a<val>"
         sys.argv = ['prog', '-ah']
-        self.eq(doc, {'-a': 'h', '--': False})
+        self.will_equal(doc, {'-a': 'h', '--': False})
 
         doc = """Usage: prog -a <sth>
 
@@ -1993,7 +1990,7 @@ Options:
             -a <sth>"""
 
         sys.argv = ['prog', '-ah']
-        self.eq(doc, {'-a': 'h', '--': False})
+        self.will_equal(doc, {'-a': 'h', '--': False})
 
         doc = """Usage: prog -a<sth>
 
@@ -2001,11 +1998,11 @@ Options:
             -a <sth>"""
 
         sys.argv = ['prog', '-ah']
-        self.eq(doc, {'-a': 'h', '--': False})
+        self.will_equal(doc, {'-a': 'h', '--': False})
 
         doc = "Usage: prog -aVAL"
         sys.argv = ['prog', '-aval']
-        self.fail(doc)
+        self.will_fail(doc)
 
         doc = """Usage: prog -a VAL
 
@@ -2013,7 +2010,7 @@ Options:
             -a <sth>"""
 
         sys.argv = ['prog', '-ah']
-        self.eq(doc, {'-a': 'h', '--': False})
+        self.will_equal(doc, {'-a': 'h', '--': False})
 
         doc = """Usage: prog -aVAL
 
@@ -2021,7 +2018,7 @@ Options:
             -a <sth>"""
 
         sys.argv = ['prog', '-ah']
-        self.eq(doc, {'-a': 'h', '--': False})
+        self.will_equal(doc, {'-a': 'h', '--': False})
 
     def test_windows_style_break_line(self):
         doc = (
@@ -2043,8 +2040,8 @@ Options:
         expect = {'cmd1': False, 'cmd2': True, '-o': False,
                   '--option': False, '-a': False, '-n': False,
                   '--': False}
-        self.eq(doc.replace('\r', ''), expect)
-        self.eq(doc, expect)
+        self.will_equal(doc.replace('\r', ''), expect)
+        self.will_equal(doc, expect)
 
     def test_usage_content_options_title(self):
         doc = """
@@ -2056,7 +2053,7 @@ Options:
         sys.argv = ['prog', 'sth']
         expect = {'<Options:>': 'sth', '-h': False, '--help': False,
                   '--': False}
-        self.eq(doc, expect)
+        self.will_equal(doc, expect)
 
     def test_repeat_follow_command(self):
         doc = """
@@ -2064,51 +2061,51 @@ Options:
 
         sys.argv = ['prog', '1', '2', '3', 'cmd']
         expect = {'<a>': ['1', '2'], '<b>': '3', 'cmd': True, '--': False}
-        self.eq(doc, expect)
+        self.will_equal(doc, expect)
 
         doc = """Usage: prog <a>... cmd <b>"""
 
         sys.argv = ['prog', '1', '2', 'cmd', '3']
         expect = {'<a>': ['1', '2'], 'cmd': True, '<b>': '3', '--': False}
-        self.eq(doc, expect)
+        self.will_equal(doc, expect)
 
     def test_repeat_required_grouped(self):
         doc = """Usage: prog (<a> <b>)... <c> <d>"""
         sys.argv = ['prog', 'a', 'b', 'a', 'b', 'c', 'd']
         expect = {'<a>': ['a', 'a'], '<b>': ['b', 'b'], '<c>': 'c', '<d>': 'd',
                   '--': False}
-        self.eq(doc, expect)
+        self.will_equal(doc, expect)
 
         sys.argv = ['prog', 'a', 'b', 'a', 'b', 'c']
-        self.fail(doc)
+        self.will_fail(doc)
 
         sys.argv = ['prog', 'a', 'b', 'c', 'd']
         expect = {'<a>': ['a'], '<b>': ['b'], '<c>': 'c', '<d>': 'd',
                   '--': False}
-        self.eq(doc, expect)
+        self.will_equal(doc, expect)
 
         sys.argv = ['prog', 'a', 'b']
-        self.fail(doc)
+        self.will_fail(doc)
 
     def test_repeat_optional_grouped(self):
         doc = """Usage: prog [<a> <b>]... <c> <d>"""
         sys.argv = ['prog', 'a', 'b', 'a', 'b', 'c', 'd']
         expect = {'<a>': ['a', 'a'], '<b>': ['b', 'b'], '<c>': 'c', '<d>': 'd',
                   '--': False}
-        self.eq(doc, expect)
+        self.will_equal(doc, expect)
 
         sys.argv = ['prog', 'a', 'b', 'a', 'c', 'd']
         expect = {'<a>': ['a', 'a'], '<b>': ['b'], '<c>': 'c', '<d>': 'd',
                   '--': False}
-        self.eq(doc, expect)
+        self.will_equal(doc, expect)
 
         sys.argv = ['prog', 'a', 'b', 'c', 'd']
         expect = {'<a>': ['a'], '<b>': ['b'], '<c>': 'c', '<d>': 'd',
                   '--': False}
-        self.eq(doc, expect)
+        self.will_equal(doc, expect)
 
         sys.argv = ['prog', 'c', 'd']
-        self.fail(doc)
+        self.will_fail(doc)
         # expect = {'<a>': [], '<b>': [], '<c>': 'c', '<d>': 'd', '--': False}
         # self.eq(doc, expect)
 
@@ -2127,7 +2124,7 @@ Options:
                   '--': False}
         # usually 1 fail out of 3
         for _ in range(6):
-            self.eq(doc, expect)
+            self.will_equal(doc, expect)
 
     def test_issue_3_not_alias_for_opt(self):
         expect = {'-k': True, '--keep': True, '--': False}
@@ -2150,7 +2147,7 @@ Options:
         for doc in (doc1, doc2):
             for argv in (argv1, argv2):
                 sys.argv = argv
-                self.eq(doc, expect)
+                self.will_equal(doc, expect)
 
     def test_new_fix_for_options_not_raise(self):
         doc = """
@@ -2160,10 +2157,10 @@ Options:
         Options:
         """
         sys.argv = ['prog']
-        self.eq(doc, {'--': False})
+        self.will_equal(doc, {'--': False})
 
         sys.argv = ['prog', 'sth']
-        self.fail(doc)
+        self.will_fail(doc)
 
     def test_option_not_reset_cause_fail(self):
         doc = """
@@ -2174,7 +2171,7 @@ Options:
             -a"""
 
         sys.argv = ['prog', '-a', 'b']
-        self.eq(doc, {'-a': True, 'a': False, 'b': True, '--': False})
+        self.will_equal(doc, {'-a': True, 'a': False, 'b': True, '--': False})
 
     def test_unstd_option_value_cause_double_dashes_failed(self):
         doc = """
@@ -2187,11 +2184,11 @@ Options:
 
         sys.argv = ['prog', '--force', '--', 'val']
         expect = {'--force': None, '--': True, '<arg>': 'val', '-a': False}
-        self.eq(doc, expect)
+        self.will_equal(doc, expect)
 
         sys.argv = ['prog', '--force', '-a', 'val']
         expect = {'--force': None, '--': False, '<arg>': 'val', '-a': True}
-        self.eq(doc, expect)
+        self.will_equal(doc, expect)
 
     def test_option_value_handle_dashes(self):
         # not standard
@@ -2202,10 +2199,10 @@ Options:
         """
 
         sys.argv = ['prog', '--all', '--', 'A', 'B', 'C']
-        self.fail(doc)
+        self.will_fail(doc)
 
         sys.argv = ['prog', '--all', 'A', '--', 'B', 'C']
-        self.fail(doc)
+        self.will_fail(doc)
 
     def test_options_argument_in_usage(self):
         doc = """
@@ -2216,7 +2213,7 @@ Options:
         """
 
         sys.argv = ['prog', '--color', 'red']
-        self.eq(doc, {'--': False, '--color': 'red'})
+        self.will_equal(doc, {'--': False, '--color': 'red'})
 
         doc2 = """
         Usage: prog [options] -c <COLOR>
@@ -2224,7 +2221,7 @@ Options:
         Options:
             -c, --color=<COLOR>
         """
-        self.eq(doc2, {'--': False, '--color': 'red', '-c': 'red'})
+        self.will_equal(doc2, {'--': False, '--color': 'red', '-c': 'red'})
 
     def test_wrong_unknow_option_note(self):
         doc = '''Usage: prog --long'''
@@ -2255,10 +2252,10 @@ OPTIONS:
            the entire subtree connected at that point."""
 
         sys.argv = ['prog', 'source', 'target']
-        self.eq(doc, {'--': False, '-f': False, '-v': False,
-                      '--verbose': False, '-X': False, '-R': False,
-                      '<source_file>': ['source'],
-                      '<target_directory>': 'target'})
+        self.will_equal(doc, {'--': False, '-f': False, '-v': False,
+                              '--verbose': False, '-X': False, '-R': False,
+                              '<source_file>': ['source'],
+                              '<target_directory>': 'target'})
 
     def test_cp_option_not_work(self):
         doc = """Example for docpie, linux cp-like command
@@ -2281,21 +2278,21 @@ OPTIONS:
                the entire subtree connected at that point."""
 
         sys.argv = ['prog', 'source', 'target', '-R']
-        self.eq(doc, {'--': False, '-f': False, '-v': False,
-                      '--verbose': False, '-X': False, '-R': True,
-                      '<source_file>': ['source'],
-                      '<target_directory>': 'target'})
+        self.will_equal(doc, {'--': False, '-f': False, '-v': False,
+                              '--verbose': False, '-X': False, '-R': True,
+                              '<source_file>': ['source'],
+                              '<target_directory>': 'target'})
         sys.argv = ['prog', 'source1', 'source2', 'target', '-R']
-        self.eq(doc, {'--': False, '-f': False, '-v': False,
-                      '--verbose': False, '-X': False, '-R': True,
-                      '<source_file>': ['source1', 'source2'],
-                      '<target_directory>': 'target'})
+        self.will_equal(doc, {'--': False, '-f': False, '-v': False,
+                              '--verbose': False, '-X': False, '-R': True,
+                              '<source_file>': ['source1', 'source2'],
+                              '<target_directory>': 'target'})
 
         sys.argv = ['prog', 'source1', '-R', 'source2', 'target']
-        self.eq(doc, {'--': False, '-f': False, '-v': False,
-                      '--verbose': False, '-X': False, '-R': True,
-                      '<source_file>': ['source1', 'source2'],
-                      '<target_directory>': 'target'})
+        self.will_equal(doc, {'--': False, '-f': False, '-v': False,
+                              '--verbose': False, '-X': False, '-R': True,
+                              '<source_file>': ['source1', 'source2'],
+                              '<target_directory>': 'target'})
 
     def test_option_section_title(self):
         doc = """
@@ -2318,18 +2315,18 @@ OPTIONS:
                prog --long-opt
         """
         sys.argv = ['prog', '--long-opt']
-        self.eq(doc, {'--': False, '--long': False, '--long-opt': True})
+        self.will_equal(doc, {'--': False, '--long': False, '--long-opt': True})
 
         doc = """
         Usage: prog --long=<opt>
                prog --long-opt
         """
         sys.argv = ['prog', '--long-opt']
-        self.eq(doc, {'--': False, '--long': None, '--long-opt': True})
+        self.will_equal(doc, {'--': False, '--long': None, '--long-opt': True})
         sys.argv = ['prog', '--long', 'opt']
-        self.eq(doc, {'--': False, '--long': 'opt', '--long-opt': False})
+        self.will_equal(doc, {'--': False, '--long': 'opt', '--long-opt': False})
         sys.argv = ['prog', '--long=opt']
-        self.eq(doc, {'--': False, '--long': 'opt', '--long-opt': False})
+        self.will_equal(doc, {'--': False, '--long': 'opt', '--long-opt': False})
 
     def test_raise_default_handler(self):
         doc = "Usage: prog"
@@ -2349,7 +2346,6 @@ class APITest(unittest.TestCase):
            stdopt=True, attachopt=True, attachvalue=True,
            auto2dashes=True, name=None, case_sensitive=False,
            optionsfirst=False, appearedonly=False, extra={}):
-
         pieargs = locals()
         pieargs.pop('self')
         pieargs.pop('result')
@@ -2880,7 +2876,6 @@ Options:
         doc = "Usage: prog whatever"
 
         class Pie(Docpie):
-
             usage_name = 'nosuch'
 
         with self.assertRaises(DocpieError) as cm:
@@ -2895,7 +2890,6 @@ Options:
 
 
 class Writer(StringIO):
-
     if sys.hexversion >= 0x03000000:
         def u(self, string):
             return string

@@ -123,11 +123,6 @@ See `here <https://github.com/TylerTemp/docpie/wiki/Why-docpie>`__ for more reas
 Reference
 ---------
 
-the code in ``bashlog.py`` is taken from
-`tornado <https://github.com/tornadoweb/tornado>`__, and
-``tracemore.py`` is from `python
-Cookbook <http://www.amazon.com/Python-Cookbook-Third-David-Beazley/dp/1449340377/ref=sr_1_1?ie=UTF8&qid=1440593849&sr=8-1&keywords=python+cookbook>`__
-
 Many examples & tests are from ``docopt``.
 
 License
